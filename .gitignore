@@ -1,4 +1,6 @@
-.pioenvs
-.piolibdeps
+/BUILD*
+/DS1820*
+/QEI*
+/PID*
+/mbed-os*
 .clang_complete
-.gcc-flags.json
