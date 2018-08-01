@@ -4,3 +4,4 @@
 /PID*
 /mbed-os*
 .clang_complete
+*.swp

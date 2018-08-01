@@ -1,0 +1,2 @@
+#!/bin/bash
+cp BUILD/NUCLEO_L476RG/GCC_ARM/robotont-mainboard-firmware.bin /media/$USER/NODE_L476RG/
