@@ -5,6 +5,7 @@
 #include "QEI.h"
 #include "PID.h"
 #include "DS1820.h"
+#include "moving_average.h"
 
 
 struct MotorConfig
@@ -15,6 +16,7 @@ struct MotorConfig
   PinName pin_enca;
   PinName pin_encb;
   PinName pin_fault;
+  PinName pin_feedback;
 
   PinName pin_temp;
 
@@ -53,12 +55,14 @@ class Motor
     void setPIDTunings(float k_p, float tau_i, float tau_d);
 
     void processPID();
+    void onCurrentPulse(void);
 
     float getMeasuredSpeed() const {return speed_measured_;};
     float getSpeedSetPoint() const {return speed_setpoint_;};
     float getEffort() const {return effort_;};
     float getWheelPosR() const {return config_.wheel_pos_r;};
     float getWheelPosPhi() const {return config_.wheel_pos_phi;};
+    float getCurrent() {return current_measured_.GetAverage();};
     float getTemperature();
 
   private:
@@ -71,13 +75,16 @@ class Motor
     DigitalIn fault_;
     PID pid_;
     Ticker pidTicker_;
+    InterruptIn* current_feedback_;
+    volatile uint32_t current_pulse_count_;
     DS1820* temp_sensor_;
     MotorStatus status_;
 
-    float speed_setpoint_; // target wheel velocity in rad/s
-    float speed_measured_; // actual wheel velocity in rad/s
-    float speed_limit_; // wheel speed limit rad/s
-    float effort_; // actual wheel velocoty in rad/s
+    float speed_setpoint_; // target wheel velocity in [rad/s]
+    float speed_measured_; // actual wheel velocity [rad/s]
+    MovingAverage<float> current_measured_; // measured current going to motor [A]
+    float speed_limit_; // wheel speed limit [rad/s]
+    float effort_; // pwm duty cycle 
     float effort_limit_; // pwm duty cycle limit [0...1]
     bool stopped_;
     float pulse_to_speed_ratio_;

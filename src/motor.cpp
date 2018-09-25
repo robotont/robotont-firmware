@@ -9,8 +9,10 @@ Motor::Motor(const MotorConfig& cfg)
   , enc_(cfg.pin_enca, cfg.pin_encb, NC, cfg.enc_cpr, QEI::X4_ENCODING)
   , fault_(cfg.pin_fault)
   , pid_(cfg.pid_k_p, cfg.pid_tau_i, cfg.pid_tau_d, cfg.pid_dt)
+  , current_feedback_(NULL)
   , temp_sensor_(NULL)
   , status_(STATUS_UNINITIALIZED)
+  , current_measured_(100, 0.0f)
 {
 
   // initialize pid to defaults
@@ -23,6 +25,12 @@ Motor::Motor(const MotorConfig& cfg)
   // linear speed on the wheel where it contacts the ground
   pulse_to_speed_ratio_ =
       1.0f / cfg.enc_cpr / cfg.gear_ratio * 2 * M_PI / cfg.pid_dt * cfg.wheel_radius;
+
+  // Check for feedback pin. Be aware that when the pin is initialized with NC or possibly with some other incorrect pinname, the system hangs. Currently we use NC for motor drivers that are not equipped with current sensing hardware.
+  if (cfg.pin_feedback != NC)
+  {
+    current_feedback_ = new InterruptIn(cfg.pin_feedback);
+  }
 
   // Check for the temperature sensor and initialize if connected
   if (cfg.pin_temp != NC)
@@ -46,6 +54,12 @@ Motor::Motor(const MotorConfig& cfg)
 
   // Attach the PID ISR ticker
   pidTicker_.attach(callback(this, &Motor::processPID), cfg.pid_dt);
+
+  // Attach an ISR to count current feedback pulses
+  if (current_feedback_)
+  {
+    current_feedback_->rise(callback(this, &Motor::onCurrentPulse));
+  }
 
   // store config in case we need it later.
   config_ = cfg; 
@@ -93,7 +107,8 @@ void Motor::setEffort(float effort)
   }
 
   // limit value to [-1...1]
-  effort_ = std::max(std::min(effort, 1.f), -1.f); 
+  // hard limit effort to 50% for testing purposes
+  effort_ = std::max(std::min(effort, 0.2f), -0.2f); 
 
   if (effort_ == 0)
   {
@@ -127,10 +142,22 @@ void Motor::setSpeedSetPoint(float speed)
 
 void Motor::processPID()
 {
+  // calculate feedback current
+  current_measured_.Insert((current_pulse_count_ / config_.pid_dt - 1000)/1000);
+  current_pulse_count_ = 0;
+
+  // calculate speed from encoder
   speed_measured_ = enc_.getPulses() * pulse_to_speed_ratio_;
   enc_.reset();
+
+  // calculate new effort
   pid_.setProcessValue(speed_measured_);
   setEffort(pid_.compute());
+}
+
+void Motor::onCurrentPulse(void)
+{
+  current_pulse_count_++;
 }
 
 float Motor::getTemperature()

@@ -18,14 +18,14 @@
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
 
-// Motor 0 configuration
-#define M0_TEMP PC_0
-struct MotorConfig cfg0 = { .pin_dir1 = PA_12,
-                            .pin_dir2 = PA_6,
-                            .pin_pwm = PA_11,
-                            .pin_enca = PB_12,
-                            .pin_encb = PA_7,
-                            .pin_fault = PA_5,
+// Test configuration for driver board rev.0.1
+struct MotorConfig cfg_test = { .pin_dir1 = PC_8,
+                            .pin_dir2 = PC_9,
+                            .pin_pwm = PB_8,
+                            .pin_enca = PC_6,
+                            .pin_encb = PB_9,
+                            .pin_fault = PC_5,
+                            .pin_feedback = PA_0,
                             .pin_temp = NC,
                             .pid_k_p = PID_KP,
                             .pid_tau_i = PID_TI,
@@ -37,33 +37,15 @@ struct MotorConfig cfg0 = { .pin_dir1 = PA_12,
                             .wheel_pos_r = WHEEL_POS_R,
                             .wheel_pos_phi = M_PI / 3.0f };
 
-// Motor 1 configuration
-#define M1_TEMP PC_1
-struct MotorConfig cfg1 = { .pin_dir1 = PB_2,
-                            .pin_dir2 = PA_8,
-                            .pin_pwm = PB_1,
-                            .pin_enca = PB_15,
-                            .pin_encb = PB_10,
-                            .pin_fault = PA_9,
-                            .pin_temp = NC,
-                            .pid_k_p = PID_KP,
-                            .pid_tau_i = PID_TI,
-                            .pid_tau_d = PID_TD,
-                            .pid_dt = PID_DELTA_T,
-                            .enc_cpr = ENC_CPR,
-                            .gear_ratio = GEAR_RATIO,
-                            .wheel_radius = WHEEL_RADIUS,
-                            .wheel_pos_r = WHEEL_POS_R,
-                            .wheel_pos_phi = M_PI };
-
-// Motor 2 configuration
-#define M2_TEMP PB_0
-struct MotorConfig cfg2 = { .pin_dir1 = PC_8,
+// Motor 0 configuration
+#define M0_TEMP PC_0
+struct MotorConfig cfg0 = { .pin_dir1 = PC_8,
                             .pin_dir2 = PB_8,
                             .pin_pwm = PC_6,
                             .pin_enca = PC_5,
                             .pin_encb = PB_9,
                             .pin_fault = PC_9,
+                            .pin_feedback = NC,
                             .pin_temp = NC,
                             .pid_k_p = PID_KP,
                             .pid_tau_i = PID_TI,
@@ -75,8 +57,106 @@ struct MotorConfig cfg2 = { .pin_dir1 = PC_8,
                             .wheel_pos_r = WHEEL_POS_R,
                             .wheel_pos_phi = 5.0f /3.0f * M_PI };
 
+// Motor 1 configuration
+#define M1_TEMP PC_1
+struct MotorConfig cfg1 = { .pin_dir1 = PA_12,
+                            .pin_dir2 = PA_6,
+                            .pin_pwm = PA_11,
+                            .pin_enca = PB_12,
+                            .pin_encb = PA_7,
+                            .pin_fault = PA_5,
+                            .pin_feedback = NC,
+                            .pin_temp = NC,
+                            .pid_k_p = PID_KP,
+                            .pid_tau_i = PID_TI,
+                            .pid_tau_d = PID_TD,
+                            .pid_dt = PID_DELTA_T,
+                            .enc_cpr = ENC_CPR,
+                            .gear_ratio = GEAR_RATIO,
+                            .wheel_radius = WHEEL_RADIUS,
+                            .wheel_pos_r = WHEEL_POS_R,
+                            .wheel_pos_phi = M_PI / 3.0f };
+
+// Motor 2 configuration
+#define M2_TEMP PB_0
+struct MotorConfig cfg2 = { .pin_dir1 = PB_2,
+                            .pin_dir2 = PA_8,
+                            .pin_pwm = PB_1,
+                            .pin_enca = PB_15,
+                            .pin_encb = PB_10,
+                            .pin_fault = PA_9,
+                            .pin_feedback = NC,
+                            .pin_temp = NC,
+                            .pid_k_p = PID_KP,
+                            .pid_tau_i = PID_TI,
+                            .pid_tau_d = PID_TD,
+                            .pid_dt = PID_DELTA_T,
+                            .enc_cpr = ENC_CPR,
+                            .gear_ratio = GEAR_RATIO,
+                            .wheel_radius = WHEEL_RADIUS,
+                            .wheel_pos_r = WHEEL_POS_R,
+                            .wheel_pos_phi = M_PI };
+
+// Motor configurations for v0.6
+struct MotorConfig cfg0_06 = { .pin_dir1 = PB_8,
+                            .pin_dir2 = PC_8,
+                            .pin_pwm = PC_6,
+                            .pin_enca = PC_5,
+                            .pin_encb = PB_9,
+                            .pin_fault = PC_9,
+                            .pin_feedback = NC,
+                            .pin_temp = NC,
+                            .pid_k_p = PID_KP,
+                            .pid_tau_i = PID_TI,
+                            .pid_tau_d = PID_TD,
+                            .pid_dt = PID_DELTA_T,
+                            .enc_cpr = ENC_CPR,
+                            .gear_ratio = GEAR_RATIO,
+                            .wheel_radius = WHEEL_RADIUS,
+                            .wheel_pos_r = WHEEL_POS_R,
+                            .wheel_pos_phi = 5.0f /3.0f * M_PI };
+
+struct MotorConfig cfg1_06 = { .pin_dir1 = PA_6,
+                            .pin_dir2 = PA_12,
+                            .pin_pwm = PA_11,
+                            .pin_enca = PB_12,
+                            .pin_encb = PA_7,
+                            .pin_fault = PA_5,
+                            .pin_feedback = NC,
+                            .pin_temp = NC,
+                            .pid_k_p = PID_KP,
+                            .pid_tau_i = PID_TI,
+                            .pid_tau_d = PID_TD,
+                            .pid_dt = PID_DELTA_T,
+                            .enc_cpr = ENC_CPR,
+                            .gear_ratio = GEAR_RATIO,
+                            .wheel_radius = WHEEL_RADIUS,
+                            .wheel_pos_r = WHEEL_POS_R,
+                            .wheel_pos_phi = M_PI / 3.0f };
+
+struct MotorConfig cfg2_06 = { .pin_dir1 = PA_8,
+                            .pin_dir2 = PB_2,
+                            .pin_pwm = PB_1,
+                            .pin_enca = PB_15,
+                            .pin_encb = PB_10,
+                            .pin_fault = PA_9,
+                            .pin_feedback = NC,
+                            .pin_temp = NC,
+                            .pid_k_p = PID_KP,
+                            .pid_tau_i = PID_TI,
+                            .pid_tau_d = PID_TD,
+                            .pid_dt = PID_DELTA_T,
+                            .enc_cpr = ENC_CPR,
+                            .gear_ratio = GEAR_RATIO,
+                            .wheel_radius = WHEEL_RADIUS,
+                            .wheel_pos_r = WHEEL_POS_R,
+                            .wheel_pos_phi = M_PI };
+
+
+
 // Initialize motors
-Motor m[MOTOR_COUNT] = { { cfg0 }, { cfg1 }, { cfg2 } };
+//Motor m[MOTOR_COUNT] = { { cfg0 }, { cfg1 }, { cfg2 } };
+Motor m[MOTOR_COUNT] = { { cfg0_06 }, { cfg1_06 }, { cfg2_06 } };
 
 // Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2);
@@ -229,10 +309,12 @@ int main()
       //serial_pc.printf("Speed: %f (%f): \r\n", m[i].getMeasuredSpeed(), m[i].getSpeedSetPoint());
 //      serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
     //  serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
-      odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-      serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-                       odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+//      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
-    wait(0.015);
+
+    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
+                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+    wait(0.01);
   }
 }
