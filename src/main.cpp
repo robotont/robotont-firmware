@@ -114,7 +114,7 @@ struct MotorConfig cfg0_06 = { .pin_dir1 = PB_8,
                             .gear_ratio = GEAR_RATIO,
                             .wheel_radius = WHEEL_RADIUS,
                             .wheel_pos_r = WHEEL_POS_R,
-                            .wheel_pos_phi = 5.0f /3.0f * M_PI };
+                            .wheel_pos_phi = M_PI / 3.0f };
 
 struct MotorConfig cfg1_06 = { .pin_dir1 = PA_6,
                             .pin_dir2 = PA_12,
@@ -132,7 +132,7 @@ struct MotorConfig cfg1_06 = { .pin_dir1 = PA_6,
                             .gear_ratio = GEAR_RATIO,
                             .wheel_radius = WHEEL_RADIUS,
                             .wheel_pos_r = WHEEL_POS_R,
-                            .wheel_pos_phi = M_PI / 3.0f };
+                            .wheel_pos_phi = M_PI };
 
 struct MotorConfig cfg2_06 = { .pin_dir1 = PA_8,
                             .pin_dir2 = PB_2,
@@ -150,7 +150,7 @@ struct MotorConfig cfg2_06 = { .pin_dir1 = PA_8,
                             .gear_ratio = GEAR_RATIO,
                             .wheel_radius = WHEEL_RADIUS,
                             .wheel_pos_r = WHEEL_POS_R,
-                            .wheel_pos_phi = M_PI };
+                            .wheel_pos_phi = 5.0f /3.0f * M_PI };
 
 
 
