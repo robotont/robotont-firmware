@@ -2,7 +2,7 @@
 /DS1820*
 /QEI*
 /PID*
-/Eigen*
+/Matrix*
 /mbed-os*
 .clang_complete
 *.swp

@@ -2,14 +2,15 @@
 #define ODOM_H
 
 #include "mbed.h"
-#include "Eigen/Dense.h"
+#include "Matrix/Matrix.h"
+
 #include "motor.h"
 
 
 class Odom
 {
   public:
-    Odom(MotorConfig& cfg0, MotorConfig& cfg1, MotorConfig& cfg2);
+    Odom(const MotorConfig& cfg0, const MotorConfig& cfg1, const MotorConfig& cfg2);
     ~Odom();
 
     void reset();
@@ -32,8 +33,8 @@ class Odom
 
     MotorConfig motor_configs_[3];
 
-    Eigen::Matrix3f odom_matrix_;
-    Eigen::Matrix3f odom_matrix_inv_;
+Matrix odom_matrix_;
+Matrix odom_matrix_inv_;
 
 };
 
