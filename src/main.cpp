@@ -13,7 +13,8 @@
 #define PID_KP 0.8
 #define PID_TI 0.05
 #define PID_TD 0.0
-#define PID_DELTA_T 0.1
+#define PID_DELTA_T 0.01
+#define MAIN_DELTA_T 0.1
 
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
@@ -264,19 +265,16 @@ struct MotorConfig cfg2_v1_1 = {
 
 
 // Initialize motors
-//Motor m[2] = { { cfg2 }, { cfg0 }};
-//Motor m0 = Motor(cfg0);
-//Motor m1 = Motor(cfg2);
-//Motor m[MOTOR_COUNT] = { { cfg0_06 }, { cfg1_06 }, { cfg2_06 } };
+//Motor m[] = { { cfg0_06 }, { cfg1_06 }, { cfg2_06 } };
 Motor m[] = { { cfg0_v1_1 }, { cfg1_v1_1 }, { cfg2_v1_1 } };
 
 // Initialize odometry
-Odom odom_(cfg0_v1_1, cfg1_v1_1, cfg2_v1_1);
+Odom odom_(cfg0_v1_1, cfg1_v1_1, cfg2_v1_1, MAIN_DELTA_T);
 
 // Variables for serial connection
-Serial serial_pc(USBTX, USBRX);  // tx, rx
+RawSerial serial_pc(USBTX, USBRX);  // tx, rx
 char serial_buf[256];        // Buffer for incoming serial data
-uint8_t serial_arrived = 0;  // Number of bytes arrived
+volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
@@ -295,7 +293,7 @@ void processPacket(const std::string& packet)
     if (arg.length())
     {
       cmd.push_back(arg);
-      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
+      //serial_pc.printf("Got arg %s\r\n", arg.c_str());
     }
     else
     {
@@ -400,6 +398,11 @@ void pc_rx_callback()
   }
 }
 
+void my_callback()
+{
+  serial_buf[0] = serial_pc.getc();
+}
+
 int main()
 {
   // Initialize serial connection
@@ -408,31 +411,33 @@ int main()
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
 
+  Timer t;
+
   // MAIN LOOP
   while (true)
   {
-    // serial_pc.printf("speed %f\r\n", m0.getMeasuredSpeed());
-    // serial_pc.printf("speed1 %f\r\n", m1.getMeasuredSpeed());
-    // serial_pc.printf("enc1:%d", enc1.getPulses());
-    // serial_pc.printf("enc2:%d\n\r", enc2.getPulses());
-    // enc1.reset();
-    // enc2.reset();
-    //    printf("myvar: %d\r\n", enc.getPulses());
+    t.reset();
+    t.start();
+
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
+      // MOTOR DEBUG
       //      serial_pc.printf("\r\n");
       //      serial_pc.printf("MOTOR %d: \r\n", i);
-      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-                       m[i].getSpeedSetPoint());
+      // serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
+      //                  m[i].getSpeedSetPoint());
       //      serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
       //  serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
       //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
 
-    //    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    //    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
-    //                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(),
-    //                     odom_.getAngVelZ());
-    wait(0.2);
+    //serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
+
+    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
+                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+    t.stop();
+    serial_pc.printf("The time taken was %f seconds\n", t.read());
+    wait(MAIN_DELTA_T);
   }
 }
