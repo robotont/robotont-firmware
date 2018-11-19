@@ -148,7 +148,7 @@ struct MotorConfig cfg0_v1_1 = {
   PC_5,          // pin_enca
   PA_12,          // pin_encb
   PA_6,          // pin_fault
-  PB_11,            // pin_feedback
+  PA_11,            // pin_feedback
   NC,            // pin_temp
   PID_KP,        // pid_k_p
   PID_TI,        // pid_tau_i
@@ -184,11 +184,11 @@ struct MotorConfig cfg1_v1_1 = {
 struct MotorConfig cfg2_v1_1 = {
   PB_15,              // pin_dir1
   PB_1,              // pin_dir2
-  PB_4,               // pin_pwm
-  PB_14,              // pin_enca
+  PB_14,               // pin_pwm
+  PB_4,              // pin_enca
   PB_13,               // pin_encb
   PB_3,              // pin_fault
-  PC_4,               // pin_feedback
+  PA_10,               // pin_feedback
   NC,                 // pin_temp
   PID_KP,             // pid_k_p
   PID_TI,             // pid_tau_i
@@ -411,22 +411,23 @@ int main()
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
 
-  Timer t;
+//  Timer t;
 
   // MAIN LOOP
   while (true)
   {
-    t.reset();
-    t.start();
+ //   t.reset();
+ //   t.start();
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       // MOTOR DEBUG
       //      serial_pc.printf("\r\n");
       //      serial_pc.printf("MOTOR %d: \r\n", i);
-      // serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-      //                  m[i].getSpeedSetPoint());
-      //      serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
+       serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
+                        m[i].getSpeedSetPoint());
+            serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
+            serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
       //  serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
       //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
@@ -436,8 +437,8 @@ int main()
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
                      odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    t.stop();
-    serial_pc.printf("The time taken was %f seconds\n", t.read());
+ //   t.stop();
+  //  serial_pc.printf("The time taken was %f seconds\n", t.read());
     wait(MAIN_DELTA_T);
   }
 }

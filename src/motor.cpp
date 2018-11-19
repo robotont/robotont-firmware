@@ -53,13 +53,15 @@ Motor::Motor(const MotorConfig& cfg)
   }
 
   // Attach the PID ISR ticker
-  pidTicker_.attach(callback(this, &Motor::processPID), cfg.pid_dt);
+  pidTicker_.attach(callback(this, &Motor::update), cfg.pid_dt);
 
   // Attach an ISR to count current feedback pulses
   if (current_feedback_)
   {
     current_feedback_->rise(callback(this, &Motor::onCurrentPulse));
   }
+  
+  fault_.rise(callback(this, &Motor::onFaultPulse));
 
   // store config in case we need it later.
   config_ = cfg; 
@@ -107,7 +109,7 @@ void Motor::setEffort(float effort)
   }
 
   // limit value to [-1...1]
-  // hard limit effort to 50% for testing purposes
+  // hard limit the effort for testing purposes
   effort_ = std::max(std::min(effort, 0.2f), -0.2f); 
 
   if (effort_ == 0)
@@ -140,7 +142,7 @@ void Motor::setSpeedSetPoint(float speed)
 }
 
 
-void Motor::processPID()
+void Motor::update()
 {
   // calculate feedback current
   current_measured_.Insert((current_pulse_count_ / config_.pid_dt - 1000)/1000);
@@ -158,6 +160,11 @@ void Motor::processPID()
 void Motor::onCurrentPulse(void)
 {
   current_pulse_count_++;
+}
+
+void Motor::onFaultPulse(void)
+{
+  fault_pulse_count_++;
 }
 
 float Motor::getTemperature()
