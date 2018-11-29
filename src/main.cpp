@@ -23,15 +23,15 @@
  * Motor configurations
  */
 
-/*
+
 // Motor 0 configuration
-#define M0_TEMP PC_0
-struct MotorConfig cfg0 = { .pin_dir1 = PC_8,
-                            .pin_dir2 = PB_8,
+//#define M0_TEMP PC_0
+struct MotorConfig cfg0 = { .pin_dir1 = PB_8,
+                            .pin_dir2 = PC_8,
                             .pin_pwm = PC_6,
                             .pin_enca = PC_5,
                             .pin_encb = PB_9,
-                            .pin_fault = PC_9,
+                            .pin_fault = NC,//PC_9,
                             .pin_feedback = NC,
                             .pin_temp = NC,
                             .pid_k_p = PID_KP,
@@ -46,12 +46,12 @@ struct MotorConfig cfg0 = { .pin_dir1 = PC_8,
 
 // Motor 1 configuration
 #define M1_TEMP PC_1
-struct MotorConfig cfg1 = { .pin_dir1 = PA_12,
-                            .pin_dir2 = PA_6,
+struct MotorConfig cfg1 = { .pin_dir1 = PA_6,
+                            .pin_dir2 = PA_12,
                             .pin_pwm = PA_11,
                             .pin_enca = PB_12,
                             .pin_encb = PA_7,
-                            .pin_fault = PA_5,
+                            .pin_fault = NC,//PA_5,
                             .pin_feedback = NC,
                             .pin_temp = NC,
                             .pid_k_p = PID_KP,
@@ -66,12 +66,12 @@ struct MotorConfig cfg1 = { .pin_dir1 = PA_12,
 
 // Motor 2 configuration
 #define M2_TEMP PB_0
-struct MotorConfig cfg2 = { .pin_dir1 = PB_2,
-                            .pin_dir2 = PA_8,
+struct MotorConfig cfg2 = { .pin_dir1 = PA_8,
+                            .pin_dir2 = PB_2,
                             .pin_pwm = PB_1,
                             .pin_enca = PB_15,
                             .pin_encb = PB_10,
-                            .pin_fault = PA_9,
+                            .pin_fault = NC,//PA_9,
                             .pin_feedback = NC,
                             .pin_temp = NC,
                             .pid_k_p = PID_KP,
@@ -83,7 +83,7 @@ struct MotorConfig cfg2 = { .pin_dir1 = PB_2,
                             .wheel_radius = WHEEL_RADIUS,
                             .wheel_pos_r = WHEEL_POS_R,
                             .wheel_pos_phi = 5.0f /3.0f * M_PI };
-
+/*
 // Motor configurations for v0.6
 struct MotorConfig cfg0_06 = { .pin_dir1 = PB_8,
                             .pin_dir2 = PC_8,
@@ -266,10 +266,12 @@ struct MotorConfig cfg2_v1_1 = {
 
 // Initialize motors
 //Motor m[] = { { cfg0_06 }, { cfg1_06 }, { cfg2_06 } };
-Motor m[] = { { cfg0_v1_1 }, { cfg1_v1_1 }, { cfg2_v1_1 } };
+//Motor m[] = { { cfg0_v1_1 }, { cfg1_v1_1 }, { cfg2_v1_1 } };
+Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 
 // Initialize odometry
-Odom odom_(cfg0_v1_1, cfg1_v1_1, cfg2_v1_1, MAIN_DELTA_T);
+//Odom odom_(cfg0_v1_1, cfg1_v1_1, cfg2_v1_1, MAIN_DELTA_T);
+Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);  // tx, rx
@@ -426,8 +428,8 @@ int main()
       //      serial_pc.printf("MOTOR %d: \r\n", i);
        serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
                         m[i].getSpeedSetPoint());
-            serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-            serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
+      //      serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
+      //      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
       //  serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
       //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }

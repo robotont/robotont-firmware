@@ -50,8 +50,8 @@ void Odom::update(float vel_1, float vel_2, float vel_3)
 
   
   // transform velocities from robot frame to odom frame
-  odom_vel_(1,1) = robot_vel_(1, 1) * cos(robot_vel_(3,1)) - robot_vel_(2, 1) * sin(robot_vel_(3,1));
-  odom_vel_(2,1) = robot_vel_(1, 1) * sin(robot_vel_(3,1)) + robot_vel_(2, 1) * cos(robot_vel_(3,1));
+  odom_vel_(1,1) = robot_vel_(1, 1) * cos(odom_pos_(3,1)) - robot_vel_(2, 1) * sin(odom_pos_(3,1));
+  odom_vel_(2,1) = robot_vel_(1, 1) * sin(odom_pos_(3,1)) + robot_vel_(2, 1) * cos(odom_pos_(3,1));
   odom_vel_(3,1) = robot_vel_(3, 1);
 
   // position integration
