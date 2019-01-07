@@ -50,7 +50,7 @@ private:
 public:
     /** Create  moving average
      * @param maxLength is length of moving average
-     * @param value is initial value
+     * @param defaultValue is initial value
      */
     MovingAverage(unsigned char maxLength, T defaultValue);
     /** Get the value of the moving average

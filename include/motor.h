@@ -43,6 +43,9 @@ struct MotorConfig
  */
 enum MotorStatus {STATUS_UNINITIALIZED, STATUS_OK, STATUS_STOPPED};
 
+/**
+ * @brief A class representing the Motor of a robot
+ */
 class Motor
 {
 public:
