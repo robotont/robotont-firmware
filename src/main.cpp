@@ -18,6 +18,7 @@
 
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
+#define CMD_TIMEOUT_MS 0.5 // If velocity command is not received within this period all motors are stopped.
 
 /*
  * Motor configurations
@@ -26,8 +27,8 @@
 
 // Motor 0 configuration
 //#define M0_TEMP PC_0
-struct MotorConfig cfg0 = { .pin_dir1 = PB_8,
-                            .pin_dir2 = PC_8,
+struct MotorConfig cfg0 = { .pin_dir1 = PC_8,
+                            .pin_dir2 = PB_8,
                             .pin_pwm = PC_6,
                             .pin_enca = PC_5,
                             .pin_encb = PB_9,
@@ -46,8 +47,8 @@ struct MotorConfig cfg0 = { .pin_dir1 = PB_8,
 
 // Motor 1 configuration
 #define M1_TEMP PC_1
-struct MotorConfig cfg1 = { .pin_dir1 = PA_6,
-                            .pin_dir2 = PA_12,
+struct MotorConfig cfg1 = { .pin_dir1 = PA_12,
+                            .pin_dir2 = PA_6,
                             .pin_pwm = PA_11,
                             .pin_enca = PB_12,
                             .pin_encb = PA_7,
@@ -66,8 +67,8 @@ struct MotorConfig cfg1 = { .pin_dir1 = PA_6,
 
 // Motor 2 configuration
 #define M2_TEMP PB_0
-struct MotorConfig cfg2 = { .pin_dir1 = PA_8,
-                            .pin_dir2 = PB_2,
+struct MotorConfig cfg2 = { .pin_dir1 = PB_2,
+                            .pin_dir2 = PA_8,
                             .pin_pwm = PB_1,
                             .pin_enca = PB_15,
                             .pin_encb = PB_10,
@@ -266,12 +267,16 @@ struct MotorConfig cfg2_v1_1 = {
 
 // Initialize motors
 //Motor m[] = { { cfg0_06 }, { cfg1_06 }, { cfg2_06 } };
-//Motor m[] = { { cfg0_v1_1 }, { cfg1_v1_1 }, { cfg2_v1_1 } };
-Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
+Motor m[] = { { cfg0_v1_1 }, { cfg1_v1_1 }, { cfg2_v1_1 } };
+//Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 
 // Initialize odometry
-//Odom odom_(cfg0_v1_1, cfg1_v1_1, cfg2_v1_1, MAIN_DELTA_T);
-Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
+Odom odom_(cfg0_v1_1, cfg1_v1_1, cfg2_v1_1, MAIN_DELTA_T);
+//Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
+
+// Timeout
+Timer cmd_timer;
+Ticker cmd_timeout_checker;
 
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);  // tx, rx
@@ -318,6 +323,7 @@ void processPacket(const std::string& packet)
       serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
     }
+    cmd_timer.reset();
   }
 
   // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
@@ -345,6 +351,7 @@ void processPacket(const std::string& packet)
         m[i].setSpeedSetPoint(speed);
       }
     }
+    cmd_timer.reset();
   }
   else if (cmd[0] == "PID")  // Update PID parameters
   {
@@ -400,9 +407,15 @@ void pc_rx_callback()
   }
 }
 
-void my_callback()
+void check_for_timeout()
 {
-  serial_buf[0] = serial_pc.getc();
+  if ((cmd_timer.read_ms()) > CMD_TIMEOUT_MS)
+  {
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+    {
+      m[i].stop();
+    }
+  }
 }
 
 int main()
@@ -412,6 +425,9 @@ int main()
   serial_buf[0] = '\0';
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
+
+  cmd_timeout_checker.attach(check_for_timeout, 0.1);
+  cmd_timer.start();
 
 //  Timer t;
 
@@ -425,20 +441,20 @@ int main()
     {
       // MOTOR DEBUG
       //      serial_pc.printf("\r\n");
-      //      serial_pc.printf("MOTOR %d: \r\n", i);
+            serial_pc.printf("MOTOR %d: \r\n", i);
        serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
                         m[i].getSpeedSetPoint());
-      //      serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-      //      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
+//            serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
+            serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
       //  serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
-      //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
+            serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
 
     //serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
 
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
-                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+//    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
+//                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
  //   t.stop();
   //  serial_pc.printf("The time taken was %f seconds\n", t.read());
     wait(MAIN_DELTA_T);

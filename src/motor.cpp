@@ -145,6 +145,7 @@ void Motor::setSpeedSetPoint(float speed)
 void Motor::update()
 {
   // calculate feedback current
+  // TODO: use new range [40khz to 1 khz]
   current_measured_.Insert((current_pulse_count_ / config_.pid_dt - 1000)/1000);
   current_pulse_count_ = 0;
 
