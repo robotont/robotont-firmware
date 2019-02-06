@@ -1,5 +1,5 @@
-#ifndef MOTORCONFIG_H
-#define MOTORCONFIG_H
+#ifndef MOTOR_H
+#define MOTOR_H
 
 #include "mbed.h"
 #include "QEI.h"

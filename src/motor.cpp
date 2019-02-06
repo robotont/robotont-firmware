@@ -23,8 +23,9 @@ Motor::Motor(const MotorConfig& cfg)
 
   // Calculate the relation between an encoder pulse and 
   // linear speed on the wheel where it contacts the ground
+  // CCW is positive when looking from the motor towards the wheel
   pulse_to_speed_ratio_ =
-      1.0f / cfg.enc_cpr / cfg.gear_ratio * 2 * M_PI / cfg.pid_dt * cfg.wheel_radius;
+      -1.0f / cfg.enc_cpr / cfg.gear_ratio * 2 * M_PI / cfg.pid_dt * cfg.wheel_radius;
 
   // Check for feedback pin. Be aware that when the pin is initialized with NC or possibly with some other incorrect pinname, the system hangs. Currently we use NC for motor drivers that are not equipped with current sensing hardware.
   if (cfg.pin_feedback != NC)
@@ -118,14 +119,14 @@ void Motor::setEffort(float effort)
   }
   else if (effort_ > 0)
   {
-    dir1_ = 1;
-    dir2_ = 0;
+    dir1_ = 0;
+    dir2_ = 1;
     pwm_ = effort_;
   }
   else
   {
-    dir1_ = 0;
-    dir2_ = 1;
+    dir1_ = 1;
+    dir2_ = 0;
     pwm_ = -effort_;
   }
 }
