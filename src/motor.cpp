@@ -13,11 +13,21 @@ Motor::Motor(const MotorConfig& cfg)
   , temp_sensor_(NULL)
   , status_(STATUS_UNINITIALIZED)
   , current_measured_(100, 0.0f)
+//  , speed_limit_(2*M_PI) // 1 revolution per second
+  , speed_limit_(0.3) // 30 cm/s
+  , effort_limit_(0.2f) // 20% duty cycle
 {
 
   // initialize pid to defaults
-  pid_.setInputLimits(-1.0, 1.0);  // set default limits to 10 cm/s
-  pid_.setOutputLimits(-1.0, 1.0);
+//   pid_.setInputLimits(-1.0, 1.0);  // set default limits to 10 cm/s
+//   pid_.setOutputLimits(-1.0, 1.0);
+
+  // set input and output limits for pid
+  //setSpeedLimit(speed_limit_);
+  pid_.setInputLimits(-1.0f, 1.0f);
+  pid_.setOutputLimits(-1.0f, 1.0f);
+  //setEffortLimit(effort_limit_);
+
   pid_.setBias(0.0);
   pid_.setMode(1);
 
@@ -86,8 +96,7 @@ void Motor::stop()
 
 void Motor::setEffortLimit(float effort_limit)
 {
-  effort_limit_ = std::max(std::min(effort_limit, 1.f), 0.f); 
-  pid_.setOutputLimits(0, effort_limit_);
+  effort_limit_ = std::max(std::min(effort_limit, 1.0f), 0.0f);
 }
 
 void Motor::setPIDTunings(float k_p, float tau_i, float tau_d)
@@ -98,8 +107,7 @@ void Motor::setPIDTunings(float k_p, float tau_i, float tau_d)
 // Limit angular velocity (in rads/s)
 void Motor::setSpeedLimit(float speed_limit)
 {
-  speed_limit_ = speed_limit;
-  pid_.setInputLimits(-speed_limit_, speed_limit_);
+  speed_limit_ = std::max(0.0f, speed_limit);
 }
 
 void Motor::setEffort(float effort)
@@ -111,7 +119,9 @@ void Motor::setEffort(float effort)
 
   // limit value to [-1...1]
   // hard limit the effort for testing purposes
-  effort_ = std::max(std::min(effort, 0.2f), -0.2f); 
+  //effort_ = std::max(std::min(effort, 0.2f), -0.2f); 
+  //effort_ = std::max(std::min(effort, 1.0f), -1.0f);
+  effort_ = std::max(-effort_limit_, std::min(effort_limit_, effort));
 
   if (effort_ == 0)
   {
@@ -138,7 +148,8 @@ void Motor::setSpeedSetPoint(float speed)
     pid_.reset();
     stopped_ = false;
   }
-  speed_setpoint_ = speed;
+  // Clamp to speed limits
+  speed_setpoint_ = std::max(-speed_limit_, std::min(speed_limit_, speed));
   pid_.setSetPoint(speed_setpoint_);
 }
 
