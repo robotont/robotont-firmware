@@ -1,7 +1,7 @@
+#include "DS1820.h"
 #include "mbed.h"
 #include "motor.h"
 #include "odom.h"
-#include "DS1820.h"
 #include <sstream>
 #include <vector>
 
@@ -18,14 +18,16 @@
 
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
-#define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
+#define CMD_TIMEOUT_MS                                                         \
+  1000 // If velocity command is not received within this period all motors are
+       // stopped.
 
 // Include motor configurations
 //#include "motor_config_v0_6.h"
 #include "motor_config_v1_1.h"
 
 // Initialize motors
-Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
+Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 
 // Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
@@ -35,46 +37,38 @@ Timer cmd_timer;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
-RawSerial serial_pc(USBTX, USBRX);  // tx, rx
-char serial_buf[256];        // Buffer for incoming serial data
-volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
+RawSerial serial_pc(USBTX, USBRX);   // tx, rx
+char serial_buf[256];                // Buffer for incoming serial data
+volatile uint8_t serial_arrived = 0; // Number of bytes arrived
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
 // This method processes a received serial packet
-void processPacket(const std::string& packet)
-{
+void processPacket(const std::string &packet) {
   std::istringstream ss(packet);
   std::string arg;
   cmd.clear();
 
-  for (int i = 0; i <= MAX_CMD_ARGS; i++)
-  {
+  for (int i = 0; i <= MAX_CMD_ARGS; i++) {
     arg.clear();
     std::getline(ss, arg, ':');
-    if (arg.length())
-    {
+    if (arg.length()) {
       cmd.push_back(arg);
-      //serial_pc.printf("Got arg %s\r\n", arg.c_str());
-    }
-    else
-    {
+      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
+    } else {
       break;
     }
   }
 
-  if (!cmd.size())
-  {
+  if (!cmd.size()) {
     return;
   }
 
   // MS - Set motor speeds manually (linear speed on wheel m/s)
   /* MS:motor1_speed:motor2_speed:motor3_speed */
-  if (cmd[0] == "MS")
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
+  if (cmd[0] == "MS") {
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++) {
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
       serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
@@ -82,34 +76,67 @@ void processPacket(const std::string& packet)
     cmd_timer.reset();
   }
 
-  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
+  // RS - Set motor speeds based on robot velocities. We use ROS coordinate
+  // convention: x-forward,
   // y-left, theta-CCW rotation.
   /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
-  else if (cmd[0] == "RS")
-  {
+  else if (cmd[0] == "RS") {
     float lin_speed_x = std::atof(cmd[1].c_str());
     float lin_speed_y = std::atof(cmd[2].c_str());
     float angular_speed_z = std::atof(cmd[3].c_str());
 
-    float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
+    //     #define WHEEL_RADIUS 0.035
+    // #define WHEEL_POS_R 0.127
 
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
-                    m[i].getWheelPosR() * angular_speed_z;
-      if (abs(speed) < 1e-5)
-      {
+    // float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
+    // float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y *
+    // lin_speed_y);
+
+    // for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+    // {
+    //   float speed = lin_speed_mag * sin(lin_speed_dir -
+    //   m[i].getWheelPosPhi()) +
+    //                 m[i].getWheelPosR() * angular_speed_z;
+    //   if (abs(speed) < 1e-5)
+    //   {
+    //     m[i].stop();
+    //   }
+    //   else
+    //   {
+    //     m[i].setSpeedSetPoint(speed);
+    //   }
+    // }
+    // http://www.scielo.org.co/scielo.php?script=sci_arttext&pid=S0120-56092015000200012
+
+    Matrix desired_velocity = Matrix(3, 1);
+    desired_velocity.add(1, 1, lin_speed_x);
+    desired_velocity.add(2, 1, lin_speed_y);
+    desired_velocity.add(3, 1, angular_speed_z);
+
+    Matrix inverse_Jacobian = Matrix(3, 3);
+    inverse_Jacobian.add(1, 1, 0);
+    inverse_Jacobian.add(2, 1, 2 * WHEEL_RADIUS / 3.0);
+    inverse_Jacobian.add(3, 1, -WHEEL_RADIUS / (3.0 * WHEEL_POS_R));
+    inverse_Jacobian.add(1, 2, 1 / WHEEL_RADIUS);
+    inverse_Jacobian.add(2, 2, -1 / (2 * WHEEL_RADIUS));
+    inverse_Jacobian.add(3, 2, -1 / (2 * WHEEL_RADIUS));
+    inverse_Jacobian.add(1, 3, -WHEEL_POS_R / WHEEL_RADIUS);
+    inverse_Jacobian.add(2, 3, -WHEEL_POS_R / WHEEL_RADIUS);
+    inverse_Jacobian.add(3, 3, -WHEEL_POS_R / WHEEL_RADIUS);
+
+    Matrix wheel_setpoints = inverse_Jacobian * desired_velocity;
+
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++) {
+      if (fabs(wheel_setpoints.getNumber(i, 1)) < 1e-5) {
         m[i].stop();
-      }
-      else
-      {
-        m[i].setSpeedSetPoint(speed);
+      } else {
+        m[i].setSpeedSetPoint(wheel_setpoints.getNumber(i, 1));
       }
     }
+
     cmd_timer.reset();
-  }
-  else if (cmd[0] == "PID")  // Update PID parameters
+
+  } else if (cmd[0] == "PID") // Update PID parameters
   {
     float k_p = 0.0f;
     float tau_i = 0.0f;
@@ -123,24 +150,20 @@ void processPacket(const std::string& packet)
 }
 
 // Process an incoming serial byte
-void pc_rx_callback()
-{
+void pc_rx_callback() {
   // Store bytes from serial in our buffer until packet
   // termination byte 'enter', '\n', '\r' etc has arrived
-  while (serial_pc.readable())
-  {
+  while (serial_pc.readable()) {
     char c = serial_pc.getc();
     serial_buf[serial_arrived++] = c;
     serial_buf[serial_arrived] = '\0';
-    if (serial_arrived > 254)
-    {
+    if (serial_arrived > 254) {
       serial_arrived = 0;
     }
 
-    if (c == '\n' || c == '\r')  // command terminated
+    if (c == '\n' || c == '\r') // command terminated
     {
-      if (serial_arrived > 3)
-      {
+      if (serial_arrived > 3) {
         // the packet is complete, let's process it.
         std::string packet(serial_buf);
         processPacket(packet);
@@ -151,10 +174,9 @@ void pc_rx_callback()
     }
 
     // if escape is received, clear the buffer and stop the motors for now
-    if (c == 27)  // esc
+    if (c == 27) // esc
     {
-      for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-      {
+      for (uint8_t i = 0; i < MOTOR_COUNT; i++) {
         m[i].stop();
       }
       serial_buf[0] = '\0';
@@ -163,19 +185,15 @@ void pc_rx_callback()
   }
 }
 
-void check_for_timeout()
-{
-  if ((cmd_timer.read_ms()) > CMD_TIMEOUT_MS)
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
+void check_for_timeout() {
+  if ((cmd_timer.read_ms()) > CMD_TIMEOUT_MS) {
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++) {
       m[i].stop();
     }
   }
 }
 
-int main()
-{
+int main() {
   // Initialize serial connection
   serial_pc.baud(115200);
   serial_buf[0] = '\0';
@@ -186,10 +204,8 @@ int main()
   cmd_timer.start();
 
   // MAIN LOOP
-  while (true)
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
+  while (true) {
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++) {
       // MOTOR DEBUG
       // serial_pc.printf("\r\n");
       serial_pc.printf("MOTOR %d: \r\n", i);
@@ -203,9 +219,11 @@ int main()
 
     // serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
 
-    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
-                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(),
+                 m[2].getMeasuredSpeed());
+    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(),
+                     odom_.getPosY(), odom_.getOriZ(), odom_.getLinVelX(),
+                     odom_.getLinVelY(), odom_.getAngVelZ());
     wait(MAIN_DELTA_T);
   }
 }
