@@ -85,27 +85,6 @@ void processPacket(const std::string &packet) {
     float lin_speed_y = std::atof(cmd[2].c_str());
     float angular_speed_z = std::atof(cmd[3].c_str());
 
-    //     #define WHEEL_RADIUS 0.035
-    // #define WHEEL_POS_R 0.127
-
-    // float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    // float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y *
-    // lin_speed_y);
-
-    // for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    // {
-    //   float speed = lin_speed_mag * sin(lin_speed_dir -
-    //   m[i].getWheelPosPhi()) +
-    //                 m[i].getWheelPosR() * angular_speed_z;
-    //   if (abs(speed) < 1e-5)
-    //   {
-    //     m[i].stop();
-    //   }
-    //   else
-    //   {
-    //     m[i].setSpeedSetPoint(speed);
-    //   }
-    // }
     // http://www.scielo.org.co/scielo.php?script=sci_arttext&pid=S0120-56092015000200012
 
     Matrix desired_velocity = Matrix(3, 1);
