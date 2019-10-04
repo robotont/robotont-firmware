@@ -32,6 +32,11 @@ Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 // Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
+// Init matrices
+Matrix desired_velocity = Matrix(3, 1);
+Matrix wheel_setpoints = Matrix(3, 1);
+Matrix inverse_Jacobian = Matrix(3, 3);
+
 // Timeout
 Timer cmd_timer;
 Ticker cmd_timeout_checker;
@@ -43,6 +48,8 @@ volatile uint8_t serial_arrived = 0; // Number of bytes arrived
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
+std::string packet;
+bool received_packet_b;
 
 // This method processes a received serial packet
 void processPacket(const std::string &packet) {
@@ -87,29 +94,19 @@ void processPacket(const std::string &packet) {
 
     // http://www.scielo.org.co/scielo.php?script=sci_arttext&pid=S0120-56092015000200012
 
-    Matrix desired_velocity = Matrix(3, 1);
     desired_velocity.add(1, 1, lin_speed_x);
     desired_velocity.add(2, 1, lin_speed_y);
     desired_velocity.add(3, 1, angular_speed_z);
 
-    Matrix inverse_Jacobian = Matrix(3, 3);
-    inverse_Jacobian.add(1, 1, 0);
-    inverse_Jacobian.add(2, 1, 2 * WHEEL_RADIUS / 3.0);
-    inverse_Jacobian.add(3, 1, -WHEEL_RADIUS / (3.0 * WHEEL_POS_R));
-    inverse_Jacobian.add(1, 2, 1 / WHEEL_RADIUS);
-    inverse_Jacobian.add(2, 2, -1 / (2 * WHEEL_RADIUS));
-    inverse_Jacobian.add(3, 2, -1 / (2 * WHEEL_RADIUS));
-    inverse_Jacobian.add(1, 3, -WHEEL_POS_R / WHEEL_RADIUS);
-    inverse_Jacobian.add(2, 3, -WHEEL_POS_R / WHEEL_RADIUS);
-    inverse_Jacobian.add(3, 3, -WHEEL_POS_R / WHEEL_RADIUS);
-
-    Matrix wheel_setpoints = inverse_Jacobian * desired_velocity;
+    wheel_setpoints = inverse_Jacobian * desired_velocity;
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++) {
-      if (fabs(wheel_setpoints.getNumber(i, 1)) < 1e-5) {
+      if (fabs(wheel_setpoints.getNumber(i + 1, 1)) < 1e-5) {
         m[i].stop();
       } else {
-        m[i].setSpeedSetPoint(wheel_setpoints.getNumber(i, 1));
+        serial_pc.printf("MOTORCONTROL %i , %f: \r\n", i,
+                         wheel_setpoints.getNumber(i + 1, 1));
+        m[i].setSpeedSetPoint(wheel_setpoints.getNumber(i + 1, 1));
       }
     }
 
@@ -144,8 +141,9 @@ void pc_rx_callback() {
     {
       if (serial_arrived > 3) {
         // the packet is complete, let's process it.
-        std::string packet(serial_buf);
-        processPacket(packet);
+        packet = serial_buf;
+        received_packet_b = true;
+        // processPacket(packet);
       }
 
       serial_buf[0] = '\0';
@@ -179,6 +177,17 @@ int main() {
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
 
+  // Init jacobian
+  inverse_Jacobian.add(1, 1, 0);
+  inverse_Jacobian.add(2, 1, 2 * WHEEL_RADIUS / 3.0);
+  inverse_Jacobian.add(3, 1, -WHEEL_RADIUS / (3.0 * WHEEL_POS_R));
+  inverse_Jacobian.add(1, 2, 1 / WHEEL_RADIUS);
+  inverse_Jacobian.add(2, 2, -1 / (2 * WHEEL_RADIUS));
+  inverse_Jacobian.add(3, 2, -1 / (2 * WHEEL_RADIUS));
+  inverse_Jacobian.add(1, 3, -WHEEL_POS_R / WHEEL_RADIUS);
+  inverse_Jacobian.add(2, 3, -WHEEL_POS_R / WHEEL_RADIUS);
+  inverse_Jacobian.add(3, 3, -WHEEL_POS_R / WHEEL_RADIUS);
+
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
@@ -203,6 +212,12 @@ int main() {
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(),
                      odom_.getPosY(), odom_.getOriZ(), odom_.getLinVelX(),
                      odom_.getLinVelY(), odom_.getAngVelZ());
+
+    if (received_packet_b) {
+      processPacket(packet);
+      received_packet_b = false;
+    }
+
     wait(MAIN_DELTA_T);
   }
 }
