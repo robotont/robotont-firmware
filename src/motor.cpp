@@ -3,7 +3,8 @@
 #include <algorithm>
 
 Motor::Motor(const MotorConfig& cfg)
-  : dir1_(cfg.pin_dir1)
+  : target_speed_(0)
+  , dir1_(cfg.pin_dir1)
   , dir2_(cfg.pin_dir2)
   , pwm_(cfg.pin_pwm)
   , enc_(cfg.pin_enca, cfg.pin_encb, NC, cfg.enc_cpr, QEI::X4_ENCODING)
@@ -88,6 +89,7 @@ Motor::~Motor()
 // Stop the motor
 void Motor::stop()
 {
+  target_speed_ = 0;
   setSpeedSetPoint(0);
   stopped_ = true;
   dir1_ = 0;

@@ -18,7 +18,7 @@
 
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
-#define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
+#define CMD_TIMEOUT_MS 5000 // If velocity command is not received within this period all motors are stopped.
 
 // Include motor configurations
 //#include "motor_config_v0_6.h"
@@ -33,6 +33,7 @@ Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 // Timeout
 Timer cmd_timer;
 Ticker cmd_timeout_checker;
+Ticker motor_balance_ticker;
 
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);  // tx, rx
@@ -98,13 +99,14 @@ void processPacket(const std::string& packet)
     {
       float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
                     m[i].getWheelPosR() * angular_speed_z;
-      if (abs(speed) < 1e-5)
+      if (fabs(speed) < 1e-5)
       {
         m[i].stop();
       }
       else
       {
-        m[i].setSpeedSetPoint(speed);
+        m[i].target_speed_ = speed;
+        //m[i].setSpeedSetPoint(speed);
       }
     }
     cmd_timer.reset();
@@ -174,6 +176,35 @@ void check_for_timeout()
   }
 }
 
+void balance_motors()
+{
+  float ratios[] = { 1.0, 1.0, 1.0 };
+
+  for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+  {
+    if (fabs(m[i].target_speed_) > 1e-5)
+    {
+      ratios[i] = m[i].getMeasuredSpeed() / m[i].target_speed_;
+    }
+  }
+
+  // Get the threshold for ratio. Set it 10% higher than the lowest ratio
+  float thres_ratio = std::min(fabs(ratios[0]), std::min(fabs(ratios[1]), fabs(ratios[2]))) * 1.1;
+
+  for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+  {
+    if (ratios[i] > thres_ratio)
+    {
+      float balanced_speed = m[i].target_speed_ * thres_ratio;
+      m[i].setSpeedSetPoint(balanced_speed);
+    }
+    else
+    {
+      m[i].setSpeedSetPoint(m[i].target_speed_);
+    }
+  }
+}
+
 int main()
 {
   // Initialize serial connection
@@ -182,6 +213,7 @@ int main()
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
 
+  motor_balance_ticker.attach(balance_motors, 0.01);
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
@@ -196,9 +228,9 @@ int main()
       serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
                        m[i].getSpeedSetPoint());
       // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
+//      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
       // serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
-      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
+//      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
 
     // serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);

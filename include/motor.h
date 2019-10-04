@@ -139,6 +139,8 @@ public:
   }
   float getTemperature();
 
+  float target_speed_;
+
 private:
   /* Set PWM duty cycle and polarity (direction). Effort is in range [0...1] */
   void setEffort(float effort);
