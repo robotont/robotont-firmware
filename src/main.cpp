@@ -38,6 +38,7 @@ Ticker cmd_timeout_checker;
 RawSerial serial_pc(USBTX, USBRX);  // tx, rx
 char serial_buf[256];        // Buffer for incoming serial data
 volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
+volatile bool packet_received_b = false;
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
@@ -76,7 +77,7 @@ void processPacket(const std::string& packet)
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
+      //serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
     }
     cmd_timer.reset();
@@ -141,13 +142,10 @@ void pc_rx_callback()
     {
       if (serial_arrived > 3)
       {
-        // the packet is complete, let's process it.
-        std::string packet(serial_buf);
-        processPacket(packet);
+        // signal that the packet is complete for processing
+	packet_received_b = true;
       }
 
-      serial_buf[0] = '\0';
-      serial_arrived = 0;
     }
 
     // if escape is received, clear the buffer and stop the motors for now
@@ -192,20 +190,29 @@ int main()
     {
       // MOTOR DEBUG
       // serial_pc.printf("\r\n");
-      serial_pc.printf("MOTOR %d: \r\n", i);
-      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-                       m[i].getSpeedSetPoint());
-      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-      // serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
-      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
+//      serial_pc.printf("MOTOR %d: \r\n", i);
+//      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
+//                       m[i].getSpeedSetPoint());
+//      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
+//      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
+//      // serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
+//      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
 
-    // serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
+//    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
+    
+    if (packet_received_b) // packet was completeted with \r \n
+    {
+      std::string packet(serial_buf);
+      serial_buf[0] = '\0';
+      serial_arrived = 0;
+      processPacket(packet);
+      packet_received_b = false;
+    }
 
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
                      odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    wait(MAIN_DELTA_T);
+    ThisThread::sleep_for(MAIN_DELTA_T);
   }
 }
