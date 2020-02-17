@@ -14,7 +14,7 @@
 #define PID_TI 0.05
 #define PID_TD 0.0
 #define PID_DELTA_T 0.01
-#define MAIN_DELTA_T 0.1
+#define MAIN_DELTA_T 0.02
 
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
@@ -31,7 +31,7 @@ Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 // Timeout
-Timer cmd_timer;
+Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
@@ -183,9 +183,12 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
+
   // MAIN LOOP
   while (true)
   {
+    main_timer.reset();
+    main_timer.start();
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       // MOTOR DEBUG
@@ -209,10 +212,12 @@ int main()
       processPacket(packet);
       packet_received_b = false;
     }
-
+    
+    // Update odometry
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
                      odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    ThisThread::sleep_for(MAIN_DELTA_T);
+    // Synchronize to given MAIN_DELTA_T
+    wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
   }
 }
