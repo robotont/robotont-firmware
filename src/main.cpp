@@ -23,6 +23,14 @@
 // Include motor configurations
 //#include "motor_config_v0_6.h"
 #include "motor_config_v1_1.h"
+// Include LED STRIP Library
+//#include <FastLED.h>
+//#define LED_PIN	7 		
+//#define NUM_LEDS 11
+//#define CHIPSET WS2812
+//CRGB leds[NUM_LEDS];
+
+I2C i2c(PB_9, PB_8);
 
 // Initialize motors
 Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
@@ -172,6 +180,73 @@ void check_for_timeout()
   }
 }
 
+void i2cScanner() {
+    serial_pc.printf("\nI2C Scanner\r\n");
+    i2c.frequency(100000);
+    while(1) {
+        int error, address;
+        int nDevices;
+ 
+        serial_pc.printf("Scanning...\r\n");
+ 
+         nDevices = 0;
+ 
+          for(address = 1; address < 127; address++ )
+          {
+            //i2c.start();
+            error = i2c.write(address << 1, NULL, 1); //We shift it left because mbed takes in 8 bit addreses
+            //i2c.stop();
+            if (error == 0)
+            {
+              serial_pc.printf("I2C device found at address 0x%X\r\n", address); //Returns 7-bit addres
+              nDevices++;
+            }
+            if (error == 2) {
+              serial_pc.printf("TIMEOUTED...\r\n");
+            }
+ 
+          }
+          if (nDevices == 0)
+            serial_pc.printf("No I2C devices found\r\n");
+          else
+            serial_pc.printf("\ndone\r\n");
+        }
+}
+
+void i2cGPIOexpanderConfigure() {
+    i2c.frequency(100000);
+    i2c.start();
+
+    char registerByte[2];
+    char readData[2];
+
+    registerByte[0] = 0x03; //configure register of GPIO expander kivi (outputiks)
+    registerByte[1] = 0x00;
+
+    i2c.write(32 << 1, registerByte, 1);
+    registerByte[0] = 0x00;
+    i2c.write(32 << 1, registerByte, 1);
+    registerByte[0] = 0x01;
+    i2c.write(32 << 1, registerByte, 1);
+    registerByte[0] = 0xFF;
+    i2c.write(32 << 1, registerByte, 1);
+    i2c.read(32 << 1, readData, 1);
+
+    i2c.stop();
+}
+
+//void initLEDS() {
+  //FastLED.addLeds<CHIPSET, LED_PIN, GRB>(leds, NUM_LEDS);
+  //FastLED.setBrightness(128);
+
+  //leds[0] = CRGB(255,0,0); //punane
+  //leds[1] = CRGB(255,0,0); //punane
+  //leds[2] = CRGB(255,0,0); //punane
+  //leds[3] = CRGB(255,0,0); //punane
+  //leds[4] = CRGB(255,0,0); //punane
+  //FastLED.show();
+//}
+
 int main()
 {
   // Initialize serial connection
@@ -183,6 +258,9 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
+  i2cScanner();
+  //i2cGPIOexpanderConfigure();
+  //initLEDS();
 
   // MAIN LOOP
   while (true)
@@ -215,7 +293,7 @@ int main()
     
     // Update odometry
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
+    serial_pc.printf("ODOM1:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
                      odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
     // Synchronize to given MAIN_DELTA_T
     wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
