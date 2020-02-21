@@ -194,12 +194,13 @@ void i2cScanner() {
           for(address = 1; address < 127; address++ )
           {
             //i2c.start();
-            error = i2c.write(address << 1, NULL, 1); //We shift it left because mbed takes in 8 bit addreses
+            error = i2c.write(address << 1, NULL, 0); //We shift it left because mbed takes in 8 bit addreses
             //i2c.stop();
             if (error == 0)
             {
               serial_pc.printf("I2C device found at address 0x%X\r\n", address); //Returns 7-bit addres
               nDevices++;
+	      break;
             }
             if (error == 2) {
               serial_pc.printf("TIMEOUTED...\r\n");
@@ -214,25 +215,21 @@ void i2cScanner() {
 }
 
 void i2cGPIOexpanderConfigure() {
+    serial_pc.printf("\nSIIIIIIIIIIIIIIIIIIIIIIIIIN\r\n");
     i2c.frequency(100000);
-    i2c.start();
 
-    char registerByte[2];
-    char readData[2];
+    char registerByte[1];
 
     registerByte[0] = 0x03; //configure register of GPIO expander kivi (outputiks)
-    registerByte[1] = 0x00;
-
-    i2c.write(32 << 1, registerByte, 1);
+   
+    i2c.write(0x20 << 1, registerByte, 1);
     registerByte[0] = 0x00;
-    i2c.write(32 << 1, registerByte, 1);
+    i2c.write(0x20 << 1, registerByte, 1);
     registerByte[0] = 0x01;
-    i2c.write(32 << 1, registerByte, 1);
+    i2c.write(0x20 << 1, registerByte, 1);
     registerByte[0] = 0xFF;
-    i2c.write(32 << 1, registerByte, 1);
-    i2c.read(32 << 1, readData, 1);
+    i2c.write(0x20 << 1, registerByte, 1);
 
-    i2c.stop();
 }
 
 //void initLEDS() {
@@ -257,8 +254,9 @@ int main()
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
-
+  //SCAN i2c devices!
   i2cScanner();
+  
   //i2cGPIOexpanderConfigure();
   //initLEDS();
 
