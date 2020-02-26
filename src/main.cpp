@@ -2,6 +2,7 @@
 #include "motor.h"
 #include "odom.h"
 #include "DS1820.h"
+#include "VL53L0X.h"
 #include <sstream>
 #include <vector>
 
@@ -30,6 +31,7 @@
 //#define CHIPSET WS2812
 //CRGB leds[NUM_LEDS];
 
+//CONFIGURE i2c pins!
 I2C i2c(PB_9, PB_8);
 
 // Initialize motors
@@ -41,7 +43,8 @@ Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 // Timeout
 Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
-
+VL53L0X     sensor(i2c, main_timer);
+#define HIGH_SPEED
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);  // tx, rx
 char serial_buf[256];        // Buffer for incoming serial data
@@ -180,7 +183,8 @@ void check_for_timeout()
   }
 }
 
-void i2cScanner() {
+void i2cScanner() 
+{
     serial_pc.printf("\nI2C Scanner\r\n");
     i2c.frequency(100000);
     while(1) {
@@ -200,7 +204,7 @@ void i2cScanner() {
             {
               serial_pc.printf("I2C device found at address 0x%X\r\n", address); //Returns 7-bit addres
               nDevices++;
-	      break;
+	      //break;
             }
             if (error == 2) {
               serial_pc.printf("TIMEOUTED...\r\n");
@@ -214,22 +218,16 @@ void i2cScanner() {
         }
 }
 
-void i2cGPIOexpanderConfigure() {
+void i2cGPIOexpanderConfigure() 
+{
     serial_pc.printf("\nSIIIIIIIIIIIIIIIIIIIIIIIIIN\r\n");
     i2c.frequency(100000);
-
-    char registerByte[1];
-
-    registerByte[0] = 0x03; //configure register of GPIO expander kivi (outputiks)
-   
-    i2c.write(0x20 << 1, registerByte, 1);
-    registerByte[0] = 0x00;
-    i2c.write(0x20 << 1, registerByte, 1);
-    registerByte[0] = 0x01;
-    i2c.write(0x20 << 1, registerByte, 1);
-    registerByte[0] = 0xFF;
-    i2c.write(0x20 << 1, registerByte, 1);
-
+    char conf_reg[2] = {0x03, 0x00}; 
+    int error = i2c.write(0x20 << 1, conf_reg, sizeof(conf_reg));
+    serial_pc.printf("Result: %s\n", (error == 0?"ACK \r\n":"NAK \r\n"));
+    char conf_reg2[2] = {0x01, 0b00001111}; //Last 4bits for PIN configure
+    error = i2c.write(0x20 << 1, conf_reg2, sizeof(conf_reg2));
+    serial_pc.printf("Result: %s\n", (error == 0?"ACK \r\n":"NAK \r\n"));
 }
 
 //void initLEDS() {
@@ -244,8 +242,40 @@ void i2cGPIOexpanderConfigure() {
   //FastLED.show();
 //}
 
+void readSensorValue() 
+{ 
+   serial_pc.printf("Start...\r\n");
+    sensor.init();
+    serial_pc.printf("Initialisation completed!\r\n");
+    sensor.setTimeout(500);
+#if defined LONG_RANGE
+  // lower the return signal rate limit (default is 0.25 MCPS)
+  sensor.setSignalRateLimit(0.1);
+  // increase laser pulse periods (defaults are 14 and 10 PCLKs)
+  sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
+  sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
+#endif
+
+#if defined HIGH_SPEED
+  // reduce timing budget to 20 ms (default is about 33 ms)
+  sensor.setMeasurementTimingBudget(20000);
+#elif defined HIGH_ACCURACY
+  // increase timing budget to 200 ms
+  sensor.setMeasurementTimingBudget(200000);
+#endif
+    while (1)
+    {
+        serial_pc.printf("%u\r\n", sensor.readRangeSingleMillimeters());
+        if (sensor.timeoutOccurred())
+        {
+            serial_pc.printf("TIMEOUT!\r\n");
+        }
+    }
+
+}
+
 int main()
-{
+{ 
   // Initialize serial connection
   serial_pc.baud(115200);
   serial_buf[0] = '\0';
@@ -255,9 +285,10 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
   //SCAN i2c devices!
-  i2cScanner();
-  
+  //i2cScanner();
+  //configure gpio expander pins
   //i2cGPIOexpanderConfigure();
+  readSensorValue();
   //initLEDS();
 
   // MAIN LOOP
