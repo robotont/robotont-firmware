@@ -3,6 +3,8 @@
 #include "odom.h"
 #include "DS1820.h"
 #include "VL53L0X.h"
+#include "WS2812.h"
+#include "PixelArray.h"
 #include <sstream>
 #include <vector>
 
@@ -24,12 +26,12 @@
 // Include motor configurations
 //#include "motor_config_v0_6.h"
 #include "motor_config_v1_1.h"
-// Include LED STRIP Library
-//#include <FastLED.h>
-//#define LED_PIN	7 		
-//#define NUM_LEDS 11
-//#define CHIPSET WS2812
-//CRGB leds[NUM_LEDS];
+// LED STRIP 
+#define WS2812_BUF 150
+#define NUM_COLORS 2
+#define NUM_LEDS_PER_COLOR 10
+PixelArray px(WS2812_BUF);
+WS2812 ws1(D6, WS2812_BUF, 0, 5, 5, 0);
 
 //CONFIGURE i2c pins!
 I2C i2c(PB_9, PB_8);
@@ -43,8 +45,10 @@ Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 // Timeout
 Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
+//VL53L0X sensor constructor
 VL53L0X     sensor(i2c, main_timer);
 #define HIGH_SPEED
+
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);  // tx, rx
 char serial_buf[256];        // Buffer for incoming serial data
@@ -230,17 +234,24 @@ void i2cGPIOexpanderConfigure()
     serial_pc.printf("Result: %s\n", (error == 0?"ACK \r\n":"NAK \r\n"));
 }
 
-//void initLEDS() {
-  //FastLED.addLeds<CHIPSET, LED_PIN, GRB>(leds, NUM_LEDS);
-  //FastLED.setBrightness(128);
-
-  //leds[0] = CRGB(255,0,0); //punane
-  //leds[1] = CRGB(255,0,0); //punane
-  //leds[2] = CRGB(255,0,0); //punane
-  //leds[3] = CRGB(255,0,0); //punane
-  //leds[4] = CRGB(255,0,0); //punane
-  //FastLED.show();
-//}
+void initLEDS() {
+   ws1.useII(WS2812::PER_PIXEL); // use per-pixel intensity scaling
+   // set up the colours we want to draw with
+   int colorbuf[NUM_COLORS] = {0xFF0000,0x00FF00};
+   for (int i = 0; i < WS2812_BUF; i++) {
+        px.Set(i, colorbuf[(i / NUM_LEDS_PER_COLOR) % NUM_COLORS]);
+   }
+   for (int j=0; j<WS2812_BUF; j++) {
+        // px.SetI(pixel position, II value)
+        px.SetI(j%WS2812_BUF, 0xf+(0xf*(j%NUM_LEDS_PER_COLOR)));
+   }
+   while (1) {
+        for (int z=WS2812_BUF; z >= 0 ; z--) {
+            ws1.write_offsets(px.getBuf(),z,z,z);
+            wait(0.075);
+        }
+   }
+}
 
 void readSensorValue() 
 { 
@@ -288,8 +299,8 @@ int main()
   //i2cScanner();
   //configure gpio expander pins
   //i2cGPIOexpanderConfigure();
-  readSensorValue();
-  //initLEDS();
+  //readSensorValue();
+  initLEDS();
 
   // MAIN LOOP
   while (true)
