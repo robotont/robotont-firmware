@@ -9,7 +9,7 @@
 #define ENC_CPR 64
 #define GEAR_RATIO 18.75
 #define WHEEL_RADIUS 0.035
-#define WHEEL_POS_R 0.127
+#define WHEEL_POS_R 0.145
 #define PID_KP 0.8
 #define PID_TI 0.05
 #define PID_TD 0.0
