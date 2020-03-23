@@ -114,6 +114,8 @@ void WS2812::write_offsets (int buf[],int r_offset, int g_offset, int b_offset) 
     
     // Exiting timing critical section, so enabling interrutps
     __enable_irq();
+
+    wait(0.075);
 }
  
  
