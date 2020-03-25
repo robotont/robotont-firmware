@@ -32,7 +32,6 @@
 #define NUM_LEDS_PER_COLOR 3
 PixelArray px(WS2812_BUF);
 WS2812 ws1(D6, WS2812_BUF, 3, 12, 9, 12);
-DigitalOut seitse(PA_8);
 
 //CONFIGURE i2c pins!
 I2C i2c(PB_9, PB_8);
@@ -148,6 +147,34 @@ void processPacket(const std::string& packet)
     //  m[i].setPIDTunings(k_p, tau_i, tau_d);
     //}
   }
+  else if (cmd[0] == "LED")  // Update single LED state
+  { 
+    ws1.useII(WS2812::GLOBAL);
+    int index = std::atof(cmd[1].c_str()); //led index. 0 = first led.
+    int rgb = std::atof(cmd[2].c_str()); //0xFF0000 - red, 0x00FF00 - green (color)
+    px.Set(index, rgb);
+    ws1.write(px.getBuf());
+  }
+  else if (cmd[0] == "LED_SEG")  // Update segment of LED states
+  {
+    ws1.useII(WS2812::GLOBAL);
+    int start_index = std::atof(cmd[1].c_str()); //led index. 0 = first led.
+    int end_index = std::atof(cmd[2].c_str());
+    int led_count = end_index - start_index;
+    led_count++;
+    //int colorbuf[led_count];
+    std::vector<int> vcolorbuf(led_count);
+    int* colorbuf = &vcolorbuf[0];
+    for (int i = 0; i < led_count; i++) {
+        colorbuf[i] = std::atof(cmd[i+3].c_str());
+    } 
+    int buffer_count = 0;
+    for (; start_index <= end_index; start_index++) {
+        px.Set(start_index, colorbuf[buffer_count]);
+        buffer_count++;
+    }
+    ws1.write(px.getBuf());
+  }
 }
 
 // Process an incoming serial byte
@@ -242,7 +269,8 @@ void i2cGPIOexpanderConfigure(int address, char pinState)
   wait_ms(10);
 }
 
-void i2cGPIOexpanderINIT(int address) {
+void i2cGPIOexpanderINIT(int address) 
+{
   i2c.frequency(100000);
   char conf_reg[2] = {0x03, 0xF0};  //0x00 output, 0xFF input
   int error = i2c.write(address << 1, conf_reg, sizeof(conf_reg));
@@ -251,36 +279,6 @@ void i2cGPIOexpanderINIT(int address) {
   error = i2c.write(address << 1, conf_reg2, sizeof(conf_reg2));
   serial_pc.printf("Result: %s\n", (error == 0?"ACK \r\n":"NAK \r\n"));
 }
-
-void initLEDS() {
-   ws1.useII(WS2812::GLOBAL); // use per-pixel intensity scaling
-   // set up the colours we want to draw with
-   int colorbuf[NUM_COLORS] = {0xFF0000,0x00FF00};
-   for (int i = 0; i < WS2812_BUF - 4; i++) {
-        px.Set(i, colorbuf[0]);
-   }
- 
-    // now all the colours are computed, add a fade effect using intensity scaling
-    // compute and write the II value for each pixel
-    //for (int j=0; j<WS2812_BUF; j++) {
-        // px.SetI(pixel position, II value);
-        //px.SetI(j%WS2812_BUF, 0xf+(0xf*(j%NUM_LEDS_PER_COLOR)));
-    //}
- 
- 
-    // Now the buffer is written, rotate it
-    // by writing it out with an increasing offset
-
-    //while (1) {
-        //for (int z=WS2812_BUF; z >= 0 ; z--) {
-            //ws1.write_offsets(px.getBuf(),z,z,z);
-            //wait(0.075);
-        //}
-    //}
-    
-    ws1.write(px.getBuf());
-}
-
 
 void initSensors() 
 { 
@@ -473,18 +471,9 @@ void readSensorValues()
 { 
     while (1)
     {
-        
-
         serial_pc.printf("RANGE:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u\r\n", sensor1.readRangeContinuousMillimeters(), sensor2.readRangeContinuousMillimeters(), sensor3.readRangeContinuousMillimeters(), sensor4.readRangeContinuousMillimeters(), sensor5.readRangeContinuousMillimeters(), sensor6.readRangeContinuousMillimeters(), sensor7.readRangeContinuousMillimeters(), sensor8.readRangeContinuousMillimeters(), sensor9.readRangeContinuousMillimeters(), sensor10.readRangeContinuousMillimeters(), sensor11.readRangeContinuousMillimeters(), sensor12.readRangeContinuousMillimeters());
        
-        //if (sensor1.timeoutOccurred())
-        //{
-            //serial_pc.printf("TIMEOUT.sensor1!\r\n");
-        //}
-        //else if (sensor2.timeoutOccurred())
-        //{
-            //serial_pc.printf("TIMEOUT.sensor2!\r\n");
-        //}
+        //timeout - print: 65535
     }
 
 }
@@ -500,17 +489,13 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
   //SCAN i2c devices!
-  //i2cScanner();
+  //i2cScanner();  //DEBUG - scan i2c addresses.
   //configure gpio expander pins
   //i2cGPIOexpanderConfigure(0x22, 0b11110111);
-  initSensors(); 
-  //i2cScanner(); //DEBUG
-  //initLEDS();
+  //initSensors(); 
   //singleSensorRead();
-  readSensorValues();
-  //i2cScanner();
+  //readSensorValues();
   
-
   // MAIN LOOP
   while (true)
   {
