@@ -147,32 +147,23 @@ void processPacket(const std::string& packet)
     //  m[i].setPIDTunings(k_p, tau_i, tau_d);
     //}
   }
-  else if (cmd[0] == "LED")  // Update single LED state
+  else if (cmd[0] == "LED")  // Update single LED state.
   { 
     ws1.useII(WS2812::GLOBAL);
-    int index = std::atof(cmd[1].c_str()); //led index. 0 = first led.
-    int rgb = std::atof(cmd[2].c_str()); //0xFF0000 - red, 0x00FF00 - green (color)
+    int index = std::atof(cmd[1].c_str()); //led index. Value 0 = First led.
+    int rgb = std::atof(cmd[2].c_str()); //0xFF0000 - red, 0x00FF00 - green, 0x0000FF blue (color).
     px.Set(index, rgb);
     ws1.write(px.getBuf());
   }
-  else if (cmd[0] == "LED_SEG")  // Update segment of LED states
+  else if (cmd[0] == "LED_SEG")  // Update LED states for a segment.
   {
     ws1.useII(WS2812::GLOBAL);
-    int start_index = std::atof(cmd[1].c_str()); //led index. 0 = first led.
-    int end_index = std::atof(cmd[2].c_str());
-    int led_count = end_index - start_index;
-    led_count++;
-    //int colorbuf[led_count];
-    std::vector<int> vcolorbuf(led_count);
-    int* colorbuf = &vcolorbuf[0];
-    for (int i = 0; i < led_count; i++) {
-        colorbuf[i] = std::atof(cmd[i+3].c_str());
+    int start_index = std::atof(cmd[1].c_str());
+    int argumentsSize = cmd.size();
+    for(int i = 2; i < argumentsSize; i++) {
+	px.Set(start_index, (int) std::atof(cmd[i].c_str()));
+        start_index++;
     } 
-    int buffer_count = 0;
-    for (; start_index <= end_index; start_index++) {
-        px.Set(start_index, colorbuf[buffer_count]);
-        buffer_count++;
-    }
     ws1.write(px.getBuf());
   }
 }
@@ -406,18 +397,18 @@ void initSensors()
 
 #if defined HIGH_SPEED
   // reduce timing budget to 20 ms (default is about 33 ms)
-  sensor1.setMeasurementTimingBudget(20000);
-  sensor2.setMeasurementTimingBudget(20000);
-  sensor3.setMeasurementTimingBudget(20000);
-  sensor4.setMeasurementTimingBudget(20000);
-  sensor5.setMeasurementTimingBudget(20000);
-  sensor6.setMeasurementTimingBudget(20000);
-  sensor7.setMeasurementTimingBudget(20000);
-  sensor8.setMeasurementTimingBudget(20000);
-  sensor9.setMeasurementTimingBudget(20000);
-  sensor10.setMeasurementTimingBudget(20000);
-  sensor11.setMeasurementTimingBudget(20000);
-  sensor12.setMeasurementTimingBudget(20000);
+  sensor1.setMeasurementTimingBudget(10000);
+  sensor2.setMeasurementTimingBudget(10000);
+  sensor3.setMeasurementTimingBudget(10000);
+  sensor4.setMeasurementTimingBudget(10000);
+  sensor5.setMeasurementTimingBudget(10000);
+  sensor6.setMeasurementTimingBudget(10000);
+  sensor7.setMeasurementTimingBudget(10000);
+  sensor8.setMeasurementTimingBudget(10000);
+  sensor9.setMeasurementTimingBudget(10000);
+  sensor10.setMeasurementTimingBudget(10000);
+  sensor11.setMeasurementTimingBudget(10000);
+  sensor12.setMeasurementTimingBudget(10000);
 #elif defined HIGH_ACCURACY
   // increase timing budget to 200 ms
   sensor1.setMeasurementTimingBudget(200000);
@@ -436,7 +427,7 @@ void initSensors()
 
 }
 
-void singleSensorRead()
+void singleSensorRead() //For debugging sensor with the first configured address.
 {
   sensor1.init();
   sensor1.setTimeout(500);
@@ -467,17 +458,6 @@ void singleSensorRead()
 
 }
 
-void readSensorValues() 
-{ 
-    while (1)
-    {
-        serial_pc.printf("RANGE:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u\r\n", sensor1.readRangeContinuousMillimeters(), sensor2.readRangeContinuousMillimeters(), sensor3.readRangeContinuousMillimeters(), sensor4.readRangeContinuousMillimeters(), sensor5.readRangeContinuousMillimeters(), sensor6.readRangeContinuousMillimeters(), sensor7.readRangeContinuousMillimeters(), sensor8.readRangeContinuousMillimeters(), sensor9.readRangeContinuousMillimeters(), sensor10.readRangeContinuousMillimeters(), sensor11.readRangeContinuousMillimeters(), sensor12.readRangeContinuousMillimeters());
-       
-        //timeout - print: 65535
-    }
-
-}
-
 int main()
 { 
   // Initialize serial connection
@@ -492,9 +472,8 @@ int main()
   //i2cScanner();  //DEBUG - scan i2c addresses.
   //configure gpio expander pins
   //i2cGPIOexpanderConfigure(0x22, 0b11110111);
-  //initSensors(); 
+  initSensors(); 
   //singleSensorRead();
-  //readSensorValues();
   
   // MAIN LOOP
   while (true)
@@ -524,11 +503,12 @@ int main()
       processPacket(packet);
       packet_received_b = false;
     }
-    
+    // Update range sensors readings
+    serial_pc.printf("RANGE:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u\r\n", sensor1.readRangeContinuousMillimeters(), sensor2.readRangeContinuousMillimeters(), sensor3.readRangeContinuousMillimeters(), sensor4.readRangeContinuousMillimeters(), sensor5.readRangeContinuousMillimeters(), sensor6.readRangeContinuousMillimeters(), sensor7.readRangeContinuousMillimeters(), sensor8.readRangeContinuousMillimeters(), sensor9.readRangeContinuousMillimeters(), sensor10.readRangeContinuousMillimeters(), sensor11.readRangeContinuousMillimeters(), sensor12.readRangeContinuousMillimeters());
     // Update odometry
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
-                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+    //serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
+                     //odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
     // Synchronize to given MAIN_DELTA_T
     wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
   }
