@@ -35,6 +35,9 @@ Timer cmd_timer;
 Ticker cmd_timeout_checker;
 Ticker motor_balance_ticker;
 
+AnalogIn voltage_in(A0);
+AnalogIn current_in(A1);
+
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);  // tx, rx
 char serial_buf[256];        // Buffer for incoming serial data
@@ -234,6 +237,10 @@ int main()
     }
 
     // serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
+    printf("Voltage %: %3.3f%%\r\n", voltage_in.read()*100.0f);
+    printf("Current %: %3.3f%%\r\n", current_in.read()*100.0f);
+//    printf("Voltage: 0x%04X \r\n", voltage_in.read_u16());
+//    printf("Current: 0x%04X \r\n", current_in.read_u16());
 
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
