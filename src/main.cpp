@@ -28,7 +28,7 @@
 #include "motor_config_v1_1.h"
 // LED STRIP 
 #define WS2812_BUF 18
-#define NUM_COLORS 2
+#define NUM_COLORS 3
 #define NUM_LEDS_PER_COLOR 3
 #define NUM_SENSORS 12
 
@@ -340,6 +340,16 @@ void singleSensorRead() //For debugging sensor with the first configured address
   }
 }
 
+void initLEDS() {
+   ws1.useII(WS2812::GLOBAL); // use per-pixel intensity scaling
+   // set up the colours we want to draw with
+   int colorbuf[NUM_COLORS] = {255,65280,16711680}; 
+   for (int i = 0; i < WS2812_BUF; i++) {
+        px.Set(i, colorbuf[1]);
+   }
+   ws1.write(px.getBuf());
+}
+
 int main()
 { 
   // Initialize serial connection
@@ -351,6 +361,7 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
   //SCAN i2c devices!
+  //initLEDS();
   initSensors(); 
   //i2cScanner();  //DEBUG - scan i2c addresses.
   //configure gpio expander pins
