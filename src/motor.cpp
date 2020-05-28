@@ -31,6 +31,8 @@ Motor::Motor(const MotorConfig& cfg)
   pid_.setBias(0.0);
   pid_.setMode(1);
 
+  pwm_.period_us(10000);
+
   // Calculate the relation between an encoder pulse and 
   // linear speed on the wheel where it contacts the ground
   // CCW is positive when looking from the motor towards the wheel
