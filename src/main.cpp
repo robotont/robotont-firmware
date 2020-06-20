@@ -1,7 +1,6 @@
 #include "mbed.h"
 #include "motor.h"
 #include "odom.h"
-#include "DS1820.h"
 #include <sstream>
 #include <vector>
 
@@ -22,7 +21,7 @@
 
 // Include motor configurations
 //#include "motor_config_v0_6.h"
-#include "motor_config_v1_1.h"
+#include "motor_config_v2_1.h"
 
 // Initialize motors
 Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
@@ -198,7 +197,6 @@ int main()
 //                       m[i].getSpeedSetPoint());
 //      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
 //      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-//      // serial_pc.printf("Temp: %f: \r\n", m[i].getTemperature());
 //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
 

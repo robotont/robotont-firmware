@@ -4,7 +4,6 @@
 #include "mbed.h"
 #include "QEI.h"
 #include "PID.h"
-#include "DS1820.h"
 #include "moving_average.h"
 
 
@@ -20,8 +19,6 @@ struct MotorConfig
   PinName pin_encb;
   PinName pin_fault;
   PinName pin_feedback;
-
-  PinName pin_temp;
 
   //Default PID parameters
   float pid_k_p;
@@ -137,7 +134,6 @@ public:
   {
     return fault_pulse_count_;
   }
-  float getTemperature();
 
 private:
   /* Set PWM duty cycle and polarity (direction). Effort is in range [0...1] */
@@ -151,7 +147,6 @@ private:
   Ticker pidTicker_;
   InterruptIn* current_feedback_;
   volatile uint32_t current_pulse_count_;
-  DS1820* temp_sensor_;
   MotorStatus status_;
   unsigned int fault_pulse_count_;
 

@@ -10,7 +10,6 @@ Motor::Motor(const MotorConfig& cfg)
   , fault_(cfg.pin_fault)
   , pid_(cfg.pid_k_p, cfg.pid_tau_i, cfg.pid_tau_d, cfg.pid_dt)
   , current_feedback_(NULL)
-  , temp_sensor_(NULL)
   , status_(STATUS_UNINITIALIZED)
   , current_measured_(100, 0.0f)
 //  , speed_limit_(2*M_PI) // 1 revolution per second
@@ -45,26 +44,6 @@ Motor::Motor(const MotorConfig& cfg)
     current_feedback_ = new InterruptIn(cfg.pin_feedback);
   }
 
-  // Check for the temperature sensor and initialize if connected
-  if (cfg.pin_temp != NC)
-  {
-    temp_sensor_ = new DS1820(cfg.pin_temp);
-
-    int retries = 5;
-    if (temp_sensor_)
-    {
-      while (!temp_sensor_->begin() && retries > 0)
-      {
-        printf("Temp sensor not found retrying... %d", retries);
-        retries--;
-      }
-      if (retries)
-      {
-        temp_sensor_->startConversion();
-      }
-    }
-  }
-
   // Attach the PID ISR ticker
   pidTicker_.attach(callback(this, &Motor::update), cfg.pid_dt);
 
@@ -82,8 +61,6 @@ Motor::Motor(const MotorConfig& cfg)
 
 Motor::~Motor()
 {
-  delete temp_sensor_;
-  temp_sensor_ = NULL;
 }
 
 
@@ -180,22 +157,4 @@ void Motor::onCurrentPulse(void)
 void Motor::onFaultPulse(void)
 {
   fault_pulse_count_++;
-}
-
-float Motor::getTemperature()
-{
-  if (!temp_sensor_)
-    return 0.0f;
-
-  float temp = 0.0f;
-  if (temp_sensor_->isPresent())
-  {
-    int retries = 5;
-    while (temp_sensor_->read(temp) != 0 && retries > 0)
-    {
-      retries--;
-    }
-    temp_sensor_->startConversion();  // start temperature conversion
-  }
-  return temp;
 }
