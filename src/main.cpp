@@ -3,6 +3,8 @@
 #include "odom.h"
 #include <sstream>
 #include <vector>
+#include "WS2812.h"
+#include "PixelArray.h"
 
 // Common parameters for all motors
 #define ENC_CPR 64
@@ -41,6 +43,13 @@ volatile bool packet_received_b = false;
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
+
+// LED STRIP
+#define WS2812_BUF 60
+
+PixelArray px(WS2812_BUF);
+WS2812 ws1(D6, WS2812_BUF, 3, 12, 9, 12);
+
 
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
@@ -119,6 +128,18 @@ void processPacket(const std::string& packet)
     //{
     //  m[i].setPIDTunings(k_p, tau_i, tau_d);
     //}
+  }
+  else if (cmd[0] == "LED")  // Update LED states for a segment.
+  {
+    ws1.useII(WS2812::GLOBAL);
+    int led_index = std::atof(cmd[1].c_str());  // led index. Value 0 = First led.
+    // Color represented by 3 bytes: 0xFF0000 - red, 0x00FF00 - green, 0x0000FF blue (color).
+    for (uint8_t i = 2; i < cmd.size(); i++)
+    {
+      px.Set(led_index, std::atoi(cmd[i].c_str()));
+      led_index++;
+    }
+    ws1.write(px.getBuf());
   }
 }
 
