@@ -17,9 +17,10 @@
 #define PID_DELTA_T 0.01
 #define MAIN_DELTA_T 0.02
 
-#define MAX_CMD_ARGS 5
+#define MAX_CMD_ARGS 100
+#define SERIAL_BUF_SIZE 2048
 #define MOTOR_COUNT 3
-#define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
+#define CMD_TIMEOUT_MS 1000  // If velocity command is not received within this period all motors are stopped.
 
 // Include motor configurations
 //#include "motor_config_v0_6.h"
@@ -36,20 +37,20 @@ Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
-RawSerial serial_pc(USBTX, USBRX);  // tx, rx
-char serial_buf[256];        // Buffer for incoming serial data
-volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
+RawSerial serial_pc(USBTX, USBRX);     // tx, rx
+char serial_buf[SERIAL_BUF_SIZE];      // Buffer for incoming serial data
+volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
 // LED STRIP
+// Set the number of pixels of the strip
 #define WS2812_BUF 60
 
 PixelArray px(WS2812_BUF);
-WS2812 ws1(D6, WS2812_BUF, 3, 12, 9, 12);
-
+WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
 
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
@@ -65,7 +66,7 @@ void processPacket(const std::string& packet)
     if (arg.length())
     {
       cmd.push_back(arg);
-      //serial_pc.printf("Got arg %s\r\n", arg.c_str());
+      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
     }
     else
     {
@@ -85,7 +86,7 @@ void processPacket(const std::string& packet)
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      //serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
+      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
     }
     cmd_timer.reset();
@@ -105,8 +106,7 @@ void processPacket(const std::string& packet)
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
-                    m[i].getWheelPosR() * angular_speed_z;
+      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) + m[i].getWheelPosR() * angular_speed_z;
       if (abs(speed) < 1e-5)
       {
         m[i].stop();
@@ -132,11 +132,13 @@ void processPacket(const std::string& packet)
   else if (cmd[0] == "LED")  // Update LED states for a segment.
   {
     ws1.useII(WS2812::GLOBAL);
-    int led_index = std::atof(cmd[1].c_str());  // led index. Value 0 = First led.
+    ws1.setII(0xFF);                            // Set intensity to use the full range
+    uint8_t led_index = std::strtoul(cmd[1].c_str(), NULL, 10);  // led index. Value 0 = First led.
     // Color represented by 3 bytes: 0xFF0000 - red, 0x00FF00 - green, 0x0000FF blue (color).
     for (uint8_t i = 2; i < cmd.size(); i++)
     {
-      px.Set(led_index, std::atoi(cmd[i].c_str()));
+      uint32_t value = std::strtoul(cmd[i].c_str(), NULL, 10);
+      px.Set(led_index, value);
       led_index++;
     }
     ws1.write(px.getBuf());
@@ -153,7 +155,7 @@ void pc_rx_callback()
     char c = serial_pc.getc();
     serial_buf[serial_arrived++] = c;
     serial_buf[serial_arrived] = '\0';
-    if (serial_arrived > 254)
+    if (serial_arrived >= SERIAL_BUF_SIZE - 1)
     {
       serial_arrived = 0;
     }
@@ -163,9 +165,8 @@ void pc_rx_callback()
       if (serial_arrived > 3)
       {
         // signal that the packet is complete for processing
-	packet_received_b = true;
+        packet_received_b = true;
       }
-
     }
 
     // if escape is received, clear the buffer and stop the motors for now
@@ -203,7 +204,6 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
-
   // MAIN LOOP
   while (true)
   {
@@ -213,17 +213,17 @@ int main()
     {
       // MOTOR DEBUG
       // serial_pc.printf("\r\n");
-//      serial_pc.printf("MOTOR %d: \r\n", i);
-//      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-//                       m[i].getSpeedSetPoint());
-//      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-//      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-//      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
+      //      serial_pc.printf("MOTOR %d: \r\n", i);
+      //      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
+      //                       m[i].getSpeedSetPoint());
+      //      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
+      //      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
+      //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
 
-//    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
-    
-    if (packet_received_b) // packet was completeted with \r \n
+    //    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
+
+    if (packet_received_b)  // packet was completeted with \r \n
     {
       std::string packet(serial_buf);
       serial_buf[0] = '\0';
@@ -231,12 +231,12 @@ int main()
       processPacket(packet);
       packet_received_b = false;
     }
-    
+
     // Update odometry
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
-                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
+                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
     // Synchronize to given MAIN_DELTA_T
-    wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
+    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
   }
 }
