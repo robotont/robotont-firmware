@@ -1,6 +1,7 @@
 #include "mbed.h"
 #include "motor.h"
 #include "odom.h"
+#include "Json.h"
 #include <sstream>
 #include <vector>
 
@@ -181,6 +182,7 @@ int main()
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
+  const char * jsonSource = "{\"MS\": {\"M1\": 1,\"M2\": 1,\"M3\": 1}} ";
 
 
   // MAIN LOOP
@@ -188,6 +190,51 @@ int main()
   {
     main_timer.reset();
     main_timer.start();
+
+
+
+
+    Json json ( jsonSource, strlen ( jsonSource ) );
+    if ( !json.isValidJson () )
+        {
+            
+            return serial_pc.printf( "Invalid JSON: %s", jsonSource );
+        }
+
+        if ( json.type (0) != JSMN_OBJECT )
+        {
+            return serial_pc.printf( "Invalid JSON.  ROOT element is not Object: %s", jsonSource );
+            
+        }
+        
+        // Let's get the value of key "city" in ROOT object, and copy into 
+        // cityValue
+        char cityValue [ 32 ];
+        // ROOT object should have '0' tokenIndex, and -1 parentIndex
+        int cityKeyIndex = json.findKeyIndexIn( "MS", 0 );
+		int motorindex = json.findKeyIndexIn("M1",0);
+        if ( motorindex == -1 )
+        {
+            // Error handling part ...
+            serial_pc.printf( "\"city\" does not exist ... do something!!" );
+        }
+        else
+        {
+            // Find the first child index of key-node "city"
+            int cityValueIndex = json.findChildIndexOf ( motorindex , -1 );
+			//serial_pc.printf("%s", cityValueIndex);
+            if ( cityValueIndex > 0 )
+            {
+                const char * valueStart  = json.tokenAddress ( cityValueIndex );
+                int          valueLength = json.tokenLength ( cityValueIndex );
+                strncpy ( cityValue, valueStart, valueLength );
+                cityValue [ valueLength ] = 0; // NULL-terminate the string
+                
+                //let's print the value.  It should be "San Jose"
+                serial_pc.printf( "city: %s", cityValue );
+            }
+        }
+    
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       // MOTOR DEBUG
