@@ -182,7 +182,7 @@ int main()
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
-  const char * jsonSource = "{\"MS\": {\"M1\": 1,\"M2\": 1,\"M3\": 1}} ";
+  const char * jsonSource = "{\"MS\": {\"M1\": 1,\"M2\": 1,\"M3\": 1},\"RS\": {\"R1\": 1,\"R2\": 1,\"R3\": 1}} ";
 
 
   // MAIN LOOP
@@ -210,10 +210,20 @@ int main()
         // Let's get the value of key "city" in ROOT object, and copy into 
         // cityValue
         char cityValue [ 32 ];
+		char cityValue1 [ 32];
+		
         // ROOT object should have '0' tokenIndex, and -1 parentIndex
-        int cityKeyIndex = json.findKeyIndexIn( "MS", 0 );
-		int motorindex = json.findKeyIndexIn("M1",0);
-        if ( motorindex == -1 )
+        int cityKeyIndex = json.findKeyIndex( "RS", 0 );
+//		int cityKeyIndex1 = json.findKeyIndexIn( "MS", 0 );
+		int cityKeyIndex2 = json.findChildIndexOf( cityKeyIndex, 0 );
+		int cityKeyIndex3 = json.findKeyIndex( "R3", cityKeyIndex2 );
+		
+		serial_pc.printf( "%d ", cityKeyIndex);
+		//serial_pc.printf( "%d ", cityKeyIndex1);
+		serial_pc.printf( "%d ", cityKeyIndex2);
+		serial_pc.printf( "%d ", cityKeyIndex3);
+		serial_pc.printf( "\n");
+        if ( cityKeyIndex == -1 )
         {
             // Error handling part ...
             serial_pc.printf( "\"city\" does not exist ... do something!!" );
@@ -221,17 +231,19 @@ int main()
         else
         {
             // Find the first child index of key-node "city"
-            int cityValueIndex = json.findChildIndexOf ( motorindex , -1 );
+            int cityValueIndex = json.findChildIndexOf ( cityKeyIndex , -1 );
+			
 			//serial_pc.printf("%s", cityValueIndex);
             if ( cityValueIndex > 0 )
             {
                 const char * valueStart  = json.tokenAddress ( cityValueIndex );
                 int          valueLength = json.tokenLength ( cityValueIndex );
                 strncpy ( cityValue, valueStart, valueLength );
-                cityValue [ valueLength ] = 0; // NULL-terminate the string
+				
+
+				 
                 
-                //let's print the value.  It should be "San Jose"
-                serial_pc.printf( "city: %s", cityValue );
+                //serial_pc.printf( "%s", cityValue );
             }
         }
     
