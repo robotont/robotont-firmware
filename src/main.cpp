@@ -36,13 +36,91 @@ Ticker cmd_timeout_checker;
 
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);  // tx, rx
-char serial_buf[256];        // Buffer for incoming serial data
+char serial_buf[4096];        // Buffer for incoming serial data
 volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
+char motorValue1 [128];
+char motorValue2 [128];
+char motorValue3 [128];
+char ledValue [2048];
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
+void processJsonPacket(const char * packet)
+{
+   Json json ( packet, strlen (packet) );
+    if ( !json.isValidJson () )
+        {
+            serial_pc.printf("Invalid JSON");
+            return;
+        }
 
+        if ( json.type (0) != JSMN_OBJECT )
+        {
+            serial_pc.printf( "Invalid JSON.  ROOT element is not Object");
+            return;
+            
+        }
+       // ROOT object should have '0' tokenIndex, and -1 parentIndex
+        int motorValueIndex1 = json.findKeyIndex( "M1", 0 );
+        int motorValueIndex2 = json.findKeyIndex( "M2", 0 );
+        int motorValueIndex3 = json.findKeyIndex( "M3", 0 );
+        int ledArrayIndex = json.findKeyIndex( "LED", 0 );
+		
+        if ( motorValueIndex1 == -1 || motorValueIndex2 == -1 || motorValueIndex3 == -1)
+        {
+            // Error handling part ...
+            serial_pc.printf( "One motor value does not excist" );
+            return;
+        }
+        else
+        {
+
+			//serial_pc.printf("%s", cityValueIndex);
+          if ( motorValueIndex1 > 0 || motorValueIndex2 > 0 || motorValueIndex3 > 0)
+          {
+              const char * valueStart1  = json.tokenAddress (motorValueIndex1+1);
+              int          valueLength1 = json.tokenLength (motorValueIndex1+1);
+              strncpy (motorValue1, valueStart1, valueLength1 );
+
+              const char * valueStart2  = json.tokenAddress (motorValueIndex1+1);
+              int          valueLength2 = json.tokenLength (motorValueIndex1+1);
+              strncpy (motorValue2, valueStart2, valueLength2 );
+            
+              const char * valueStart3  = json.tokenAddress (motorValueIndex1+1);
+              int          valueLength3 = json.tokenLength (motorValueIndex1+1);
+              strncpy (motorValue3, valueStart3, valueLength3 );
+              int mv1 = stoi(motorValue1);
+              int mv2 = stoi(motorValue2); 
+              int mv3 = stoi(motorValue3);   
+
+      
+
+        
+              
+              serial_pc.printf( "%d", mv1);
+              serial_pc.printf( "%d", mv2);
+              serial_pc.printf( "%d \n", mv3);
+          }
+        }
+        if ( ledArrayIndex == -1){
+          serial_pc.printf( "led value does not excist " );
+         return;
+          
+        }
+        else
+        {
+          if(ledArrayIndex > 0)
+          {
+            const char * valueStart4  = json.tokenAddress (ledArrayIndex+1);
+            int          valueLength4 = json.tokenLength (ledArrayIndex+1);
+            strncpy (ledValue, valueStart4, valueLength4 );
+            serial_pc.printf( "%s \n", ledValue);
+
+          }
+        }
+        
+}
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
 {
@@ -133,7 +211,7 @@ void pc_rx_callback()
     char c = serial_pc.getc();
     serial_buf[serial_arrived++] = c;
     serial_buf[serial_arrived] = '\0';
-    if (serial_arrived > 254)
+    if (serial_arrived > 4095)
     {
       serial_arrived = 0;
     }
@@ -182,7 +260,6 @@ int main()
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
-  const char * jsonSource = "{\"MS\": {\"M1\": 1,\"M2\": 1,\"M3\": 1},\"RS\": {\"R1\": 1,\"R2\": 1,\"R3\": 1}} ";
 
 
   // MAIN LOOP
@@ -194,58 +271,6 @@ int main()
 
 
 
-    Json json ( jsonSource, strlen ( jsonSource ) );
-    if ( !json.isValidJson () )
-        {
-            
-            return serial_pc.printf( "Invalid JSON: %s", jsonSource );
-        }
-
-        if ( json.type (0) != JSMN_OBJECT )
-        {
-            return serial_pc.printf( "Invalid JSON.  ROOT element is not Object: %s", jsonSource );
-            
-        }
-        
-        // Let's get the value of key "city" in ROOT object, and copy into 
-        // cityValue
-        char cityValue [ 32 ];
-		char cityValue1 [ 32];
-		
-        // ROOT object should have '0' tokenIndex, and -1 parentIndex
-        int cityKeyIndex = json.findKeyIndex( "RS", 0 );
-//		int cityKeyIndex1 = json.findKeyIndexIn( "MS", 0 );
-		int cityKeyIndex2 = json.findChildIndexOf( cityKeyIndex, 0 );
-		int cityKeyIndex3 = json.findKeyIndex( "R3", cityKeyIndex2 );
-		
-		serial_pc.printf( "%d ", cityKeyIndex);
-		//serial_pc.printf( "%d ", cityKeyIndex1);
-		serial_pc.printf( "%d ", cityKeyIndex2);
-		serial_pc.printf( "%d ", cityKeyIndex3);
-		serial_pc.printf( "\n");
-        if ( cityKeyIndex == -1 )
-        {
-            // Error handling part ...
-            serial_pc.printf( "\"city\" does not exist ... do something!!" );
-        }
-        else
-        {
-            // Find the first child index of key-node "city"
-            int cityValueIndex = json.findChildIndexOf ( cityKeyIndex , -1 );
-			
-			//serial_pc.printf("%s", cityValueIndex);
-            if ( cityValueIndex > 0 )
-            {
-                const char * valueStart  = json.tokenAddress ( cityValueIndex );
-                int          valueLength = json.tokenLength ( cityValueIndex );
-                strncpy ( cityValue, valueStart, valueLength );
-				
-
-				 
-                
-                //serial_pc.printf( "%s", cityValue );
-            }
-        }
     
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
@@ -262,11 +287,19 @@ int main()
 //    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
     
     if (packet_received_b) // packet was completeted with \r \n
-    {
+    { 
+     
       std::string packet(serial_buf);
+      
       serial_buf[0] = '\0';
       serial_arrived = 0;
-      processPacket(packet);
+      
+      char *cstr = new char[packet.length() + 1];
+      strcpy(cstr, packet.c_str());
+      // do stuff
+      processJsonPacket(cstr);
+      delete [] cstr;
+      
       packet_received_b = false;
     }
     
