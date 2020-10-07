@@ -43,7 +43,7 @@ char motorValue1 [128];
 char motorValue2 [128];
 char motorValue3 [128];
 char ledValue [2048];
-
+const char * jsonsource = "{\"MS\":{\"M1\":10,\"M2\":20,\"M3\":40},\"LED\":[1,2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4]}";
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 void processJsonPacket(const char * packet)
@@ -294,11 +294,11 @@ int main()
       serial_buf[0] = '\0';
       serial_arrived = 0;
       
-      char *cstr = new char[packet.length() + 1];
-      strcpy(cstr, packet.c_str());
+      //char *cstr = new char[packet.length() + 1];
+      //strcpy(cstr, packet.c_str());
       // do stuff
-      processJsonPacket(cstr);
-      delete [] cstr;
+      processJsonPacket(jsonsource);
+      //delete [] cstr;
       
       packet_received_b = false;
     }
