@@ -14,7 +14,7 @@ Motor::Motor(const MotorConfig& cfg)
   , current_measured_(100, 0.0f)
 //  , speed_limit_(2*M_PI) // 1 revolution per second
   , speed_limit_(0.3) // 30 cm/s
-  , effort_limit_(0.2f) // 20% duty cycle
+  , effort_limit_(0.25f) // 25% duty cycle
 {
 
   // initialize pid to defaults
