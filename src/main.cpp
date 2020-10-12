@@ -34,7 +34,7 @@ int rv1;
 int rv2;
 int rv3;
 int temp_led_value;
-
+int ledarr [60] = { 10066682, 10102972, 10319056, 10355969, 10428612, 10565919, 10717752, 10783710, 10882887, 10955120, 11127807, 11158075, 11193819, 11202752, 11551486, 11623994, 11790515, 11880182, 11931999, 11952266, 12133489, 12137829, 12293910, 12413209, 12442287, 12479550, 12521919, 12638736, 12678538, 12696715, 12873257, 13166316, 13348606, 13567725, 13850595, 13898195, 13924676, 13975870, 14025285, 14064364, 14141714, 14744475, 14744976, 15186068, 15224251, 15359457, 15409668, 15469622, 15520422, 15599931, 15727045, 15742858, 15788763, 15923926, 15978899, 16054705, 16173431, 16180072, 16431170};
 
 // LED STRIP
 // Set the number of pixels of the strip
@@ -49,8 +49,9 @@ Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 // Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
+
 // Timeout
-Timer cmd_timer, main_timer;
+Timer cmd_timer, main_timer, t;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
@@ -58,12 +59,17 @@ RawSerial serial_pc(USBTX, USBRX);  // tx, rx
 char serial_buf[4096];        // Buffer for incoming serial data
 volatile uint32_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
-//const char * jsonsource = "{\"MS\":{\"M1\":10,\"M2\":20,\"M3\":40},\"LED\":[1,2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,3,4,5,6,7,2,3,4,5,6,7,2,3,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7,4,7,7,7,7]}";
+const char * jsonsource = "{\"MS\":{\"M1\": 50,\"M2\": 50,\"M3\": 50}, \"LED\": [ 10066682, 10102972, 10319056, 10355969, 10428612, 10565919, 10717752, 10783710, 10882887, 10955120, 11127807, 11158075, 11193819, 11202752, 11551486, 11623994, 11790515, 11880182, 11931999, 11952266, 12133489, 12137829, 12293910, 12413209, 12442287, 12479550, 12521919, 12638736, 12678538, 12696715, 12873257, 13166316, 13348606, 13567725, 13850595, 13898195, 13924676, 13975870, 14025285, 14064364, 14141714, 14744475, 14744976, 15186068, 15224251, 15359457, 15409668, 15469622, 15520422, 15599931, 15727045, 15742858, 15788763, 15923926, 15978899, 16054705, 16173431, 16180072, 16431170]}";
 // For parsing command with arguments received over serial
+
 std::vector<std::string> cmd;
 void processJsonPacket(const char * packet)
-{
+{   
+    t.start();
    Json json ( packet, strlen (packet),128 );
+         t.stop();
+        printf("The objekt time taken was %d microseconds\n", t.read_us());
+        t.reset();
     if ( !json.isValidJson () )
         {
             serial_pc.printf("Invalid JSON");
@@ -78,17 +84,23 @@ void processJsonPacket(const char * packet)
             return;
             
         }
+         t.start();
        // ROOT object should have '0' tokenIndex, and -1 parentIndex
         int motorValueIndex1 = json.findKeyIndex( "M1", 0 );
         int motorValueIndex2 = json.findKeyIndex( "M2", 0 );
         int motorValueIndex3 = json.findKeyIndex( "M3", 0 );
+       
 
         int robotValueIndex1 = json.findKeyIndex( "R1", 0 );
         int robotValueIndex2 = json.findKeyIndex( "R2", 0 );
         int robotValueIndex3 = json.findKeyIndex( "R3", 0 );
         int ledArrayIndex = json.findKeyIndex( "LED", 0 );
         int ledcount = json.childCount(ledArrayIndex+1);
-		
+
+                t.stop();
+        printf("findkey taken was %d microseconds\n", t.read_us());
+        t.reset();
+
         if ( motorValueIndex1 == -1 || motorValueIndex2 == -1 || motorValueIndex3 == -1)
         {
             // Error handling part ...
@@ -112,20 +124,25 @@ void processJsonPacket(const char * packet)
               const char * valueStart3  = json.tokenAddress (motorValueIndex1+1);
               int          valueLength3 = json.tokenLength (motorValueIndex1+1);
               strncpy (motorValue3, valueStart3, valueLength3 );*/
+              t.start();
+
               json.tokenIntegerValue(motorValueIndex1+1,mv1);
               json.tokenIntegerValue(motorValueIndex2+1,mv2); 
               json.tokenIntegerValue(motorValueIndex3+1,mv3);  
               m[1].setSpeedSetPoint(mv1);
               m[2].setSpeedSetPoint(mv2);
-              m[3].setSpeedSetPoint(mv3); 
+              m[3].setSpeedSetPoint(mv3);
+              t.stop();
+              printf("mv integer taken was %d microseconds\n", t.read_us()); 
+              t.reset();
 
       
 
         
               
-              serial_pc.printf( "%d", mv1);
-              serial_pc.printf( "%d", mv2);
-              serial_pc.printf( "%d \n", mv3);
+ //             serial_pc.printf( "%d", mv1);
+ //             serial_pc.printf( "%d", mv2);
+ //             serial_pc.printf( "%d \n", mv3);
           }
         }
         
@@ -169,13 +186,17 @@ void processJsonPacket(const char * packet)
         }
         else
         {
+          t.start();
+
           if(ledArrayIndex > 0)
           {
             ws1.useII(WS2812::GLOBAL);
             ws1.setII(0xFF); 
             for (int i = 0; i < ledcount; i++){
-              json.tokenIntegerValue(ledArrayIndex+2+i,temp_led_value);
-              px.Set(i, temp_led_value);
+              //json.tokenIntegerValue(ledArrayIndex+2+i,temp_led_value);
+              //px.Set(i, temp_led_value);
+              px.Set(i,ledarr[i]);
+
 
 
 
@@ -187,6 +208,10 @@ void processJsonPacket(const char * packet)
               
 
           }
+                  t.stop();
+        printf("led libra taken was %d microseconds\n", t.read_us());
+        t.reset();
+
         }
         
 }
@@ -367,7 +392,15 @@ int main()
       // do stuff
      // serial_pc.printf(cstr);
       //serial_pc.printf("suur vahe \n \n \n");
-      processJsonPacket(serial_buf);
+      //t.start();
+    
+      
+      processJsonPacket(jsonsource);
+      
+      //t.stop();
+      //printf("The time taken was %d microseconds\n", t.read_us());
+      
+
       serial_buf[0] = '\0';
       serial_arrived = 0;
       
