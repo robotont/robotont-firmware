@@ -34,7 +34,6 @@ int rv1;
 int rv2;
 int rv3;
 int temp_led_value;
-int ledarr [60] = { 10066682, 10102972, 10319056, 10355969, 10428612, 10565919, 10717752, 10783710, 10882887, 10955120, 11127807, 11158075, 11193819, 11202752, 11551486, 11623994, 11790515, 11880182, 11931999, 11952266, 12133489, 12137829, 12293910, 12413209, 12442287, 12479550, 12521919, 12638736, 12678538, 12696715, 12873257, 13166316, 13348606, 13567725, 13850595, 13898195, 13924676, 13975870, 14025285, 14064364, 14141714, 14744475, 14744976, 15186068, 15224251, 15359457, 15409668, 15469622, 15520422, 15599931, 15727045, 15742858, 15788763, 15923926, 15978899, 16054705, 16173431, 16180072, 16431170};
 
 // LED STRIP
 // Set the number of pixels of the strip
@@ -51,7 +50,7 @@ Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 
 // Timeout
-Timer cmd_timer, main_timer, t;
+Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
@@ -60,10 +59,8 @@ char serial_buf[4096];        // Buffer for incoming serial data
 volatile uint32_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
 volatile bool reset_timer = false;
-const char * jsonsource = "{\"MS\":{\"M1\": 50,\"M2\": 50,\"M3\": 50}, \"LED\": [ 10066682, 10102972, 10319056, 10355969, 10428612, 10565919, 10717752, 10783710, 10882887, 10955120, 11127807, 11158075, 11193819, 11202752, 11551486, 11623994, 11790515, 11880182, 11931999, 11952266, 12133489, 12137829, 12293910, 12413209, 12442287, 12479550, 12521919, 12638736, 12678538, 12696715, 12873257, 13166316, 13348606, 13567725, 13850595, 13898195, 13924676, 13975870, 14025285, 14064364, 14141714, 14744475, 14744976, 15186068, 15224251, 15359457, 15409668, 15469622, 15520422, 15599931, 15727045, 15742858, 15788763, 15923926, 15978899, 16054705, 16173431, 16180072, 16431170]}";
 // For parsing command with arguments received over serial
 
-std::vector<std::string> cmd;
 
 void processJsonPacket(const char * packet)
 {   
@@ -74,11 +71,7 @@ void processJsonPacket(const char * packet)
 
     if ( !json.isValidJson () )
         {   
-            //printf("The time taken was %d microseconds\n", t.read_us());
-            //t.reset();
-            //t.start();
             serial_pc.printf("Invalid JSON");
-            serial_pc.printf(packet);
 
             return;
         }
@@ -86,7 +79,6 @@ void processJsonPacket(const char * packet)
         if ( json.type (0) != JSMN_OBJECT )
         {
             serial_pc.printf( "Invalid JSON.  ROOT element is not Object");
-            serial_pc.printf(packet);
             return;
             
         }
@@ -115,38 +107,18 @@ void processJsonPacket(const char * packet)
         else
         {
 
-			//serial_pc.printf("%s", cityValueIndex);
           if ( motorValueIndex1 > 0 || motorValueIndex2 > 0 || motorValueIndex3 > 0)
           {
-/*              const char * valueStart1  = json.tokenAddress (motorValueIndex1+1);
-              int          valueLength1 = json.tokenLength (motorValueIndex1+1);
-              strncpy (motorValue1, valueStart1, valueLength1 );
 
-              const char * valueStart2  = json.tokenAddress (motorValueIndex1+1);
-              int          valueLength2 = json.tokenLength (motorValueIndex1+1);
-              strncpy (motorValue2, valueStart2, valueLength2 );
-            
-              const char * valueStart3  = json.tokenAddress (motorValueIndex1+1);
-              int          valueLength3 = json.tokenLength (motorValueIndex1+1);
-              strncpy (motorValue3, valueStart3, valueLength3 );*/
-
-
+              // Get motor values and update them
               json.tokenIntegerValue(motorValueIndex1+1,mv1);
               json.tokenIntegerValue(motorValueIndex2+1,mv2); 
               json.tokenIntegerValue(motorValueIndex3+1,mv3);  
               m[1].setSpeedSetPoint(mv1);
               m[2].setSpeedSetPoint(mv2);
               m[3].setSpeedSetPoint(mv3);
+              cmd_timer.reset();
 
-
-
-      
-
-        
-              
-              //serial_pc.printf( "%d", mv1);
- //             serial_pc.printf( "%d", mv2);
- //             serial_pc.printf( "%d \n", mv3);
           }
         }
         
@@ -161,23 +133,15 @@ void processJsonPacket(const char * packet)
         else
         {
 
-			//serial_pc.printf("%s", cityValueIndex);
+
           if ( robotValueIndex1 > 0 || robotValueIndex2 > 0 || robotValueIndex3 > 0)
           {
-/*              const char * valueStart1  = json.tokenAddress (motorValueIndex1+1);
-              int          valueLength1 = json.tokenLength (motorValueIndex1+1);
-              strncpy (motorValue1, valueStart1, valueLength1 );
+              // Get robot value and update them 
 
-              const char * valueStart2  = json.tokenAddress (motorValueIndex1+1);
-              int          valueLength2 = json.tokenLength (motorValueIndex1+1);
-              strncpy (motorValue2, valueStart2, valueLength2 );
-            
-              const char * valueStart3  = json.tokenAddress (motorValueIndex1+1);
-              int          valueLength3 = json.tokenLength (motorValueIndex1+1);
-              strncpy (motorValue3, valueStart3, valueLength3 );*/
               json.tokenIntegerValue(robotValueIndex1+1,rv1);
               json.tokenIntegerValue(robotValueIndex2+1,rv2); 
-              json.tokenIntegerValue(robotValueIndex3+1,rv3);   
+              json.tokenIntegerValue(robotValueIndex3+1,rv3);
+
 
           }
         }
@@ -200,13 +164,6 @@ void processJsonPacket(const char * packet)
               json.tokenIntegerValue(ledArrayIndex+2+i,temp_led_value);
               px.Set(i, temp_led_value);
 
-
-
-
-
-            //serial_pc.printf("led value %d , %d index\n", temp_led_value, i);
-            
-
             }
           ws1.write(px.getBuf());
               
@@ -216,85 +173,6 @@ void processJsonPacket(const char * packet)
         }
      
      
-}
-// This method processes a received serial packet
-void processPacket(const std::string& packet)
-{
-  std::istringstream ss(packet);
-  std::string arg;
-  cmd.clear();
-
-  for (int i = 0; i <= MAX_CMD_ARGS; i++)
-  {
-    arg.clear();
-    std::getline(ss, arg, ':');
-    if (arg.length())
-    {
-      cmd.push_back(arg);
-      //serial_pc.printf("Got arg %s\r\n", arg.c_str());
-    }
-    else
-    {
-      break;
-    }
-  }
-
-  if (!cmd.size())
-  {
-    return;
-  }
-
-  // MS - Set motor speeds manually (linear speed on wheel m/s)
-  /* MS:motor1_speed:motor2_speed:motor3_speed */
-  if (cmd[0] == "MS")
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
-      m[i].setSpeedSetPoint(speed_setpoint);
-    }
-    cmd_timer.reset();
-  }
-
-  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
-  // y-left, theta-CCW rotation.
-  /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
-  else if (cmd[0] == "RS")
-  {
-    float lin_speed_x = std::atof(cmd[1].c_str());
-    float lin_speed_y = std::atof(cmd[2].c_str());
-    float angular_speed_z = std::atof(cmd[3].c_str());
-
-    float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
-
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
-                    m[i].getWheelPosR() * angular_speed_z;
-      if (abs(speed) < 1e-5)
-      {
-        m[i].stop();
-      }
-      else
-      {
-        m[i].setSpeedSetPoint(speed);
-      }
-    }
-    cmd_timer.reset();
-  }
-  else if (cmd[0] == "PID")  // Update PID parameters
-  {
-    float k_p = 0.0f;
-    float tau_i = 0.0f;
-    float tau_d = 0.0f;
-    // sscanf(ss.str().c_str(), "%f:%f:%f", &k_p, &tau_i, &tau_d);
-    // for (uint8_t i = 0; i < 3; i++)
-    //{
-    //  m[i].setPIDTunings(k_p, tau_i, tau_d);
-    //}
-  }
 }
 
 // Process an incoming serial byte
@@ -368,50 +246,15 @@ int main()
     t.reset();
 
 
-
-
-    
-/*    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      // MOTOR DEBUG
-        //serial_pc.printf("\r\n");
-	//serial_pc.printf("MOTOR %d: \r\n", i);
-//      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-//                       m[i].getSpeedSetPoint());
-//      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-//      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-//      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
-    }
-
-//    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
-   */ 
     if (packet_received_b) // packet was completeted with \r \n
     { 
-     
-     // std::string packet(serial_buf);
-      
-
-      
-      //char *cstr = new char[packet.length() + 1];
-      //strcpy(cstr, packet.c_str());
-      // do stuff
-     // serial_pc.printf(cstr);
-      //serial_pc.printf("suur vahe \n \n \n");
-      
-    
-      
       processJsonPacket(serial_buf);
-      
-      
-
 
       serial_buf[0] = '\0';
       serial_arrived = 0;
       
-      //delete [] cstr;
-      
+
       packet_received_b = false;
-      //serial_pc.printf(" %d microseconds\n", t.read_us());
       
     }
     
@@ -426,10 +269,6 @@ int main()
       reset_timer = true;
       
     }
-
-  //wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
-  //serial_pc.printf(" %d microseconds\n", t.read_us());
-
 
   }
 }
