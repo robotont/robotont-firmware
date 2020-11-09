@@ -40,7 +40,7 @@ void Odom::reset()
   odom_vel_.Clear();
 }
 
-void Odom::update(float vel_1, float vel_2, float vel_3)
+void Odom::update(int vel_1, int vel_2, int vel_3)
 {
   wheel_vel_(1,1) = vel_1;
   wheel_vel_(2,1) = vel_2;

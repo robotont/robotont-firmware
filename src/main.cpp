@@ -33,7 +33,7 @@ Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 // Timeout
-Timer cmd_timer, main_timer;
+Timer cmd_timer, main_timer, t;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
@@ -51,6 +51,8 @@ std::vector<std::string> cmd;
 
 PixelArray px(WS2812_BUF);
 WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
+int timer_reset = 0;
+
 
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
@@ -86,10 +88,12 @@ void processPacket(const std::string& packet)
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
+      serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
     }
     cmd_timer.reset();
+    timer_reset = 1;
+
   }
 
   // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
@@ -117,6 +121,7 @@ void processPacket(const std::string& packet)
       }
     }
     cmd_timer.reset();
+    
   }
   else if (cmd[0] == "PID")  // Update PID parameters
   {
@@ -143,6 +148,7 @@ void processPacket(const std::string& packet)
     }
     ws1.write(px.getBuf());
   }
+  timer_reset =5;
 }
 
 // Process an incoming serial byte
@@ -203,13 +209,15 @@ int main()
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
-
+  t.start();
+  main_timer.start();
   // MAIN LOOP
   while (true)
   {
     main_timer.reset();
-    main_timer.start();
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+    t.reset();
+    
+    /*for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       // MOTOR DEBUG
       // serial_pc.printf("\r\n");
@@ -225,18 +233,34 @@ int main()
 
     if (packet_received_b)  // packet was completeted with \r \n
     {
+      if (timer_reset == 0);
+      {
+        t.reset();
+        
+      }
+      
+
       std::string packet(serial_buf);
       serial_buf[0] = '\0';
       serial_arrived = 0;
       processPacket(packet);
       packet_received_b = false;
+      if (timer_reset == 5){
+        serial_pc.printf(" %d microseconds\n", t.read_us());
+        timer_reset=0;
+
+      }
     }
+    */
 
     // Update odometry
-    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+    
+   // odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+    serial_pc.printf("ODOM:%.3f:%.3f:%.3f:%.3f:%.3f:%.3f\r\n",1.0, 0.691, 0.620,
+                     0.619, 0.722,0.029);
+    serial_pc.printf(" %d microseconds\n", t.read_us());
     // Synchronize to given MAIN_DELTA_T
-    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+    //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+    
   }
 }

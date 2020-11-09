@@ -37,37 +37,37 @@ public:
    *
    * This function calculates the new robot position based on its wheel speeds.
    */
-  void update(float vel_1, float vel_2, float vel_3);
+  void update(int vel_1, int vel_2, int vel_3);
 
   /**
    * \todo FINISH DOCUMENTATION
    */
-  float getPosX() const
+  int getPosX() const
   {
     return odom_pos_(1, 1);
   };
 
-  float getPosY() const
+  int getPosY() const
   {
     return odom_pos_(2, 1);
   };
 
-  float getOriZ() const
+  int getOriZ() const
   {
     return odom_pos_(3, 1);
   };
 
-  float getLinVelX() const
+  int getLinVelX() const
   {
     return odom_vel_(1, 1);
   };
   
-  float getLinVelY() const
+  int getLinVelY() const
   {
     return odom_vel_(2, 1);
   };
 
-  float getAngVelZ() const
+  int getAngVelZ() const
   {
     return odom_vel_(3, 1);
   };
