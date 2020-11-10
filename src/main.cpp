@@ -300,6 +300,7 @@ void processPacket(const std::string& packet)
 // Process an incoming serial byte
 void pc_rx_callback()
 {
+  t.start();
   // Store bytes from serial in our buffer until packet
   // termination byte 'enter', '\n', '\r' etc has arrived
   while (serial_pc.readable())
@@ -318,6 +319,7 @@ void pc_rx_callback()
       {
         // signal that the packet is complete for processing
 	packet_received_b = true;
+  
       }
 
     }
@@ -349,24 +351,28 @@ void check_for_timeout()
 int main()
 {
   // Initialize serial connection
-  serial_pc.baud(256000);
+  serial_pc.baud(115200);
   serial_buf[0] = '\0';
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
-  t.start();
+ 
   main_timer.start();
 
   // MAIN LOOP
   while (true)
+    
+
   {
     
-    if (reset_timer) main_timer.reset();
-
-    t.reset();
-
+   /* if (reset_timer){
+      main_timer.reset();
+      reset_timer=false;
+    } 
+*/
+    
 
 
 
@@ -400,7 +406,7 @@ int main()
       
     
       
-      processJsonPacket(serial_buf);
+      //processJsonPacket(serial_buf);
       
       
 
@@ -411,22 +417,34 @@ int main()
       //delete [] cstr;
       
       packet_received_b = false;
-      //serial_pc.printf(" %d microseconds\n", t.read_us());
       
+      serial_pc.printf(" %d microseconds\n", t.read_us());
+      t.reset();
     }
     
-    // Update odometry
-    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
-                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+
     // Synchronize to given MAIN_DELTA_T
-    if (MAIN_DELTA_T-(MAIN_DELTA_T*0.4)*1000*1000-main_timer.read_us())
+    /*
+    if (main_timer.read_us() > (MAIN_DELTA_T-0.005)*1000*1000)
     {
+      
       wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
+      t.reset();
       reset_timer = true;
+          // Update odometry
+      odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+      
+      serial_pc.printf("update %d microseconds\n", t.read_us());
+      t.reset();
+      serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
+                      odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+      
+      serial_pc.printf(" printf %d microseconds\n", t.read_us());
+      
+
       
     }
-
+*/
   //wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
   //serial_pc.printf(" %d microseconds\n", t.read_us());
 
