@@ -88,7 +88,7 @@ void processPacket(const std::string& packet)
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
+      //serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
     }
     cmd_timer.reset();
@@ -147,8 +147,9 @@ void processPacket(const std::string& packet)
       led_index++;
     }
     ws1.write(px.getBuf());
+    timer_reset =5;
   }
-  timer_reset =5;
+  
 }
 
 // Process an incoming serial byte
@@ -217,7 +218,7 @@ int main()
     main_timer.reset();
     t.reset();
     
-    /*for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       // MOTOR DEBUG
       // serial_pc.printf("\r\n");
@@ -251,14 +252,14 @@ int main()
 
       }
     }
-    */
+    
 
     // Update odometry
     
-   // odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+   /* odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%.3f:%.3f:%.3f:%.3f:%.3f:%.3f\r\n",1.0, 0.691, 0.620,
                      0.619, 0.722,0.029);
-    serial_pc.printf(" %d microseconds\n", t.read_us());
+    serial_pc.printf(" %d microseconds\n", t.read_us());*/
     // Synchronize to given MAIN_DELTA_T
     //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
     
