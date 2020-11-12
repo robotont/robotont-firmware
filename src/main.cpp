@@ -6,6 +6,10 @@
 #include "WS2812.h"
 #include "PixelArray.h"
 
+
+
+
+
 // Common parameters for all motors
 #define ENC_CPR 64
 #define GEAR_RATIO 18.75
@@ -26,6 +30,12 @@
 //#include "motor_config_v0_6.h"
 #include "motor_config_v2_1.h"
 
+
+
+
+
+
+
 // Initialize motors
 Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 
@@ -41,7 +51,7 @@ RawSerial serial_pc(USBTX, USBRX);     // tx, rx
 char serial_buf[SERIAL_BUF_SIZE];      // Buffer for incoming serial data
 volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
-
+void DMATransferComplete(DMA_HandleTypeDef *hdma);
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
@@ -53,6 +63,25 @@ PixelArray px(WS2812_BUF);
 WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
 int timer_reset = 0;
 
+__DMA_HandleTypeDef hdma2_ch7;  // UARTTX1
+// Enable DMA IRQ for usart1, see handler below
+void setup_dma(void) {
+  NVIC_SetPriority(DMA2_Channel7_IRQn, 0);
+  NVIC_EnableIRQ(DMA2_Channel7_IRQn);
+
+  // DMA2, channel 7 setup for UARTTX1
+  hdma2_ch7.Instance = DMA1_Channel7;
+  hdma2_ch7.Init.Request = DMA_REQUEST_2;
+  hdma2_ch7.Init.Direction = DMA_MEMORY_TO_PERIPH;
+  hdma2_ch7.Init.PeriphInc = DMA_PINC_DISABLE;
+  hdma2_ch7.Init.MemInc = DMA_MINC_ENABLE;
+  hdma2_ch7.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+  hdma2_ch7.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+  hdma2_ch7.Init.Mode = DMA_NORMAL;
+  hdma2_ch7.Init.Priority = DMA_PRIORITY_LOW;
+
+  HAL_DMA_Init(&hdma2_ch7);
+}
 
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
@@ -201,6 +230,9 @@ void check_for_timeout()
 
 int main()
 {
+
+
+
   // Initialize serial connection
   serial_pc.baud(115200);
   serial_buf[0] = '\0';
@@ -211,11 +243,20 @@ int main()
   cmd_timer.start();
   t.start();
   main_timer.start();
-  // MAIN LOOP
+  setup_dma();
+
+  char msg[] = "Seee on minu suur sdnglsjdnglnadglndslgnldkasngldanglsfdnglaksnglksnglsdngsdlngsldnkgosdlgnlskndglsdnaglkdsna\r\n";
+  HAL_DMA_RegisterCallback(&hdma2_ch7, HAL_DMA_XFER_CPLT_CB_ID,&DMATransferComplete);
+
   while (true)
   {
     main_timer.reset();
     t.reset();
+    //serial_pc.Instance->CR3 |= USART_CR3_DMAT;
+    HAL_DMA_Start_IT(&hdma2_ch7, (uint32_t)msg, LL_USART_DMA_GetRegAddr(serial_pc,0x00000000U) , strlen(msg));
+    wait_us(100000);
+
+
     
     /*for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
@@ -256,11 +297,18 @@ int main()
     // Update odometry
     
    // odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%.3f:%.3f:%.3f:%.3f:%.3f:%.3f\r\n",1.0, 0.691, 0.620,
-                     0.619, 0.722,0.029);
-    serial_pc.printf(" %d microseconds\n", t.read_us());
+    //serial_pc.printf("ODOM:%.3f:%.3f:%.3f:%.3f:%.3f:%.3f\r\n",1.0, 0.691, 0.620,
+    //                 0.619, 0.722,0.029);
+    //serial_pc.printf(" %d microseconds\n", t.read_us());
     // Synchronize to given MAIN_DELTA_T
     //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
     
   }
+}
+void DMATransferComplete(DMA_HandleTypeDef *hdma) {
+
+  huart2 &= ~USART_CR3_DMAT;
+
+  // Toggle LD2
+  
 }
