@@ -5,9 +5,12 @@
 #include <vector>
 #include "WS2812.h"
 #include "PixelArray.h"
+#include "dma.h"
+#include "gpio.h"
 
 
-
+#include "usart.h"
+#include "main.h"
 
 
 // Common parameters for all motors
@@ -30,10 +33,17 @@
 //#include "motor_config_v0_6.h"
 #include "motor_config_v2_1.h"
 
+void SystemClock_Config(void);
+void MX_GPIO_Init(void);
+void MX_DMA_Init(void);
+void MX_USART2_UART_Init(void);
+/* USER CODE BEGIN PFP */
+void DMATransferComplete(DMA_HandleTypeDef *hdma);
 
+uint8_t dma_buffer[2000];
 
-
-
+UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 
 // Initialize motors
@@ -47,11 +57,11 @@ Timer cmd_timer, main_timer, t;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
-RawSerial serial_pc(USBTX, USBRX);     // tx, rx
+
 char serial_buf[SERIAL_BUF_SIZE];      // Buffer for incoming serial data
 volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
-void DMATransferComplete(DMA_HandleTypeDef *hdma);
+
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
@@ -63,25 +73,8 @@ PixelArray px(WS2812_BUF);
 WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
 int timer_reset = 0;
 
-__DMA_HandleTypeDef hdma2_ch7;  // UARTTX1
+
 // Enable DMA IRQ for usart1, see handler below
-void setup_dma(void) {
-  NVIC_SetPriority(DMA2_Channel7_IRQn, 0);
-  NVIC_EnableIRQ(DMA2_Channel7_IRQn);
-
-  // DMA2, channel 7 setup for UARTTX1
-  hdma2_ch7.Instance = DMA1_Channel7;
-  hdma2_ch7.Init.Request = DMA_REQUEST_2;
-  hdma2_ch7.Init.Direction = DMA_MEMORY_TO_PERIPH;
-  hdma2_ch7.Init.PeriphInc = DMA_PINC_DISABLE;
-  hdma2_ch7.Init.MemInc = DMA_MINC_ENABLE;
-  hdma2_ch7.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-  hdma2_ch7.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-  hdma2_ch7.Init.Mode = DMA_NORMAL;
-  hdma2_ch7.Init.Priority = DMA_PRIORITY_LOW;
-
-  HAL_DMA_Init(&hdma2_ch7);
-}
 
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
@@ -117,7 +110,7 @@ void processPacket(const std::string& packet)
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
+      //serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
     }
     cmd_timer.reset();
@@ -181,6 +174,7 @@ void processPacket(const std::string& packet)
 }
 
 // Process an incoming serial byte
+/*
 void pc_rx_callback()
 {
   // Store bytes from serial in our buffer until packet
@@ -216,7 +210,7 @@ void pc_rx_callback()
     }
   }
 }
-
+*/
 void check_for_timeout()
 {
   if ((cmd_timer.read_ms()) > CMD_TIMEOUT_MS)
@@ -234,27 +228,45 @@ int main()
 
 
   // Initialize serial connection
+  /*
   serial_pc.baud(115200);
   serial_buf[0] = '\0';
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
+  */
+   char msg[] =  "Long boat holystone pirate log driver hulk nipperkin cog. " \
+                "Buccaneer me lass poop deck spyglass maroon jib spike. Come" \
+                "about maroon skysail Corsair bilge water Arr long clothes " \
+                "transom.\r\n";
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
   t.start();
   main_timer.start();
-  setup_dma();
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_USART2_UART_Init();
+  HAL_DMA_RegisterCallback(&hdma_usart2_tx, HAL_DMA_XFER_CPLT_CB_ID,
+                          &DMATransferComplete);
 
-  char msg[] = "Seee on minu suur sdnglsjdnglnadglndslgnldkasngldanglsfdnglaksnglksnglsdngsdlngsldnkgosdlgnlskndglsdnaglkdsna\r\n";
-  HAL_DMA_RegisterCallback(&hdma2_ch7, HAL_DMA_XFER_CPLT_CB_ID,&DMATransferComplete);
 
   while (true)
   {
     main_timer.reset();
     t.reset();
-    //serial_pc.Instance->CR3 |= USART_CR3_DMAT;
-    HAL_DMA_Start_IT(&hdma2_ch7, (uint32_t)msg, LL_USART_DMA_GetRegAddr(serial_pc,0x00000000U) , strlen(msg));
-    wait_us(100000);
+
+
+    huart2.Instance->CR3 |= USART_CR3_DMAT;
+ 
+
+    HAL_DMA_Start_IT(&hdma_usart2_tx, (uint32_t)msg,
+                (uint32_t)&huart2.Instance->TDR, strlen(msg));
+
+    wait_us(1000000);
+
+
+
+
 
 
     
@@ -307,8 +319,9 @@ int main()
 }
 void DMATransferComplete(DMA_HandleTypeDef *hdma) {
 
-  huart2 &= ~USART_CR3_DMAT;
+  // Disable UART DMA mode
+  huart2.Instance->CR3 &= ~USART_CR3_DMAT;
 
   // Toggle LD2
-  
+  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 }
