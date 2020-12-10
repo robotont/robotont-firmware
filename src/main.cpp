@@ -1,242 +1,145 @@
+/* mbed Microcontroller Library
+ * Copyright (c) 2018 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "mbed.h"
-#include "motor.h"
-#include "odom.h"
-#include <sstream>
-#include <vector>
-#include "WS2812.h"
-#include "PixelArray.h"
+#include "stats_report.h"
 
-// Common parameters for all motors
-#define ENC_CPR 64
-#define GEAR_RATIO 18.75
-#define WHEEL_RADIUS 0.035
-#define WHEEL_POS_R 0.145
-#define PID_KP 0.8
-#define PID_TI 0.05
-#define PID_TD 0.0
-#define PID_DELTA_T 0.01
-#define MAIN_DELTA_T 0.02
+/*
+ * main.cpp
+ *
+ *  Created on: 2019/04/03
+ *      Author: aruaru
+ */
 
-#define MAX_CMD_ARGS 100
-#define SERIAL_BUF_SIZE 2048
-#define MOTOR_COUNT 3
-#define CMD_TIMEOUT_MS 1000  // If velocity command is not received within this period all motors are stopped.
 
-// Include motor configurations
-//#include "motor_config_v0_6.h"
-#include "motor_config_v2_1.h"
+#include "application.h"
 
-// Initialize motors
-Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
+#include "usart.h"
+#include "dma.h"
+#include "mx.h"
 
-// Initialize odometry
-Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
-
-// Timeout
-Timer cmd_timer, main_timer;
-Ticker cmd_timeout_checker;
-
-// Variables for serial connection
-RawSerial serial_pc(USBTX, USBRX);     // tx, rx
-char serial_buf[SERIAL_BUF_SIZE];      // Buffer for incoming serial data
-volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
-volatile bool packet_received_b = false;
-
-// For parsing command with arguments received over serial
-std::vector<std::string> cmd;
-
-// LED STRIP
-// Set the number of pixels of the strip
-#define WS2812_BUF 60
-
-PixelArray px(WS2812_BUF);
-WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
-
-// This method processes a received serial packet
-void processPacket(const std::string& packet)
-{
-  std::istringstream ss(packet);
-  std::string arg;
-  cmd.clear();
-
-  for (int i = 0; i <= MAX_CMD_ARGS; i++)
-  {
-    arg.clear();
-    std::getline(ss, arg, ':');
-    if (arg.length())
+EventQueue* hqueue;
+DigitalOut* hled;
+Timer utime;
+int now;//1ms毎に更新
+#if defined ( __GNUC__ )
+int printfunc(const char *format, ...){
+    char* b;
+    const size_t size=300;
+    int len;
+    va_list arg;
+    b = (char *)malloc(sizeof(char)*size);
+    va_start(arg, format);
+    len=vsnprintf( b , size , format, arg );
+    int status;
+    int retry;
+    while(1)
     {
-      cmd.push_back(arg);
-      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
+        status = printUart( b , len );
+        if(status == HAL_OK)break;
+        wait_ms(10);
+        retry++;
+        if(retry>10){
+            len=0;
+            break;
+        }
     }
-    else
-    {
-      break;
-    }
-  }
-
-  if (!cmd.size())
-  {
-    return;
-  }
-
-  // MS - Set motor speeds manually (linear speed on wheel m/s)
-  /* MS:motor1_speed:motor2_speed:motor3_speed */
-  if (cmd[0] == "MS")
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
-      m[i].setSpeedSetPoint(speed_setpoint);
-    }
-    cmd_timer.reset();
-  }
-
-  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
-  // y-left, theta-CCW rotation.
-  /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
-  else if (cmd[0] == "RS")
-  {
-    float lin_speed_x = std::atof(cmd[1].c_str());
-    float lin_speed_y = std::atof(cmd[2].c_str());
-    float angular_speed_z = std::atof(cmd[3].c_str());
-
-    float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
-
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) + m[i].getWheelPosR() * angular_speed_z;
-      if (abs(speed) < 1e-5)
-      {
-        m[i].stop();
-      }
-      else
-      {
-        m[i].setSpeedSetPoint(speed);
-      }
-    }
-    cmd_timer.reset();
-  }
-  else if (cmd[0] == "PID")  // Update PID parameters
-  {
-    float k_p = 0.0f;
-    float tau_i = 0.0f;
-    float tau_d = 0.0f;
-    // sscanf(ss.str().c_str(), "%f:%f:%f", &k_p, &tau_i, &tau_d);
-    // for (uint8_t i = 0; i < 3; i++)
-    //{
-    //  m[i].setPIDTunings(k_p, tau_i, tau_d);
-    //}
-  }
-  else if (cmd[0] == "LED")  // Update LED states for a segment.
-  {
-    ws1.useII(WS2812::GLOBAL);
-    ws1.setII(0xFF);                            // Set intensity to use the full range
-    uint8_t led_index = std::strtoul(cmd[1].c_str(), NULL, 10);  // led index. Value 0 = First led.
-    // Color represented by 3 bytes: 0xFF0000 - red, 0x00FF00 - green, 0x0000FF blue (color).
-    for (uint8_t i = 2; i < cmd.size(); i++)
-    {
-      uint32_t value = std::strtoul(cmd[i].c_str(), NULL, 10);
-      px.Set(led_index, value);
-      led_index++;
-    }
-    ws1.write(px.getBuf());
-  }
+    va_end(arg);
+    free(b);
+    return len;
 }
-
-// Process an incoming serial byte
-void pc_rx_callback()
-{
-  // Store bytes from serial in our buffer until packet
-  // termination byte 'enter', '\n', '\r' etc has arrived
-  while (serial_pc.readable())
-  {
-    char c = serial_pc.getc();
-    serial_buf[serial_arrived++] = c;
-    serial_buf[serial_arrived] = '\0';
-    if (serial_arrived >= SERIAL_BUF_SIZE - 1)
+#else
+int printfunc(const char *format, ...){
+    char* b;
+    int len;
+    va_list arg;
+    va_start(arg, format);
+    len=vasprintf( &b , format, arg );
+    int status;
+    int retry;
+    while(1)
     {
-      serial_arrived = 0;
+        status = printUart( b , len );
+        if(status == HAL_OK)break;
+        wait_ms(10);
+        retry++;
+        if(retry>100){
+            len=0;
+            break;
+        }
     }
-
-    if (c == '\n' || c == '\r')  // command terminated
-    {
-      if (serial_arrived > 3)
-      {
-        // signal that the packet is complete for processing
-        packet_received_b = true;
-      }
-    }
-
-    // if escape is received, clear the buffer and stop the motors for now
-    if (c == 27)  // esc
-    {
-      for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-      {
-        m[i].stop();
-      }
-      serial_buf[0] = '\0';
-      serial_arrived = 0;
-    }
-  }
+    va_end(arg);
+    free(b);
+    return len;
 }
-
-void check_for_timeout()
-{
-  if ((cmd_timer.read_ms()) > CMD_TIMEOUT_MS)
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      m[i].stop();
+#endif
+void interval1ms(void){
+    char c;
+    now=utime.read_ms();
+    if(1){
+        if( getChar(&c) ){
+            logMessage("utime:%d,cndtr:%d,pos:%d,%02x,%c\n\r",now,readCndtr(),readPos(),c,c);
+        }
     }
-  }
 }
+void interval1000ms(void){
+    *hled = !*hled;
+}
+void systemInfo(){
+    mbed_stats_sys_t stats;
+    mbed_stats_sys_get(&stats);
 
-int main()
-{
-  // Initialize serial connection
-  serial_pc.baud(115200);
-  serial_buf[0] = '\0';
-  serial_pc.attach(&pc_rx_callback);
-  serial_pc.printf("**** MAIN ****\r\n");
+    /* CPUID Register information
+    [31:24]Implementer      0x41 = ARM
+    [23:20]Variant          Major revision 0x0  =  Revision 0
+    [19:16]Architecture     0xC  = Baseline Architecture
+                            0xF  = Constant (Mainline Architecture?)
+    [15:4]PartNO            0xC20 =  Cortex-M0
+                            0xC60 = Cortex-M0+
+                            0xC23 = Cortex-M3
+                            0xC24 = Cortex-M4
+                            0xC27 = Cortex-M7
+                            0xD20 = Cortex-M23
+                            0xD21 = Cortex-M33
+    [3:0]Revision           Minor revision: 0x1 = Patch 1.
+    */
 
-  cmd_timeout_checker.attach(check_for_timeout, 0.1);
-  cmd_timer.start();
+    /* Compiler versions:
+       ARM: PVVbbbb (P = Major; VV = Minor; bbbb = build number)
+       GCC: VVRRPP  (VV = Version; RR = Revision; PP = Patch)
+       IAR: VRRRPPP (V = Version; RRR = Revision; PPP = Patch)
+    */
+    logMessage("\n\r[%s] %s started.\n\r",__FUNCTION__,__FILE__            );
+    logMessage("[%s]\tBUILD:%sT%s,\n\r",__FUNCTION__,__DATE__, __TIME__          );
+    logMessage("[%s]\tmbed-OS:%d.%d.%d\n\r",__FUNCTION__,
+            MBED_MAJOR_VERSION, MBED_MINOR_VERSION,MBED_PATCH_VERSION
+            );
+    logMessage("[%s]\tMbed OS Version: %ld \n\r",__FUNCTION__, stats.os_version);
+    logMessage("[%s]\tCPU ID: 0x%x \n\r",__FUNCTION__,(unsigned int) stats.cpu_id);
+    logMessage("[%s]\tCompiler ID: %d \n\r",__FUNCTION__, stats.compiler_id);
+    logMessage("[%s]\tCompiler Version: %d \n\r",__FUNCTION__, (unsigned int)stats.compiler_version);
+    logMessage("[%s]\tSTM32HAL_driver Version: 0x%08x \n\r",__FUNCTION__, (unsigned int)HAL_GetHalVersion());
+}
+int main(){
+    utime.start();
+    hled = new DigitalOut(LED1);
+    hqueue = new EventQueue(32*EVENTS_EVENT_SIZE);
 
-  // MAIN LOOP
-  while (true)
-  {
-    main_timer.reset();
-    main_timer.start();
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      // MOTOR DEBUG
-      // serial_pc.printf("\r\n");
-      //      serial_pc.printf("MOTOR %d: \r\n", i);
-      //      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-      //                       m[i].getSpeedSetPoint());
-      //      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-      //      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-      //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
+    MX_DMA_Init();
+    MX_USART2_UART_Init();
+    HAL_StatusTypeDef status;
+
+    systemInfo();
+
+    status = startRxUart();
+    if( status != HAL_OK ){
+        printf("error status: %d\n\r",status);
+    }else{
+        logMessage("uartRXstart status: %d\n\r", status );
     }
-
-    //    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
-
-    if (packet_received_b)  // packet was completeted with \r \n
-    {
-      std::string packet(serial_buf);
-      serial_buf[0] = '\0';
-      serial_arrived = 0;
-      processPacket(packet);
-      packet_received_b = false;
-    }
-
-    // Update odometry
-    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    // Synchronize to given MAIN_DELTA_T
-    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
-  }
+    hqueue->call_every(1000,interval1000ms);
+    hqueue->call_every(1,interval1ms);
+    hqueue->dispatch_forever();
 }
