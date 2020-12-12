@@ -58,6 +58,7 @@ void processPacket(const std::string& packet)
   std::istringstream ss(packet);
   std::string arg;
   cmd.clear();
+  uint8_t sum = 0;
 
   for (int i = 0; i <= MAX_CMD_ARGS; i++)
   {
@@ -88,6 +89,8 @@ void processPacket(const std::string& packet)
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
       // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
+	  sum += speed_setpoint;
+	  
     }
     cmd_timer.reset();
   }
@@ -140,6 +143,7 @@ void processPacket(const std::string& packet)
       uint32_t value = std::strtoul(cmd[i].c_str(), NULL, 10);
       px.Set(led_index, value);
       led_index++;
+	  sum += value;
     }
     ws1.write(px.getBuf());
   }
