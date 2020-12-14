@@ -41,7 +41,7 @@ RawSerial serial_pc(USBTX, USBRX);     // tx, rx
 char serial_buf[SERIAL_BUF_SIZE];      // Buffer for incoming serial data
 volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
-uint32_t sum = 0;
+uint32_t summ = 0;
 uint8_t lugejams =0;
 uint8_t lugejaled =0;
 // For parsing command with arguments received over serial
@@ -91,7 +91,7 @@ void processPacket(const std::string& packet)
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
       // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
-	    sum += speed_setpoint;
+	    summ += speed_setpoint;
 	  
     }
     cmd_timer.reset();
@@ -145,7 +145,7 @@ void processPacket(const std::string& packet)
       uint32_t value = std::strtoul(cmd[i].c_str(), NULL, 10);
       px.Set(led_index, value);
       led_index++;
-	    sum += value;
+	    summ += value;
     }
     ws1.write(px.getBuf());
   }
@@ -215,8 +215,7 @@ int main()
   // MAIN LOOP
   while (true)
   {
-    sum =0;
-    main_timer.reset();
+    //main_timer.reset();
     
 
 
@@ -227,16 +226,16 @@ int main()
       serial_arrived = 0;
       processPacket(packet);
       
-      if(sum == 200){
+      if(summ == 200)
+      {
         lugejams++;
-
       }
-      if (sum == 767057416)
+      if (summ == 767057416)
       {
         lugejaled++;
       }
-      //serial_pc.printf("%d\r\n",sum);
-      sum =0;
+      serial_pc.printf("%u\r\n",summ);
+      summ = 0;
       
       
 
@@ -245,11 +244,13 @@ int main()
 
 
     // Update odometry
+    /*
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
     // Synchronize to given MAIN_DELTA_T
     wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+    */
 
     if (minutimer.read() > 20)
     {
