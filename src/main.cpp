@@ -33,7 +33,7 @@ Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 // Timeout
-Timer cmd_timer, main_timer;
+Timer cmd_timer, main_timer,minutimer;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
@@ -41,7 +41,9 @@ RawSerial serial_pc(USBTX, USBRX);     // tx, rx
 char serial_buf[SERIAL_BUF_SIZE];      // Buffer for incoming serial data
 volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
-
+uint32_t sum = 0;
+uint8_t lugejams =0;
+uint8_t lugejaled =0;
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
@@ -58,7 +60,7 @@ void processPacket(const std::string& packet)
   std::istringstream ss(packet);
   std::string arg;
   cmd.clear();
-  uint8_t sum = 0;
+  
 
   for (int i = 0; i <= MAX_CMD_ARGS; i++)
   {
@@ -89,7 +91,7 @@ void processPacket(const std::string& packet)
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
       // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
-	  sum += speed_setpoint;
+	    sum += speed_setpoint;
 	  
     }
     cmd_timer.reset();
@@ -143,7 +145,7 @@ void processPacket(const std::string& packet)
       uint32_t value = std::strtoul(cmd[i].c_str(), NULL, 10);
       px.Set(led_index, value);
       led_index++;
-	  sum += value;
+	    sum += value;
     }
     ws1.write(px.getBuf());
   }
@@ -207,25 +209,16 @@ int main()
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
+  minutimer.start();
+  
 
   // MAIN LOOP
   while (true)
   {
+    sum =0;
     main_timer.reset();
-    main_timer.start();
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      // MOTOR DEBUG
-      // serial_pc.printf("\r\n");
-      //      serial_pc.printf("MOTOR %d: \r\n", i);
-      //      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-      //                       m[i].getSpeedSetPoint());
-      //      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-      //      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-      //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
-    }
+    
 
-    //    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
 
     if (packet_received_b)  // packet was completeted with \r \n
     {
@@ -233,8 +226,23 @@ int main()
       serial_buf[0] = '\0';
       serial_arrived = 0;
       processPacket(packet);
+      
+      if(sum == 200){
+        lugejams++;
+
+      }
+      if (sum == 767057416)
+      {
+        lugejaled++;
+      }
+      //serial_pc.printf("%d\r\n",sum);
+      sum =0;
+      
+      
+
       packet_received_b = false;
     }
+
 
     // Update odometry
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
@@ -242,5 +250,18 @@ int main()
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
     // Synchronize to given MAIN_DELTA_T
     wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+
+    if (minutimer.read() > 20)
+    {
+      while (true)
+      {
+        serial_pc.printf("MS %hu\r\n",lugejams);
+        serial_pc.printf("LED %hu\r\n",lugejaled);
+      }
+    
+   
+    }
+  
   }
+
 }
