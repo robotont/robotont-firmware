@@ -25,6 +25,7 @@
 
 // DMA stuff
 #define USART_TX_Pin GPIO_PIN_2
+#define USART_RX_Pin GPIO_PIN_3
 #define USART_TX_GPIO_Port GPIOA
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
@@ -33,10 +34,12 @@ DigitalOut myled(LED2);
 uint16_t loendur=0;
 volatile uint8_t toggle = 0;
 char serial_buf[1000];
+char txbuffer[66];
+bool odom_print = false;
 // Include motor configurations
 //#include "motor_config_v0_6.h"
 #include "motor_config_v2_1.h"
-uint8_t	rx_byte;
+
 
 // Initialize motors
 Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
@@ -45,8 +48,8 @@ Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 // Timeout
-Timer cmd_timer, main_timer;
-Ticker cmd_timeout_checker;
+Timer cmd_timer, minutimer,main_timer;
+Ticker cmd_timeout_checker, odom_ticker;
 
 // Variables for serial connection
 
@@ -54,6 +57,9 @@ Ticker cmd_timeout_checker;
 volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
 uint8_t b[1];
+uint32_t sum = 0;
+uint8_t lugejams =0;
+uint8_t lugejaled =0;
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
@@ -69,8 +75,40 @@ extern "C"  void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   
   
-   loendur +=  10;
-   HAL_UART_Receive_IT(&huart2, b, 1);
+   
+  HAL_UART_Receive_IT(&huart2, b, 1);
+
+  char c = (char) b[0];
+  
+  serial_buf[serial_arrived++] = c;
+  serial_buf[serial_arrived] = '\0';
+  if (serial_arrived >= SERIAL_BUF_SIZE - 1)
+  {
+    serial_arrived = 0;
+  }
+
+  if (c == '\n' || c == '\r')  // command terminated
+  {
+    if (serial_arrived > 3)
+    {
+      // signal that the packet is complete for processing
+      packet_received_b = true;
+    }
+  }
+
+  // if escape is received, clear the buffer and stop the motors for now
+  if (c == 27)  // esc
+  {
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+    {
+      m[i].stop();
+    }
+    serial_buf[0] = '\0';
+    serial_arrived = 0;
+  }
+   
+
+
 
 }
 
@@ -109,16 +147,12 @@ extern "C" void DMA1_Channel7_IRQHandler(void)
   
   HAL_DMA_IRQHandler(&hdma_usart2_tx);
   
-  static int8_t endflag = 0;
-  if(endflag != 0){//2回目のコール
-      huart2.gState=HAL_UART_STATE_READY;
-      endflag = 0;
-  }else{
-      endflag++;
-  }
+
 
 
 }
+
+
 
 
 
@@ -185,7 +219,7 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     PA2     ------> USART2_TX
     PA3     ------> USART2_RX 
     */
-    GPIO_InitStruct.Pin = USART_TX_Pin;
+    GPIO_InitStruct.Pin = USART_TX_Pin|USART_RX_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -259,57 +293,20 @@ extern "C" void USART2_IRQHandler(void)
 
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
-  loendur+=10;
-  myled = !myled ;
-  if ((USART2->ISR & USART_ISR_RXNE) == USART_ISR_RXNE)
-	{
-		// RXNE flags automatically clears when reading RDR.
+  
+  
 
-		// Store incoming byte
-		rx_byte = USART2->RDR;
-	
-	}
   /* USER CODE BEGIN USART2_IRQn 1 */
 
   /* USER CODE END USART2_IRQn 1 */
 
   // Store bytes from serial in our buffer until packet
   // termination byte 'enter', '\n', '\r' etc has arrived
-  /*
   
-  myled = 0;
   
-  HAL_UART_Receive_IT(&huart2, &b, 1); 
-  char c = (char) b[0];
-  
-  serial_buf[serial_arrived++] = c;
-  serial_buf[serial_arrived] = '\0';
-  if (serial_arrived >= SERIAL_BUF_SIZE - 1)
-  {
-    serial_arrived = 0;
-  }
 
-  if (c == '\n' || c == '\r')  // command terminated
-  {
-    if (serial_arrived > 3)
-    {
-      // signal that the packet is complete for processing
-      packet_received_b = true;
-    }
-  }
-
-  // if escape is received, clear the buffer and stop the motors for now
-  if (c == 27)  // esc
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      m[i].stop();
-    }
-    serial_buf[0] = '\0';
-    serial_arrived = 0;
-  }
   
-  */
+  
 }
 
 
@@ -350,6 +347,7 @@ void processPacket(const std::string& packet)
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
       // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
+      sum += speed_setpoint;
     }
     cmd_timer.reset();
   }
@@ -402,6 +400,7 @@ void processPacket(const std::string& packet)
       uint32_t value = std::strtoul(cmd[i].c_str(), NULL, 10);
       px.Set(led_index, value);
       led_index++;
+      sum += value;
     }
     ws1.write(px.getBuf());
   }
@@ -424,6 +423,11 @@ void check_for_timeout()
   }
 }
 
+void print_odom_dma(){
+  odom_print = true;
+
+}
+
 int main()
 {
   // Initialize serial connection
@@ -434,88 +438,95 @@ int main()
   serial_pc.printf("**** MAIN ****\r\n");
 */
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
+
+  odom_ticker.attach(print_odom_dma, 0.1);
   cmd_timer.start();
+
   MX_DMA_Init();
   MX_USART2_UART_Init();
-  HAL_StatusTypeDef status;
-  int retry;
+
   
   myled = 1;
-  char txbuffer[100];
-  static char txbuffer2[]="tuli minigi jama \n\r";
+  char lugeja[30];
+
+
+
+
   // MAIN LOOP
   HAL_UART_Receive_IT(&huart2, b, 1);
+  main_timer.start();
+  minutimer.start();
   while (true)
   {
+    main_timer.reset();
+    wait_us(100);
+    sum =0;
+    
+    
+
+    
+    
+   
+    
 
 
-    HAL_StatusTypeDef status=HAL_ERROR;
-    if(hdma_usart2_tx.Instance->CNDTR!=0){
-        return HAL_BUSY;
-    }
-    snprintf(txbuffer, sizeof(txbuffer), "S: %d,%hu \n", loendur,rx_byte);
-    status = HAL_UART_Transmit_DMA(&huart2, (uint8_t*)txbuffer, strlen(txbuffer));
-
-    wait_us(1000000);
     if (packet_received_b)  // packet was completeted with \r \n
     {
-      HAL_UART_Transmit_DMA(&huart2, (uint8_t*)txbuffer2, strlen(txbuffer2));
+      
+     
+      
+      
       std::string packet(serial_buf);
       serial_buf[0] = '\0';
       serial_arrived = 0;
-      //processPacket(packet);
       
+      processPacket(packet);
+      if(sum == 200){
+        lugejams++;
+        myled = !myled;
+
+      }
+      if (sum == 767057416)
+      {
+        lugejaled++;
+      }
+
+
       packet_received_b = false;
+
+      
     }
+   
+      odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+      snprintf(txbuffer, sizeof(txbuffer), "ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
+                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+      if (hdma_usart2_tx.Instance->CNDTR==0)
+      {
+        HAL_UART_Transmit_DMA(&huart2, (uint8_t*)txbuffer, strlen(txbuffer));
+      }
+      
+    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+    if (minutimer.read() > 20)
+    {
+      snprintf(lugeja,sizeof(lugeja),"Lugejams %hu ja lugejaled %hu \n",lugejams,lugejaled);
+      while (true)
+      {
+        if (hdma_usart2_tx.Instance->CNDTR==0)
+        {
+          HAL_UART_Transmit_DMA(&huart2,(uint8_t*)lugeja,sizeof(lugeja));
+        }
+        
+        
+      }
+
+
+    }
+
+
+
+    
+    
       
 
-    
-
-
-    /*
-    main_timer.reset();
-    main_timer.start();
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      // MOTOR DEBUG
-      // serial_pc.printf("\r\n");
-      //      serial_pc.printf("MOTOR %d: \r\n", i);
-      //      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-      //                       m[i].getSpeedSetPoint());
-      //      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-      //      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-      //      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
-    }
-
-    //    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
-
-
-*/ 
-/*
-    s6num = printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-                     */
-                    /*
-    while(1)
-    { 
-        status = printUart(  msg , strlen(msg) );
-        if(status == HAL_OK)break;
-        wait_us(10000);
-        retry++;
-        if(retry>10){
-            
-            break;
-        }
-    }
-    retry = 0;
-
-    // Synchronize to given MAIN_DELTA_T
-    */
-    
-
-    //HAL_UART_Transmit_DMA(&huart2,  msg, strlen(msg));
-
-    //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
-    
-    }
+  }
 }
