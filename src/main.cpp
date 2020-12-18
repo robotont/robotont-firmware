@@ -57,7 +57,11 @@ WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
 {
-  std::istringstream ss(packet);
+
+  // Trim all potential newline symbols from the beginning
+  const auto strBegin = packet.find_first_not_of("\r\n");
+
+  std::istringstream ss(packet.substr(strBegin));
   std::string arg;
   cmd.clear();
   
