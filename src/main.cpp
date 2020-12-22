@@ -33,7 +33,7 @@ Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 // Timeout
-Timer cmd_timer, main_timer,minutimer;
+Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
@@ -42,8 +42,8 @@ char serial_buf[SERIAL_BUF_SIZE];      // Buffer for incoming serial data
 volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
 uint32_t summ = 0;
-uint8_t lugejams =0;
-uint8_t lugejaled =0;
+uint16_t lugejams =0;
+uint16_t lugejaled =0;
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
@@ -53,7 +53,8 @@ std::vector<std::string> cmd;
 
 PixelArray px(WS2812_BUF);
 WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
-
+AnalogIn   ain(A5);
+DigitalOut led(LED1);
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
 {
@@ -213,7 +214,7 @@ int main()
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
-  minutimer.start();
+
   
 
   // MAIN LOOP
@@ -238,34 +239,38 @@ int main()
       {
         lugejaled++;
       }
-      serial_pc.printf("%u\r\n",summ);
+      //serial_pc.printf("%u\r\n",summ);
       summ = 0;
       
       
 
       packet_received_b = false;
     }
+    if(ain > 0.3f) {
+            wait_us(1000);
+            led = 1;
+            while (ain > 0.3f)
+            {
+              serial_pc.printf("MS %d, LED %d\r\n",lugejams,lugejaled);
+            }
+            serial_pc.printf("Lugejad reset\r\n");
+            lugejams = 0;
+            lugejaled = 0;
+        }
+    else
+    {
+      led =0;
+    }
+    
 
 
     // Update odometry
-    /*
-    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    // Synchronize to given MAIN_DELTA_T
-    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
-    */
-
-    if (minutimer.read() > 20)
-    {
-      while (true)
-      {
-        serial_pc.printf("MS %hu\r\n",lugejams);
-        serial_pc.printf("LED %hu\r\n",lugejaled);
-      }
     
-   
-    }
+    //odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+    //serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
+      //               odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+    // Synchronize to given MAIN_DELTA_T
+    //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
   
   }
 
