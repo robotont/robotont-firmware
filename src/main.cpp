@@ -30,6 +30,8 @@
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
+SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_tx;
 DigitalOut myled(LED2);
 uint16_t loendur=0;
 volatile uint8_t toggle = 0;
@@ -123,6 +125,9 @@ extern "C"  void MX_DMA_Init(void)
   HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
   /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
+  /* DMA1_Channel4_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
   /* DMA1_Channel6_IRQn interrupt configuration */
@@ -196,6 +201,23 @@ extern "C" void MX_USART2_UART_Init(void)
   {
     Error_Handler();
   }
+  	/* SPI1 parameter configuration*/
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi1.Init.CRCPolynomial = 7;
+	if (HAL_SPI_Init(&hspi1) != HAL_OK)
+	{
+		Error_Handler();
+	}
   HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(USART2_IRQn);
 
@@ -456,13 +478,14 @@ int main()
   HAL_UART_Receive_IT(&huart2, b, 1);
   main_timer.start();
   minutimer.start();
+  uint8_t bit_data[5] = {0x00,0x88,0x88,0x88,0x88};
   while (true)
   {
     main_timer.reset();
     wait_us(100);
     sum =0;
     
-    
+    HAL_SPI_Transmit_DMA(&hspi1, bit_data, sizeof(bit_data));
 
     
     
