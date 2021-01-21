@@ -38,6 +38,7 @@ Ticker cmd_timeout_checker;
 
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);     // tx, rx
+SPI spi(D11, D12, D13); // mosi, miso, sclk
 char serial_buf[SERIAL_BUF_SIZE];      // Buffer for incoming serial data
 volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
@@ -214,13 +215,40 @@ int main()
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
-
   
 
   // MAIN LOOP
   while (true)
   {
     //main_timer.reset();
+
+    spi.write(0x0);
+    for (size_t i = 0; i < 5; i++)
+    {
+      /* code */
+    
+    
+    for (size_t i = 0; i < 4; i++)
+    {
+      spi.write(0x88);
+    }
+    for (size_t i = 0; i < 4; i++)
+    {
+      spi.write(0x88);
+    }
+     for (size_t i = 0; i < 4; i++)
+    {
+      spi.write(0x88);
+    }
+    }
+    wait_us(50);
+    
+    
+
+    
+
+    
+ 
     
 
 
