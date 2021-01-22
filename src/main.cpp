@@ -32,7 +32,7 @@ DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
-DigitalOut myled(LED2);
+
 uint16_t loendur=0;
 volatile uint8_t toggle = 0;
 char serial_buf[1000];
@@ -48,7 +48,8 @@ Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
 
 // Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
-
+AnalogIn   ain(A5);
+DigitalOut led(LED1);
 // Timeout
 Timer cmd_timer, minutimer,main_timer;
 Ticker cmd_timeout_checker, odom_ticker;
@@ -60,8 +61,8 @@ volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
 volatile bool packet_received_b = false;
 uint8_t b[1];
 uint32_t sum = 0;
-uint8_t lugejams =0;
-uint8_t lugejaled =0;
+uint16_t lugejams =0;
+uint16_t lugejaled =0;
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
@@ -336,7 +337,10 @@ extern "C" void USART2_IRQHandler(void)
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
 {
-  std::istringstream ss(packet);
+    // Trim all potential newline symbols from the beginning
+  const auto strBegin = packet.find_first_not_of("\r\n");
+
+  std::istringstream ss(packet.substr(strBegin));
   std::string arg;
   cmd.clear();
 
@@ -461,15 +465,15 @@ int main()
 */
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
 
-  odom_ticker.attach(print_odom_dma, 0.1);
+  odom_ticker.attach(print_odom_dma, 0.02);
   cmd_timer.start();
 
   MX_DMA_Init();
   MX_USART2_UART_Init();
 
   
-  myled = 1;
-  char lugeja[30];
+  led = 0;
+  char lugeja[50];
 
 
 
@@ -478,14 +482,13 @@ int main()
   HAL_UART_Receive_IT(&huart2, b, 1);
   main_timer.start();
   minutimer.start();
-  uint8_t bit_data[5] = {0x00,0x88,0x88,0x88,0x88};
+
   while (true)
   {
-    main_timer.reset();
-    wait_us(100);
-    sum =0;
+
     
-    HAL_SPI_Transmit_DMA(&hspi1, bit_data, sizeof(bit_data));
+    
+
 
     
     
@@ -506,7 +509,6 @@ int main()
       processPacket(packet);
       if(sum == 200){
         lugejams++;
-        myled = !myled;
 
       }
       if (sum == 767057416)
@@ -516,10 +518,12 @@ int main()
 
 
       packet_received_b = false;
-
+      sum =0;
       
     }
-   
+    if (odom_print)
+    {
+      odom_print = false;
       odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
       snprintf(txbuffer, sizeof(txbuffer), "ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
@@ -528,22 +532,29 @@ int main()
         HAL_UART_Transmit_DMA(&huart2, (uint8_t*)txbuffer, strlen(txbuffer));
       }
       
-    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
-    if (minutimer.read() > 20)
-    {
-      snprintf(lugeja,sizeof(lugeja),"Lugejams %hu ja lugejaled %hu \n",lugejams,lugejaled);
-      while (true)
-      {
-        if (hdma_usart2_tx.Instance->CNDTR==0)
-        {
-          HAL_UART_Transmit_DMA(&huart2,(uint8_t*)lugeja,sizeof(lugeja));
-        }
-        
-        
-      }
-
-
     }
+    
+    if(ain > 0.2f) {
+            wait_us(1000);
+            led = 1;
+            while (ain > 0.2f)
+            {
+              snprintf(lugeja,sizeof(lugeja),"MS %d, LED %d\r\n",lugejams,lugejaled);
+              if (hdma_usart2_tx.Instance->CNDTR==0)
+              {
+                   HAL_UART_Transmit_DMA(&huart2,(uint8_t*)lugeja,sizeof(lugeja));
+              }
+            }
+
+            lugejams = 0;
+            lugejaled = 0;
+        }
+    else
+    {
+      led =0;
+    }
+      
+
 
 
 
