@@ -34,7 +34,7 @@ Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 // Timeout
 Timer cmd_timer, main_timer;
-Ticker cmd_timeout_checker;
+Ticker cmd_timeout_checker,odom_ticker;
 
 // Variables for serial connection
 RawSerial serial_pc(USBTX, USBRX);     // tx, rx
@@ -45,6 +45,7 @@ volatile bool packet_received_b = false;
 uint32_t summ = 0;
 uint16_t lugejams =0;
 uint16_t lugejaled =0;
+bool odom_boolean = true;
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
@@ -204,6 +205,11 @@ void check_for_timeout()
     }
   }
 }
+void odom_bool()
+{
+  odom_boolean = true;
+  
+}
 
 int main()
 {
@@ -214,38 +220,16 @@ int main()
   serial_pc.printf("**** MAIN ****\r\n");
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
+  //odom_ticker.attach(odom_bool, 0.02);
+
   cmd_timer.start();
   
 
   // MAIN LOOP
   while (true)
   {
-    //main_timer.reset();
+    main_timer.reset();
 
-    spi.write(0x0);
-    for (size_t i = 0; i < 5; i++)
-    {
-      /* code */
-    
-    
-    for (size_t i = 0; i < 4; i++)
-    {
-      spi.write(0x88);
-    }
-    for (size_t i = 0; i < 4; i++)
-    {
-      spi.write(0x88);
-    }
-     for (size_t i = 0; i < 4; i++)
-    {
-      spi.write(0x88);
-    }
-    }
-    wait_us(50);
-    
-    
-
-    
 
     
  
@@ -291,14 +275,19 @@ int main()
     }
     
 
-
-    // Update odometry
+    /*if (odom_boolean)
+    {
+          }
     
-    //odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    //serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-      //               odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+*/
+          // Update odometry
+    odom_boolean=false;
+    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
+                    odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
     // Synchronize to given MAIN_DELTA_T
-    //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+
   
   }
 
