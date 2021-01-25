@@ -45,7 +45,10 @@ volatile bool packet_received_b = false;
 uint32_t summ = 0;
 uint16_t lugejams =0;
 uint16_t lugejaled =0;
+uint16_t loendur =0;
+uint16_t checksum_loendur =0;
 bool odom_boolean = true;
+bool tulemuse_saatmine = false;
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
@@ -55,7 +58,7 @@ std::vector<std::string> cmd;
 
 PixelArray px(WS2812_BUF);
 WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
-AnalogIn   ain(A5);
+
 DigitalOut led(LED1);
 // This method processes a received serial packet
 void processPacket(const std::string& packet)
@@ -156,6 +159,11 @@ void processPacket(const std::string& packet)
     }
     ws1.write(px.getBuf());
   }
+  else if (cmd[0] == "END")
+  {
+    tulemuse_saatmine = true;
+  }
+  
 }
 
 // Process an incoming serial byte
@@ -247,9 +255,13 @@ int main()
       {
         lugejams++;
       }
-      if (summ == 767057416)
+      else if (summ == 767057416)
       {
         lugejaled++;
+      }
+      else
+      {
+        checksum_loendur++;
       }
       //serial_pc.printf("%u\r\n",summ);
       summ = 0;
@@ -257,17 +269,21 @@ int main()
       
 
       packet_received_b = false;
+      loendur++;
     }
-    if(ain > 0.3f) {
-            wait_us(1000);
+    if(tulemuse_saatmine) {
             led = 1;
-            while (ain > 0.3f)
+            for (size_t i = 0; i < 100; i++)
             {
-              serial_pc.printf("MS %d, LED %d\r\n",lugejams,lugejaled);
-            }
+              serial_pc.printf("MS %d, LED %d, LOENDUR %d,CSUM %d\r\n",lugejams,lugejaled,loendur-1,checksum_loendur);
+              wait_us(10000);
+            }    
             serial_pc.printf("Lugejad reset\r\n");
             lugejams = 0;
             lugejaled = 0;
+            loendur = 0;
+            checksum_loendur =0;
+            tulemuse_saatmine = false;
         }
     else
     {
@@ -281,7 +297,7 @@ int main()
     
 */
           // Update odometry
-    odom_boolean=false;
+    //odom_boolean=false;
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
