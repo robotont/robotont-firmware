@@ -228,7 +228,7 @@ int main()
   serial_pc.printf("**** MAIN ****\r\n");
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
-  //odom_ticker.attach(odom_bool, 0.02);
+  odom_ticker.attach(odom_bool, 0.02);
 
   cmd_timer.start();
   
@@ -291,20 +291,21 @@ int main()
     }
     
 
-    /*if (odom_boolean)
+    if (odom_boolean)
     {
-          }
+          
     
 
           // Update odometry
-    //odom_boolean=false;
+    odom_boolean=false;
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
     // Synchronize to given MAIN_DELTA_T
-    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+    //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
 
-  */
+  
+  }
   }
 
 }
