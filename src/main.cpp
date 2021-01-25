@@ -236,7 +236,7 @@ int main()
   // MAIN LOOP
   while (true)
   {
-    main_timer.reset();
+    //main_timer.reset();
 
 
     
@@ -295,7 +295,7 @@ int main()
     {
           }
     
-*/
+
           // Update odometry
     //odom_boolean=false;
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
@@ -304,7 +304,7 @@ int main()
     // Synchronize to given MAIN_DELTA_T
     wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
 
-  
+  */
   }
 
 }
