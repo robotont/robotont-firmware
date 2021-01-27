@@ -6,6 +6,7 @@
 #include "WS2812.h"
 #include "PixelArray.h"
 
+
 // Common parameters for all motors
 #define ENC_CPR 64
 #define GEAR_RATIO 18.75
@@ -60,110 +61,220 @@ PixelArray px(WS2812_BUF);
 WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
 
 DigitalOut led(LED1);
-// This method processes a received serial packet
-void processPacket(const std::string& packet)
+SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_tx;
+extern "C"  void MX_DMA_Init(void) 
+{
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+  /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
+  /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+  /* DMA1_Channel6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
+  /* DMA1_Channel7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
+  /* DMA2_Channel6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel6_IRQn);
+  /* DMA2_Channel7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel7_IRQn);
+
+}
+
+extern "C"  void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+
+  /* USER CODE END Error_Handler_Debug */
+}
+
+extern "C"  void assert_failed(char *file, uint32_t line)
+{
+  /* USER CODE BEGIN 6 */
+  /* User can add his own implementation to report the file name and line number,
+     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  /* USER CODE END 6 */
+}
+
+extern "C" void MX_USART2_UART_Init(void)
 {
 
-  // Trim all potential newline symbols from the beginning
-  const auto strBegin = packet.find_first_not_of("\r\n");
+  	/* SPI1 parameter configuration*/
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi1.Init.CRCPolynomial = 7;
+	if (HAL_SPI_Init(&hspi1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
 
-  std::istringstream ss(packet.substr(strBegin));
-  std::string arg;
-  cmd.clear();
-  
 
-  for (int i = 0; i <= MAX_CMD_ARGS; i++)
+}
+
+
+extern "C" void DMA1_Channel3_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
+
+  /* USER CODE END DMA1_Channel2_3_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_spi1_tx);
+  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel2_3_IRQn 1 */
+}
+
+/**
+* @brief This function handles SPI1 global interrupt.
+*/
+extern "C"  void SPI1_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPI1_IRQn 0 */
+
+  /* USER CODE END SPI1_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi1);
+  /* USER CODE BEGIN SPI1_IRQn 1 */
+
+  /* USER CODE END SPI1_IRQn 1 */
+}
+extern "C"  void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  if(hspi->Instance==SPI1)
   {
-    arg.clear();
-    std::getline(ss, arg, ':');
-    if (arg.length())
+  /* USER CODE BEGIN SPI1_MspInit 0 */
+
+  /* USER CODE END SPI1_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_SPI1_CLK_ENABLE();
+
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**SPI1 GPIO Configuration
+    PA5     ------> SPI1_SCK
+    PA6     ------> SPI1_MISO
+    PA7     ------> SPI1_MOSI
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    /* SPI1 DMA Init */
+    /* SPI1_TX Init */
+    hdma_spi1_tx.Instance = DMA1_Channel3;
+    hdma_spi1_tx.Init.Request = DMA_REQUEST_1;
+    hdma_spi1_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_spi1_tx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_spi1_tx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_spi1_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_spi1_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_spi1_tx.Init.Mode = DMA_NORMAL;
+    hdma_spi1_tx.Init.Priority = DMA_PRIORITY_LOW;
+    if (HAL_DMA_Init(&hdma_spi1_tx) != HAL_OK)
     {
-      cmd.push_back(arg);
-      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
+      Error_Handler();
     }
-    else
-    {
-      break;
-    }
+
+    __HAL_LINKDMA(hspi,hdmatx,hdma_spi1_tx);
+
+    /* SPI1 interrupt Init */
+    HAL_NVIC_SetPriority(SPI1_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(SPI1_IRQn);
+  /* USER CODE BEGIN SPI1_MspInit 1 */
+
+  /* USER CODE END SPI1_MspInit 1 */
   }
 
-  if (!cmd.size())
+}
+
+extern "C" void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 7;
+  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
-    return;
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
+}
+
+extern "C"  void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
+{
+  if(hspi->Instance==SPI1)
+  {
+  /* USER CODE BEGIN SPI1_MspDeInit 0 */
+
+  /* USER CODE END SPI1_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_SPI1_CLK_DISABLE();
+
+    /**SPI1 GPIO Configuration
+    PA5     ------> SPI1_SCK
+    PA6     ------> SPI1_MISO
+    PA7     ------> SPI1_MOSI
+    */
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7);
+
+    /* SPI1 DMA DeInit */
+    HAL_DMA_DeInit(hspi->hdmatx);
+
+    /* SPI1 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(SPI1_IRQn);
+  /* USER CODE BEGIN SPI1_MspDeInit 1 */
+
+  /* USER CODE END SPI1_MspDeInit 1 */
   }
 
-  // MS - Set motor speeds manually (linear speed on wheel m/s)
-  /* MS:motor1_speed:motor2_speed:motor3_speed */
-  if (cmd[0] == "MS")
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
-      m[i].setSpeedSetPoint(speed_setpoint);
-	    summ += speed_setpoint;
-	  
-    }
-    cmd_timer.reset();
-  }
-
-  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
-  // y-left, theta-CCW rotation.
-  /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
-  else if (cmd[0] == "RS")
-  {
-    float lin_speed_x = std::atof(cmd[1].c_str());
-    float lin_speed_y = std::atof(cmd[2].c_str());
-    float angular_speed_z = std::atof(cmd[3].c_str());
-
-    float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
-
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) + m[i].getWheelPosR() * angular_speed_z;
-      if (abs(speed) < 1e-5)
-      {
-        m[i].stop();
-      }
-      else
-      {
-        m[i].setSpeedSetPoint(speed);
-      }
-    }
-    cmd_timer.reset();
-  }
-  else if (cmd[0] == "PID")  // Update PID parameters
-  {
-    float k_p = 0.0f;
-    float tau_i = 0.0f;
-    float tau_d = 0.0f;
-    // sscanf(ss.str().c_str(), "%f:%f:%f", &k_p, &tau_i, &tau_d);
-    // for (uint8_t i = 0; i < 3; i++)
-    //{
-    //  m[i].setPIDTunings(k_p, tau_i, tau_d);
-    //}
-  }
-  else if (cmd[0] == "LED")  // Update LED states for a segment.
-  {
-    ws1.useII(WS2812::GLOBAL);
-    ws1.setII(0xFF);                            // Set intensity to use the full range
-    uint8_t led_index = std::strtoul(cmd[1].c_str(), NULL, 10);  // led index. Value 0 = First led.
-    // Color represented by 3 bytes: 0xFF0000 - red, 0x00FF00 - green, 0x0000FF blue (color).
-    for (uint8_t i = 2; i < cmd.size(); i++)
-    {
-      uint32_t value = std::strtoul(cmd[i].c_str(), NULL, 10);
-      px.Set(led_index, value);
-      led_index++;
-	    summ += value;
-    }
-    ws1.write(px.getBuf());
-  }
-  else if (cmd[0] == "END")
-  {
-    tulemuse_saatmine = true;
-  }
-  
 }
 
 // Process an incoming serial byte
@@ -203,21 +314,6 @@ void pc_rx_callback()
   }
 }
 
-void check_for_timeout()
-{
-  if ((cmd_timer.read_ms()) > CMD_TIMEOUT_MS)
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      m[i].stop();
-    }
-  }
-}
-void odom_bool()
-{
-  odom_boolean = true;
-  
-}
 
 int main()
 {
@@ -226,87 +322,14 @@ int main()
   serial_buf[0] = '\0';
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN1 ****\r\n");
-
-  cmd_timeout_checker.attach(check_for_timeout, 0.1);
-  odom_ticker.attach(odom_bool, 0.02);
-
-  cmd_timer.start();
-  
-
-  // MAIN LOOP
+  uint16_t data = {0x8e};
+  MX_DMA_Init();
+  MX_SPI1_Init();
+ 
   while (true)
   {
-    //main_timer.reset();
-     if (odom_boolean)
-    {
-          
     
-
-          // Update odometry
-    odom_boolean=false;
-    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-                    odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    // Synchronize to given MAIN_DELTA_T
-    //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
-
-  
-  }
-
-
     
- 
-    
-
-
-    if (packet_received_b)  // packet was completeted with \r \n
-    {
-      std::string packet(serial_buf);
-      serial_buf[0] = '\0';
-      serial_arrived = 0;
-      processPacket(packet);
-      
-      if(summ == 200)
-      {
-        lugejams++;
-      }
-      else if (summ == 767057416)
-      {
-        lugejaled++;
-      }
-      else
-      {
-        checksum_loendur++;
-      }
-      //serial_pc.printf("%u\r\n",summ);
-      summ = 0;
-      
-      
-
-      packet_received_b = false;
-      loendur++;
-    }
-    if(tulemuse_saatmine) {
-            led = 1;
-            for (size_t i = 0; i < 100; i++)
-            {
-              serial_pc.printf("MS %d, LED %d, LOENDUR %d,CSUM %d\r\n",lugejams,lugejaled,loendur-1,checksum_loendur);
-              wait_us(10000);
-            }    
-            serial_pc.printf("Lugejad reset\r\n");
-            lugejams = 0;
-            lugejaled = 0;
-            loendur = 0;
-            checksum_loendur =0;
-            tulemuse_saatmine = false;
-        }
-    else
-    {
-      led =0;
-    }
-    
-
-   
   }
 
 }
