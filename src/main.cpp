@@ -225,7 +225,7 @@ int main()
   serial_pc.baud(115200);
   serial_buf[0] = '\0';
   serial_pc.attach(&pc_rx_callback);
-  serial_pc.printf("**** MAIN ****\r\n");
+  serial_pc.printf("**** MAIN1 ****\r\n");
 
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   odom_ticker.attach(odom_bool, 0.02);
@@ -237,6 +237,21 @@ int main()
   while (true)
   {
     //main_timer.reset();
+     if (odom_boolean)
+    {
+          
+    
+
+          // Update odometry
+    odom_boolean=false;
+    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
+                    odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+    // Synchronize to given MAIN_DELTA_T
+    //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+
+  
+  }
 
 
     
@@ -291,21 +306,7 @@ int main()
     }
     
 
-    if (odom_boolean)
-    {
-          
-    
-
-          // Update odometry
-    odom_boolean=false;
-    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-                    odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    // Synchronize to given MAIN_DELTA_T
-    //wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
-
-  
-  }
+   
   }
 
 }
