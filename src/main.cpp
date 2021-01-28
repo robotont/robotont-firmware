@@ -63,7 +63,7 @@ WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
 DigitalOut led(LED1);
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
-#define LED_NO    10
+#define LED_NO    60
 
 #define LED_BUFFER_LENGTH (LED_NO*12)
 const uint8_t leddata[256*4] = { // size = 256 * 3
@@ -328,7 +328,7 @@ const uint8_t leddata[256*4] = { // size = 256 * 3
 
 uint8_t ws_buffer[LED_BUFFER_LENGTH];
 
-void encode_byte( uint8_t data, int16_t buffer_index )
+extern "C" void encode_byte( uint8_t data, int16_t buffer_index )
 {
    int index = data * 4;
    ws_buffer[buffer_index++ ] = leddata[index++];
@@ -336,7 +336,7 @@ void encode_byte( uint8_t data, int16_t buffer_index )
    ws_buffer[buffer_index++ ] = leddata[index++];
    ws_buffer[buffer_index++ ] = leddata[index++];
 }
-void generate_ws_buffer( uint8_t RData,uint8_t GData,uint8_t BData, int16_t led_no )
+extern "C" void generate_ws_buffer( uint8_t RData,uint8_t GData,uint8_t BData, int16_t led_no )
 {
 	//ws2812b
 //G--R--B
@@ -346,18 +346,18 @@ void generate_ws_buffer( uint8_t RData,uint8_t GData,uint8_t BData, int16_t led_
    encode_byte( RData, offset+4 );
    encode_byte( BData, offset+8 );   
 }
-void Send_2812(void)
+extern "C" void Send_2812(void)
  {   
-#if 1    
-    HAL_SPI_Transmit_DMA( &hspi1, ws_buffer, LED_BUFFER_LENGTH ); 
+   
+    //HAL_SPI_Transmit_DMA( &hspi1, ws_buffer, LED_BUFFER_LENGTH ); 
     // wait until finished
-    while(__HAL_SPI_GET_FLAG(&hspi1, SPI_FLAG_BSY ));
-#else
+    //while(__HAL_SPI_GET_FLAG(&hspi1, SPI_FLAG_BSY ));
+
     HAL_SPI_Transmit( &hspi1, ws_buffer, LED_BUFFER_LENGTH, 300 );
-#endif
+
  } 
  
-void setAllPixelColor(uint8_t r, uint8_t g, uint8_t b)
+extern "C" void setAllPixelColor(uint8_t r, uint8_t g, uint8_t b)
 { 
    int i;
    for(i=0;i< LED_NO;i++) {
@@ -365,16 +365,17 @@ void setAllPixelColor(uint8_t r, uint8_t g, uint8_t b)
    }
    Send_2812();
 }
- void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b)
- {	 
+extern "C" void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b)
+ {
+
    generate_ws_buffer( r, g, b, n );
-   Send_2812();
+   
 }
 /**
  * initialize MOSI pin to LOW.  Without this, first time transmit for first LED might be wrong.
  *
  */
-void initLEDMOSI(void)
+extern "C" void initLEDMOSI(void)
 {
    uint8_t buffer0[2] = { 0, 0 };
    HAL_SPI_Transmit(&hspi1, buffer0, 1, 100 );
@@ -644,31 +645,35 @@ int main()
   MX_SPI1_Init();
   MX_DMA_Init();
   initLEDMOSI();
+  main_timer.start();
   while (true)
   {
     int8_t i;
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-  /*
-    setAllPixelColor( 0, 0, 0);
-    wait_us(200000);
+  
+   
     // red
     for ( i = 0; i < LED_NO; i++) {
+
        setPixelColor( i, 250, 0, 0 );
-       wait_us(200000);
+       Send_2812();
+       wait_us(50);
     }
     // green
     for ( i = 0; i < LED_NO; i++) {
        setPixelColor( i, 0, 250, 0 );
-       wait_us(200000);
+       Send_2812();
+       wait_us(50);
     }
     // blue
     for ( i = 0; i < LED_NO; i++) {
        setPixelColor( i, 0, 0, 250 );
-       wait_us(200000);
+       Send_2812();
+       wait_us(50);
     }
-    */
+    
   }
 
 }
