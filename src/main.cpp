@@ -202,6 +202,7 @@ extern "C" void MX_USART2_UART_Init(void)
   {
     Error_Handler();
   }
+
   	/* SPI1 parameter configuration*/
 	hspi1.Instance = SPI1;
 	hspi1.Init.Mode = SPI_MODE_MASTER;
