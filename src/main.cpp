@@ -69,10 +69,13 @@ static uint8_t usart_rx_dma_buffer[64];
 
 int main()
 {
+
     char hello[]="USART DMA example: DMA HT & TC + USART IDLE LINE interrupts\r\n";
     MX_DMA_Init();
     MX_USART2_UART_Init();
-    
+    LL_USART_Disable(USART2);
+    LL_USART_ConfigNodeAddress(USART2 , LL_USART_ADDRESS_DETECT_7B, 0x0A);
+    LL_USART_Enable(USART2);
     HAL_UART_Transmit(&huart2, (uint8_t *)hello, sizeof(hello), 500);
     led = 0;
     HAL_UART_Receive_DMA(&huart2, (uint8_t*)usart_rx_dma_buffer, 64);
@@ -250,7 +253,7 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
 extern "C" void MX_USART2_UART_Init(void)
 {
-
+  
   huart2.Instance = USART2;
   huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
@@ -266,6 +269,7 @@ extern "C" void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   LL_USART_EnableIT_IDLE(USART2);
+  LL_USART_EnableIT_CM(USART2);
   HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(USART2_IRQn);
 
@@ -307,8 +311,15 @@ USART2_IRQHandler(void) {
     if (LL_USART_IsEnabledIT_IDLE(USART2) && LL_USART_IsActiveFlag_IDLE(USART2)) {
         LL_USART_ClearFlag_IDLE(USART2);        /* Clear IDLE line flag */
         usart_rx_check();                       /* Check for data to process */
-        led = !led;
+
     }
+    if ( LL_USART_IsEnabledIT_CM(USART2) && LL_USART_IsActiveFlag_CM(USART2)){
+      LL_USART_ClearFlag_CM(USART2);
+      usart_rx_check();
+      led = !led;  
+    }
+    
+
 
     /* Implement other events when needed */
 }
@@ -346,3 +357,4 @@ extern "C" void LL_DMA_ClearFlag_HT6(DMA_TypeDef* DMAx)
 {
   SET_BIT(DMAx->IFCR, DMA_IFCR_CHTIF6);
 }
+
