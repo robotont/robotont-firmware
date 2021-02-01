@@ -1,121 +1,164 @@
 #include "mbed.h"
-#include "motor.h"
-#include "odom.h"
+
 #include <sstream>
 #include <vector>
-#include "WS2812.h"
-#include "PixelArray.h"
-
-// Common parameters for all motors
-#define ENC_CPR 64
-#define GEAR_RATIO 18.75
-#define WHEEL_RADIUS 0.035
-#define WHEEL_POS_R 0.145
-#define PID_KP 0.8
-#define PID_TI 0.05
-#define PID_TD 0.0
-#define PID_DELTA_T 0.01
-#define MAIN_DELTA_T 0.02
-
-#define MAX_CMD_ARGS 100
-#define SERIAL_BUF_SIZE 2048
-#define MOTOR_COUNT 3
-#define CMD_TIMEOUT_MS 1000  // If velocity command is not received within this period all motors are stopped.
 
 
-// DMA stuff
+#define B1_Pin GPIO_PIN_13
+#define B1_GPIO_Port GPIOC
 #define USART_TX_Pin GPIO_PIN_2
-#define USART_RX_Pin GPIO_PIN_3
 #define USART_TX_GPIO_Port GPIOA
+#define USART_RX_Pin GPIO_PIN_3
+#define USART_RX_GPIO_Port GPIOA
+#define LD2_Pin GPIO_PIN_5
+#define LD2_GPIO_Port GPIOA
+#define TMS_Pin GPIO_PIN_13
+#define TMS_GPIO_Port GPIOA
+#define TCK_Pin GPIO_PIN_14
+#define TCK_GPIO_Port GPIOA
+#define SWO_Pin GPIO_PIN_3
+#define SWO_GPIO_Port GPIOB
+#define LL_DMA_CHANNEL_1                  ((uint32_t)0x00000001)
+#define LL_DMA_CHANNEL_2                  ((uint32_t)0x00000002)
+#define LL_DMA_CHANNEL_3                  ((uint32_t)0x00000003)
+#define LL_DMA_CHANNEL_4                  ((uint32_t)0x00000004)
+#define LL_DMA_CHANNEL_5                  ((uint32_t)0x00000005)
+#define LL_DMA_CHANNEL_6                  ((uint32_t)0x00000006)
+#define LL_DMA_CHANNEL_7                  ((uint32_t)0x00000007)
+
+static const uint8_t CHANNEL_OFFSET_TAB[] =
+{
+  (uint8_t)(DMA1_Channel1_BASE - DMA1_BASE),
+  (uint8_t)(DMA1_Channel2_BASE - DMA1_BASE),
+  (uint8_t)(DMA1_Channel3_BASE - DMA1_BASE),
+  (uint8_t)(DMA1_Channel4_BASE - DMA1_BASE),
+  (uint8_t)(DMA1_Channel5_BASE - DMA1_BASE),
+  (uint8_t)(DMA1_Channel6_BASE - DMA1_BASE),
+  (uint8_t)(DMA1_Channel7_BASE - DMA1_BASE)
+};
+
+
+void usart_init(void);
+void usart_rx_check(void);
+void usart_process_data(const uint8_t* data, size_t len);
+//void usart_send_string(const unsigned char* str);
+extern "C" void MX_DMA_Init(void);
+extern "C"  void Error_Handler(void);
+extern "C" void MX_USART2_UART_Init(void);
+extern "C" uint32_t LL_DMA_GetDataLength(DMA_TypeDef *DMAx, uint32_t Channel);
+extern "C" uint32_t LL_DMA_IsEnabledIT_TC(DMA_TypeDef *DMAx, uint32_t Channel);
+extern "C" uint32_t LL_DMA_IsActiveFlag_TC6(DMA_TypeDef* DMAx);
+extern "C" void LL_DMA_ClearFlag_TC6(DMA_TypeDef* DMAx);
+extern "C" uint32_t LL_DMA_IsEnabledIT_HT(DMA_TypeDef *DMAx, uint32_t Channel);
+extern "C" uint32_t LL_DMA_IsActiveFlag_HT6(DMA_TypeDef* DMAx);
+extern "C" void LL_DMA_ClearFlag_HT6(DMA_TypeDef* DMAx);
+
+
+
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
-SPI_HandleTypeDef hspi1;
-DMA_HandleTypeDef hdma_spi1_tx;
-
-uint16_t loendur=0;
-volatile uint8_t toggle = 0;
-char serial_buf[1000];
-char txbuffer[66];
-bool odom_print = false;
-// Include motor configurations
-//#include "motor_config_v0_6.h"
-#include "motor_config_v2_1.h"
 
 
-// Initialize motors
-Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
-
-// Initialize odometry
-Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
-AnalogIn   ain(A5);
 DigitalOut led(LED1);
-// Timeout
-Timer cmd_timer, minutimer,main_timer;
-Ticker cmd_timeout_checker, odom_ticker;
-
-// Variables for serial connection
 
 
-volatile uint16_t serial_arrived = 0;  // Number of bytes arrived
-volatile bool packet_received_b = false;
-uint8_t b[1];
-uint32_t sum = 0;
-uint16_t lugejams =0;
-uint16_t lugejaled =0;
+#define ARRAY_LEN(x)            (sizeof(x) / sizeof((x)[0]))
 
-// For parsing command with arguments received over serial
-std::vector<std::string> cmd;
+static uint8_t usart_rx_dma_buffer[64];
 
-// LED STRIP
-// Set the number of pixels of the strip
-#define WS2812_BUF 60
-
-PixelArray px(WS2812_BUF);
-WS2812 ws1(PA_15, WS2812_BUF, 1, 12, 6, 11);
-//dma init ja muud func
-extern "C"  void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+int main()
 {
-  
-  
-   
-  HAL_UART_Receive_IT(&huart2, b, 1);
+    char hello[]="USART DMA example: DMA HT & TC + USART IDLE LINE interrupts\r\n";
+    MX_DMA_Init();
+    MX_USART2_UART_Init();
+    
+    HAL_UART_Transmit(&huart2, (uint8_t *)hello, sizeof(hello), 500);
+    led = 0;
+    HAL_UART_Receive_DMA(&huart2, (uint8_t*)usart_rx_dma_buffer, 64);
 
-  char c = (char) b[0];
-  
-  serial_buf[serial_arrived++] = c;
-  serial_buf[serial_arrived] = '\0';
-  if (serial_arrived >= SERIAL_BUF_SIZE - 1)
+
+
+
+
+
+
+  while (true)
   {
-    serial_arrived = 0;
+    
+
+
   }
-
-  if (c == '\n' || c == '\r')  // command terminated
-  {
-    if (serial_arrived > 3)
-    {
-      // signal that the packet is complete for processing
-      packet_received_b = true;
-    }
-  }
-
-  // if escape is received, clear the buffer and stop the motors for now
-  if (c == 27)  // esc
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      m[i].stop();
-    }
-    serial_buf[0] = '\0';
-    serial_arrived = 0;
-  }
-   
-
-
-
 }
 
-extern "C"  void MX_DMA_Init(void) 
+
+void
+usart_rx_check(void) {
+    static size_t old_pos;
+    size_t pos;
+    
+
+    /* Calculate current position in buffer */
+    pos = ARRAY_LEN(usart_rx_dma_buffer) - LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_6);
+    if (pos != old_pos) {                       /* Check change in received data */
+        if (pos > old_pos) {                    /* Current position is over previous one */
+            /* We are in "linear" mode */
+            /* Process data directly by subtracting "pointers" */
+            usart_process_data(&usart_rx_dma_buffer[old_pos], pos - old_pos);
+            //HAL_UART_Transmit(&huart2, (uint8_t *)usart_rx_dma_buffer[old_pos], pos - old_pos, 100);
+        } else {
+            /* We are in "overflow" mode */
+            /* First process data to the end of buffer */
+            usart_process_data(&usart_rx_dma_buffer[old_pos], ARRAY_LEN(usart_rx_dma_buffer) - old_pos);
+            //HAL_UART_Transmit(&huart2, (uint8_t *)usart_rx_dma_buffer[old_pos], ARRAY_LEN(usart_rx_dma_buffer) - old_pos, 100);
+            /* Check and continue with beginning of buffer */
+            if (pos > 0) {
+                usart_process_data(&usart_rx_dma_buffer[0], pos);
+                //HAL_UART_Transmit(&huart2, (uint8_t *)usart_rx_dma_buffer[0], pos,100);
+            }
+        }
+        old_pos = pos;                          /* Save current position as old */
+    }
+}
+
+/**
+ * \brief           Process received data over UART
+ * \note            Either process them directly or copy to other bigger buffer
+ * \param[in]       data: Data to process
+ * \param[in]       len: Length in units of bytes
+ */
+void
+usart_process_data(const uint8_t* data, size_t len) {
+    //const uint8_t* d = static_cast<const uint8_t *>(data);
+    //const uint8_t* d = data;
+    /*
+     * This function is called on DMA TC and HT events, aswell as on UART IDLE (if enabled) line event.
+     * 
+     * For the sake of this example, function does a loop-back data over UART in polling mode.
+     * Check ringbuff RX-based example for implementation with TX & RX DMA transfer.
+     */
+	
+    for (; len > 0; --len, ++data) {
+        //HAL_UART_Transmit(&huart2, (uint8_t *)data, 1, 1);
+        LL_USART_TransmitData8(USART2, *data);
+        while (!LL_USART_IsActiveFlag_TXE(USART2)) {}
+    }
+    while (!LL_USART_IsActiveFlag_TC(USART2)) {}
+}
+
+/**
+ * \brief           Send string to USART
+ * \param[in]       str: String to send
+
+void
+usart_send_string(const unsigned char* str) {
+    const uint8_t* str_uus = static_cast<const uint8_t *>(str);
+    usart_process_data(str_uus, strlen(str));
+}
+ */
+
+
+extern "C" void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
   __HAL_RCC_DMA2_CLK_ENABLE();
@@ -146,103 +189,20 @@ extern "C"  void MX_DMA_Init(void)
 
 }
 
-extern "C" void DMA1_Channel7_IRQHandler(void)
-{
-
-
-  
-  HAL_DMA_IRQHandler(&hdma_usart2_tx);
-  
-
-
-
-}
-
-
-
-
-
-extern "C"  void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
-{
-  
-
-
-}
-extern "C"  void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-
-  /* USER CODE END Error_Handler_Debug */
-}
-
-extern "C"  void assert_failed(char *file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-}
-
-
-extern "C" void MX_USART2_UART_Init(void)
-{
-
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  	/* SPI1 parameter configuration*/
-	hspi1.Instance = SPI1;
-	hspi1.Init.Mode = SPI_MODE_MASTER;
-	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-	hspi1.Init.NSS = SPI_NSS_SOFT;
-	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
-	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-	hspi1.Init.CRCPolynomial = 7;
-	if (HAL_SPI_Init(&hspi1) != HAL_OK)
-	{
-		Error_Handler();
-	}
-  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(USART2_IRQn);
-
-
-}
-
 extern "C" void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 {
 
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(uartHandle->Instance==USART2)
-  {
-  /* USER CODE BEGIN USART2_MspInit 0 */
-
-  /* USER CODE END USART2_MspInit 0 */
-    /* USART2 clock enable */
-    __HAL_RCC_USART2_CLK_ENABLE();
-  
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    /**USART2 GPIO Configuration    
+    /**USART2 GPIO Configuration
     PA2     ------> USART2_TX
-    PA3     ------> USART2_RX 
+    PA3     ------> USART2_RX
     */
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    if(uartHandle->Instance==USART2){
+
+     __HAL_RCC_USART2_CLK_ENABLE();
+
+    __HAL_RCC_GPIOA_CLK_ENABLE();
     GPIO_InitStruct.Pin = USART_TX_Pin|USART_RX_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -250,7 +210,23 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+    /* USART2 DMA Init */
+    /* USART2_RX Init */
+    hdma_usart2_rx.Instance = DMA1_Channel6;
+    hdma_usart2_rx.Init.Request = DMA_REQUEST_2;
+    hdma_usart2_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_usart2_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_usart2_rx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_usart2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_usart2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_usart2_rx.Init.Mode = DMA_CIRCULAR;
+    hdma_usart2_rx.Init.Priority = DMA_PRIORITY_LOW;
+     if (HAL_DMA_Init(&hdma_usart2_rx) != HAL_OK)
+    {
+      Error_Handler();
+    }
 
+    __HAL_LINKDMA(uartHandle,hdmarx,hdma_usart2_rx);
 
     /* USART2_TX Init */
     hdma_usart2_tx.Instance = DMA1_Channel7;
@@ -269,299 +245,104 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
     __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart2_tx);
 
-  /* USER CODE BEGIN USART2_MspInit 1 */
-
-  /* USER CODE END USART2_MspInit 1 */
-  }
+}
 }
 
-void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
+extern "C" void MX_USART2_UART_Init(void)
 {
 
-  if(uartHandle->Instance==USART2)
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
   {
-  /* USER CODE BEGIN USART2_MspDeInit 0 */
-
-  /* USER CODE END USART2_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_USART2_CLK_DISABLE();
-  
-    /**USART2 GPIO Configuration    
-    PA2     ------> USART2_TX
-    PA3     ------> USART2_RX 
-    */
-    HAL_GPIO_DeInit(GPIOA, USART_TX_Pin);
-
-    /* USART2 DMA DeInit */
-    HAL_DMA_DeInit(uartHandle->hdmatx);
-  /* USER CODE BEGIN USART2_MspDeInit 1 */
-
-  /* USER CODE END USART2_MspDeInit 1 */
+    Error_Handler();
   }
-} 
+  LL_USART_EnableIT_IDLE(USART2);
+  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
 
-/*
-HAL_StatusTypeDef printUart(char* buf,int num){
-    HAL_StatusTypeDef status=HAL_ERROR;
-    if(hdma_usart2_tx.Instance->CNDTR!=0){
-        return HAL_BUSY;
-    }
-    status = HAL_UART_Transmit_DMA(&huart2, (uint8_t*)txbuffer, num);
 
-    return status;
 }
-*/
-extern "C" void USART2_IRQHandler(void)
+
+
+
+
+
+extern "C"  void Error_Handler(void)
 {
-  /* USER CODE BEGIN USART2_IRQn 0 */
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
 
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  
-  
-
-  /* USER CODE BEGIN USART2_IRQn 1 */
-
-  /* USER CODE END USART2_IRQn 1 */
-
-  // Store bytes from serial in our buffer until packet
-  // termination byte 'enter', '\n', '\r' etc has arrived
-  
-  
-
-  
-  
+  /* USER CODE END Error_Handler_Debug */
 }
 
+extern "C" void
+DMA1_Channel6_IRQHandler(void) {
+    /* Check half-transfer complete interrupt */
+    if (LL_DMA_IsEnabledIT_HT(DMA1, LL_DMA_CHANNEL_6) && LL_DMA_IsActiveFlag_HT6(DMA1)) {
+        LL_DMA_ClearFlag_HT6(DMA1);             /* Clear half-transfer complete flag */
+        usart_rx_check();                       /* Check for data to process */
+    }
 
+    /* Check transfer-complete interrupt */
+    if (LL_DMA_IsEnabledIT_TC(DMA1, LL_DMA_CHANNEL_6) && LL_DMA_IsActiveFlag_TC6(DMA1)) {
+        LL_DMA_ClearFlag_TC6(DMA1);             /* Clear transfer complete flag */
+        usart_rx_check();                       /* Check for data to process */
+    }
 
-// This method processes a received serial packet
-void processPacket(const std::string& packet)
+    /* Implement other events when needed */
+}
+
+extern "C" void
+USART2_IRQHandler(void) {
+    /* Check for IDLE line interrupt */
+    if (LL_USART_IsEnabledIT_IDLE(USART2) && LL_USART_IsActiveFlag_IDLE(USART2)) {
+        LL_USART_ClearFlag_IDLE(USART2);        /* Clear IDLE line flag */
+        usart_rx_check();                       /* Check for data to process */
+        led = !led;
+    }
+
+    /* Implement other events when needed */
+}
+
+extern "C"  uint32_t LL_DMA_GetDataLength(DMA_TypeDef *DMAx, uint32_t Channel)
 {
-    // Trim all potential newline symbols from the beginning
-  const auto strBegin = packet.find_first_not_of("\r\n");
-
-  std::istringstream ss(packet.substr(strBegin));
-  std::string arg;
-  cmd.clear();
-
-  for (int i = 0; i <= MAX_CMD_ARGS; i++)
-  {
-    arg.clear();
-    std::getline(ss, arg, ':');
-    if (arg.length())
-    {
-      cmd.push_back(arg);
-      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
-    }
-    else
-    {
-      break;
-    }
-  }
-
-  if (!cmd.size())
-  {
-    return;
-  }
-
-  // MS - Set motor speeds manually (linear speed on wheel m/s)
-  /* MS:motor1_speed:motor2_speed:motor3_speed */
-  if (cmd[0] == "MS")
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
-      m[i].setSpeedSetPoint(speed_setpoint);
-      sum += speed_setpoint;
-    }
-    cmd_timer.reset();
-  }
-
-  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
-  // y-left, theta-CCW rotation.
-  /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
-  else if (cmd[0] == "RS")
-  {
-    float lin_speed_x = std::atof(cmd[1].c_str());
-    float lin_speed_y = std::atof(cmd[2].c_str());
-    float angular_speed_z = std::atof(cmd[3].c_str());
-
-    float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
-
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) + m[i].getWheelPosR() * angular_speed_z;
-      if (abs(speed) < 1e-5)
-      {
-        m[i].stop();
-      }
-      else
-      {
-        m[i].setSpeedSetPoint(speed);
-      }
-    }
-    cmd_timer.reset();
-  }
-  else if (cmd[0] == "PID")  // Update PID parameters
-  {
-    float k_p = 0.0f;
-    float tau_i = 0.0f;
-    float tau_d = 0.0f;
-    // sscanf(ss.str().c_str(), "%f:%f:%f", &k_p, &tau_i, &tau_d);
-    // for (uint8_t i = 0; i < 3; i++)
-    //{
-    //  m[i].setPIDTunings(k_p, tau_i, tau_d);
-    //}
-  }
-  else if (cmd[0] == "LED")  // Update LED states for a segment.
-  {
-    ws1.useII(WS2812::GLOBAL);
-    ws1.setII(0xFF);                            // Set intensity to use the full range
-    uint8_t led_index = std::strtoul(cmd[1].c_str(), NULL, 10);  // led index. Value 0 = First led.
-    // Color represented by 3 bytes: 0xFF0000 - red, 0x00FF00 - green, 0x0000FF blue (color).
-    for (uint8_t i = 2; i < cmd.size(); i++)
-    {
-      uint32_t value = std::strtoul(cmd[i].c_str(), NULL, 10);
-      px.Set(led_index, value);
-      led_index++;
-      sum += value;
-    }
-    ws1.write(px.getBuf());
-  }
+  return (READ_BIT(((DMA_Channel_TypeDef*)((uint32_t)((uint32_t)DMAx + CHANNEL_OFFSET_TAB[Channel-1])))->CNDTR, DMA_CNDTR_NDT));
 }
 
-// Process an incoming serial byte
-
-
-
-
-
-void check_for_timeout()
+extern "C" uint32_t LL_DMA_IsEnabledIT_TC(DMA_TypeDef *DMAx, uint32_t Channel)
 {
-  if ((cmd_timer.read_ms()) > CMD_TIMEOUT_MS)
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      m[i].stop();
-    }
-  }
+  return (READ_BIT(((DMA_Channel_TypeDef*)((uint32_t)((uint32_t)DMAx + CHANNEL_OFFSET_TAB[Channel-1])))->CCR, DMA_CCR_TCIE) == (DMA_CCR_TCIE));
 }
 
-void print_odom_dma(){
-  odom_print = true;
-
-}
-
-int main()
+extern "C" uint32_t LL_DMA_IsActiveFlag_TC6(DMA_TypeDef* DMAx)
 {
-  // Initialize serial connection
- /*
-  serial_pc.baud(115200);
-  serial_buf[0] = '\0';
-  serial_pc.attach(&pc_rx_callback);
-  serial_pc.printf("**** MAIN ****\r\n");
-*/
-  cmd_timeout_checker.attach(check_for_timeout, 0.1);
+  return (READ_BIT(DMAx->ISR, DMA_ISR_TCIF6) == (DMA_ISR_TCIF6));
+}
 
-  odom_ticker.attach(print_odom_dma, 0.02);
-  cmd_timer.start();
+extern "C" void LL_DMA_ClearFlag_TC6(DMA_TypeDef* DMAx)
+{
+  SET_BIT(DMAx->IFCR, DMA_IFCR_CTCIF6);
+}
 
-  MX_DMA_Init();
-  MX_USART2_UART_Init();
+extern "C" uint32_t LL_DMA_IsEnabledIT_HT(DMA_TypeDef *DMAx, uint32_t Channel)
+{
+  return (READ_BIT(((DMA_Channel_TypeDef*)((uint32_t)((uint32_t)DMAx + CHANNEL_OFFSET_TAB[Channel-1])))->CCR, DMA_CCR_HTIE) == (DMA_CCR_HTIE));
+}
+extern "C" uint32_t LL_DMA_IsActiveFlag_HT6(DMA_TypeDef* DMAx)
+{
+  return (READ_BIT(DMAx->ISR, DMA_ISR_HTIF6) == (DMA_ISR_HTIF6));
+}
 
-  
-  led = 0;
-  char lugeja[50];
-
-
-
-
-  // MAIN LOOP
-  HAL_UART_Receive_IT(&huart2, b, 1);
-  main_timer.start();
-  minutimer.start();
-
-  while (true)
-  {
-
-    
-    
-
-
-    
-    
-   
-    
-
-
-    if (packet_received_b)  // packet was completeted with \r \n
-    {
-      
-     
-      
-      
-      std::string packet(serial_buf);
-      serial_buf[0] = '\0';
-      serial_arrived = 0;
-      
-      processPacket(packet);
-      if(sum == 200){
-        lugejams++;
-
-      }
-      if (sum == 767057416)
-      {
-        lugejaled++;
-      }
-
-
-      packet_received_b = false;
-      sum =0;
-      
-    }
-    if (odom_print)
-    {
-      odom_print = false;
-      odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-      snprintf(txbuffer, sizeof(txbuffer), "ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
-                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-      if (hdma_usart2_tx.Instance->CNDTR==0)
-      {
-        HAL_UART_Transmit_DMA(&huart2, (uint8_t*)txbuffer, strlen(txbuffer));
-      }
-      
-    }
-    
-    if(ain > 0.2f) {
-            wait_us(1000);
-            led = 1;
-            while (ain > 0.2f)
-            {
-              snprintf(lugeja,sizeof(lugeja),"MS %d, LED %d\r\n",lugejams,lugejaled);
-              if (hdma_usart2_tx.Instance->CNDTR==0)
-              {
-                   HAL_UART_Transmit_DMA(&huart2,(uint8_t*)lugeja,sizeof(lugeja));
-              }
-            }
-
-            lugejams = 0;
-            lugejaled = 0;
-        }
-    else
-    {
-      led =0;
-    }
-      
-
-
-
-
-    
-    
-      
-
-  }
+extern "C" void LL_DMA_ClearFlag_HT6(DMA_TypeDef* DMAx)
+{
+  SET_BIT(DMAx->IFCR, DMA_IFCR_CHTIF6);
 }
