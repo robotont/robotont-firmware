@@ -1,5 +1,5 @@
 #include "odom.h"
-#include "MatrixMath/MatrixMath.h"
+#include "MatrixMath.h"
 
 Odom::Odom(const MotorConfig& cfg0, const MotorConfig& cfg1, const MotorConfig& cfg2,
            float delta_t)
