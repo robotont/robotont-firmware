@@ -2,7 +2,7 @@
 #define ODOM_H
 
 #include "mbed.h"
-#include "Matrix/Matrix.h"
+#include "Matrix.h"
 
 #include "motor.h"
 
