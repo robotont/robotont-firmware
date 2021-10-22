@@ -59,17 +59,17 @@ public:
 
   float getLinVelX() const
   {
-    return odom_vel_(1, 1);
+    return robot_vel_(1, 1);
   };
   
   float getLinVelY() const
   {
-    return odom_vel_(2, 1);
+    return robot_vel_(2, 1);
   };
 
   float getAngVelZ() const
   {
-    return odom_vel_(3, 1);
+    return robot_vel_(3, 1);
   };
 
   /**
