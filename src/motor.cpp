@@ -2,37 +2,31 @@
 #include "motor.h"
 #include <algorithm>
 
-Motor::Motor(const MotorConfig& cfg)
-  : dir1_(cfg.pin_dir1)
-  , dir2_(cfg.pin_dir2)
-  , pwm_(cfg.pin_pwm)
-  , enc_(cfg.pin_enca, cfg.pin_encb, NC, cfg.enc_cpr, QEI::X4_ENCODING)
-  , fault_(cfg.pin_fault)
-  , pid_(cfg.pid_k_p, cfg.pid_tau_i, cfg.pid_tau_d, cfg.pid_dt)
-  , current_feedback_(NULL)
-  , status_(STATUS_UNINITIALIZED)
-  , current_measured_(100, 0.0f)
-//  , speed_limit_(2*M_PI) // 1 revolution per second
-  , speed_limit_(0.3) // 30 cm/s
-  , effort_limit_(0.25f) // 25% duty cycle
+Motor::Motor(const MotorConfig &cfg)
+    : dir1_(cfg.pin_dir1), dir2_(cfg.pin_dir2), pwm_(cfg.pin_pwm), enc_(cfg.pin_enca, cfg.pin_encb, NC, cfg.enc_cpr, QEI::X4_ENCODING), fault_(cfg.pin_fault), pid_(cfg.pid_k_p, cfg.pid_tau_i, cfg.pid_tau_d, cfg.pid_dt), current_feedback_(NULL), status_(STATUS_UNINITIALIZED), current_measured_(100, 0.0f)
+      //  , speed_limit_(2*M_PI) // 1 revolution per second
+      ,
+      speed_limit_(0.3) // 30 cm/s
+      ,
+      effort_limit_(0.25f) // 25% duty cycle
 {
 
   // initialize pid to defaults
-//   pid_.setInputLimits(-1.0, 1.0);  // set default limits to 10 cm/s
-//   pid_.setOutputLimits(-1.0, 1.0);
+  //   pid_.setInputLimits(-1.0, 1.0);  // set default limits to 10 cm/s
+  //   pid_.setOutputLimits(-1.0, 1.0);
 
   // set input and output limits for pid
-  //setSpeedLimit(speed_limit_);
+  // setSpeedLimit(speed_limit_);
   pid_.setInputLimits(-1.0f, 1.0f);
   pid_.setOutputLimits(-1.0f, 1.0f);
-  //setEffortLimit(effort_limit_);
+  // setEffortLimit(effort_limit_);
 
   pid_.setBias(0.0);
   pid_.setMode(1);
 
   pwm_.period_us(10000);
 
-  // Calculate the relation between an encoder pulse and 
+  // Calculate the relation between an encoder pulse and
   // linear speed on the wheel where it contacts the ground
   // CCW is positive when looking from the motor towards the wheel
   pulse_to_speed_ratio_ =
@@ -52,17 +46,16 @@ Motor::Motor(const MotorConfig& cfg)
   {
     current_feedback_->rise(callback(this, &Motor::onCurrentPulse));
   }
-  
+
   fault_.rise(callback(this, &Motor::onFaultPulse));
 
   // store config in case we need it later.
-  config_ = cfg; 
+  config_ = cfg;
 }
 
 Motor::~Motor()
 {
 }
-
 
 // Stop the motor
 void Motor::stop()
@@ -98,8 +91,8 @@ void Motor::setEffort(float effort)
 
   // limit value to [-1...1]
   // hard limit the effort for testing purposes
-  //effort_ = std::max(std::min(effort, 0.2f), -0.2f); 
-  //effort_ = std::max(std::min(effort, 1.0f), -1.0f);
+  // effort_ = std::max(std::min(effort, 0.2f), -0.2f);
+  // effort_ = std::max(std::min(effort, 1.0f), -1.0f);
   effort_ = std::max(-effort_limit_, std::min(effort_limit_, effort));
 
   if (effort_ == 0)
@@ -132,12 +125,11 @@ void Motor::setSpeedSetPoint(float speed)
   pid_.setSetPoint(speed_setpoint_);
 }
 
-
 void Motor::update()
 {
   // calculate feedback current
   // TODO: use new range [40khz to 1 khz]
-  current_measured_.Insert((current_pulse_count_ / config_.pid_dt - 1000)/1000);
+  current_measured_.Insert((current_pulse_count_ / config_.pid_dt - 1000) / 1000);
   current_pulse_count_ = 0;
 
   // calculate speed from encoder
