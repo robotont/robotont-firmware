@@ -4,6 +4,8 @@
 #include <sstream>
 #include <vector>
 
+#include "PID.h"
+
 // Common parameters for all motors
 #define ENC_CPR 64
 #define GEAR_RATIO 18.75
@@ -24,7 +26,7 @@
 #include "motor_config_v2_1.h"
 
 // Initialize motors
-Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
+Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 
 // Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
@@ -34,16 +36,16 @@ Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
 
 // Variables for serial connection
-RawSerial serial_pc(USBTX, USBRX);  // tx, rx
-char serial_buf[256];        // Buffer for incoming serial data
-volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
+RawSerial serial_pc(USBTX, USBRX);   // tx, rx
+char serial_buf[256];                // Buffer for incoming serial data
+volatile uint8_t serial_arrived = 0; // Number of bytes arrived
 volatile bool packet_received_b = false;
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
 
 // This method processes a received serial packet
-void processPacket(const std::string& packet)
+void processPacket(const std::string &packet)
 {
   std::istringstream ss(packet);
   std::string arg;
@@ -56,7 +58,7 @@ void processPacket(const std::string& packet)
     if (arg.length())
     {
       cmd.push_back(arg);
-      //serial_pc.printf("Got arg %s\r\n", arg.c_str());
+      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
     }
     else
     {
@@ -76,7 +78,7 @@ void processPacket(const std::string& packet)
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      //serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
+      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
     }
     cmd_timer.reset();
@@ -109,18 +111,22 @@ void processPacket(const std::string& packet)
     }
     cmd_timer.reset();
   }
-  else if (cmd[0] == "PID")  // Update PID parameters
+  /*
+  else if (cmd[0] == "PID") // Update PID parameters
   {
     float k_p = 0.0f;
     float tau_i = 0.0f;
     float tau_d = 0.0f;
-    // sscanf(ss.str().c_str(), "%f:%f:%f", &k_p, &tau_i, &tau_d);
-    // for (uint8_t i = 0; i < 3; i++)
-    //{
-    //  m[i].setPIDTunings(k_p, tau_i, tau_d);
-    //}
+    sscanf(ss.str().c_str(), "%f:%f:%f", &k_p, &tau_i, &tau_d);
+    for (uint8_t i = 0; i < 3; i++)
+    {
+     m[i].setPIDTunings(k_p, tau_i, tau_d);
+    }
   }
+  */
 }
+
+
 
 // Process an incoming serial byte
 void pc_rx_callback()
@@ -137,18 +143,17 @@ void pc_rx_callback()
       serial_arrived = 0;
     }
 
-    if (c == '\n' || c == '\r')  // command terminated
+    if (c == '\n' || c == '\r') // command terminated
     {
       if (serial_arrived > 3)
       {
         // signal that the packet is complete for processing
-	packet_received_b = true;
+        packet_received_b = true;
       }
-
     }
 
     // if escape is received, clear the buffer and stop the motors for now
-    if (c == 27)  // esc
+    if (c == 27) // esc
     {
       for (uint8_t i = 0; i < MOTOR_COUNT; i++)
       {
@@ -182,27 +187,47 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
+  // PID for posx, posy, angle
+  PID pid_x(PID_KP, PID_TI, PID_TD, PID_DELTA_T);
+  pid_x.setInputLimits(-1.0f, 1.0f);
+  pid_x.setOutputLimits(-1.0f, 1.0f);
+  pid_x.setBias(0.0);
+  pid_x.setMode(1);
+
+  float pos_x_setpoint;
+  float pos_x_measured;
+
 
   // MAIN LOOP
   while (true)
   {
     main_timer.reset();
     main_timer.start();
+
+    // PID for posx, posy, angle
+    // TODO measured vs actual pos_x
+    pid_x.setSetPoint(pos_x_setpoint);
+    pid_x.setProcessValue(pos_x_measured);
+    pid_x.compute();
+    // setEffort(pid_.compute());
+
+    /*
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       // MOTOR DEBUG
-      // serial_pc.printf("\r\n");
-//      serial_pc.printf("MOTOR %d: \r\n", i);
-//      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-//                       m[i].getSpeedSetPoint());
-//      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-//      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-//      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
+      serial_pc.printf("\r\n");
+      serial_pc.printf("MOTOR %d: \r\n", i);
+      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
+                       m[i].getSpeedSetPoint());
+      serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
+      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
+      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
     }
+    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
+    */
 
-//    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
-    
-    if (packet_received_b) // packet was completeted with \r \n
+    // packet was completeted with \r \n
+    if (packet_received_b)
     {
       std::string packet(serial_buf);
       serial_buf[0] = '\0';
@@ -210,12 +235,14 @@ int main()
       processPacket(packet);
       packet_received_b = false;
     }
-    
+
     // Update odometry
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
-                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+
+    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
+                     odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
+                     odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
     // Synchronize to given MAIN_DELTA_T
-    wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
+    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
   }
 }
