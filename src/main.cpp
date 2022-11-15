@@ -30,6 +30,11 @@ Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 
 // Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
+// !
+Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
+float expected_lin_speed_x;
+float expected_lin_speed_y;
+float expected_angular_speed_z;
 
 // Timeout
 Timer cmd_timer, main_timer;
@@ -109,6 +114,10 @@ void processPacket(const std::string &packet)
         m[i].setSpeedSetPoint(speed);
       }
     }
+
+    expected_lin_speed_x = lin_speed_x;         // !
+    expected_lin_speed_y = lin_speed_y;         // !
+    expected_angular_speed_z = angular_speed_z; // !
     cmd_timer.reset();
   }
   /*
@@ -125,8 +134,6 @@ void processPacket(const std::string &packet)
   }
   */
 }
-
-
 
 // Process an incoming serial byte
 void pc_rx_callback()
@@ -187,16 +194,12 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
-  // PID for posx, posy, angle
+  // ! PID for posx, posy, angle
   PID pid_x(PID_KP, PID_TI, PID_TD, PID_DELTA_T);
   pid_x.setInputLimits(-1.0f, 1.0f);
   pid_x.setOutputLimits(-1.0f, 1.0f);
   pid_x.setBias(0.0);
   pid_x.setMode(1);
-
-  float pos_x_setpoint;
-  float pos_x_measured;
-
 
   // MAIN LOOP
   while (true)
@@ -204,11 +207,11 @@ int main()
     main_timer.reset();
     main_timer.start();
 
-    // PID for posx, posy, angle
-    // TODO measured vs actual pos_x
-    pid_x.setSetPoint(pos_x_setpoint);
-    pid_x.setProcessValue(pos_x_measured);
+    // ! PID for posx, posy, angle
+    pid_x.setSetPoint(odom_expected_.getPosX());
+    pid_x.setProcessValue(odom_.getPosX());
     pid_x.compute();
+    odom_expected_.update(expected_lin_speed_x, expected_lin_speed_y, expected_angular_speed_z);
     // setEffort(pid_.compute());
 
     /*

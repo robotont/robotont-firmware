@@ -1,9 +1,9 @@
 #include "odom.h"
 #include "MatrixMath.h"
 
-Odom::Odom(const MotorConfig &cfg0, const MotorConfig &cfg1, const MotorConfig &cfg2,
-           float delta_t)
-    : motor_configs_({cfg0, cfg1, cfg2}), wheel_vel_(3, 1), robot_vel_(3, 1), odom_vel_(3, 1), odom_pos_(3, 1), odom_matrix_(3, 3), odom_matrix_inv_(3, 3), delta_t_(delta_t)
+Odom::Odom(const MotorConfig &cfg0, const MotorConfig &cfg1, const MotorConfig &cfg2, float delta_t)
+    : motor_configs_({cfg0, cfg1, cfg2}), wheel_vel_(3, 1), robot_vel_(3, 1), odom_vel_(3, 1),
+      odom_pos_(3, 1), odom_matrix_(3, 3), odom_matrix_inv_(3, 3), delta_t_(delta_t)
 {
   // add elements to odom matrix row by row
   for (int i = 0; i < 3; i++)
