@@ -30,11 +30,12 @@ Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 
 // Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
-// !
-Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
+Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T); // !
+
 float expected_lin_speed_x;
 float expected_lin_speed_y;
 float expected_angular_speed_z;
+float pid_angle_output = 0;
 
 // Timeout
 Timer cmd_timer, main_timer;
@@ -194,12 +195,12 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
-  // ! PID for posx, posy, angle
-  PID pid_x(PID_KP, PID_TI, PID_TD, PID_DELTA_T);
-  pid_x.setInputLimits(-1.0f, 1.0f);
-  pid_x.setOutputLimits(-1.0f, 1.0f);
-  pid_x.setBias(0.0);
-  pid_x.setMode(1);
+  // ! PID for angle
+  PID pid_angle(PID_KP, PID_TI, PID_TD, PID_DELTA_T);
+  pid_angle.setInputLimits(-1.0f, 1.0f);
+  pid_angle.setOutputLimits(-1.0f, 1.0f);
+  pid_angle.setBias(0.0);
+  pid_angle.setMode(1);
 
   // MAIN LOOP
   while (true)
@@ -207,12 +208,12 @@ int main()
     main_timer.reset();
     main_timer.start();
 
-    // ! PID for posx, posy, angle
-    pid_x.setSetPoint(odom_expected_.getPosX());
-    pid_x.setProcessValue(odom_.getPosX());
-    pid_x.compute();
+    pid_angle.setSetPoint(odom_expected_.getOriZ());
+    pid_angle.setProcessValue(odom_.getOriZ());
+    pid_angle_output = pid_angle.compute();
+    
     odom_expected_.update(expected_lin_speed_x, expected_lin_speed_y, expected_angular_speed_z);
-    // setEffort(pid_.compute());
+    
 
     /*
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
