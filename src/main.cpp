@@ -35,7 +35,7 @@ Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T); // !
 float expected_lin_speed_x;
 float expected_lin_speed_y;
 float expected_angular_speed_z;
-float pid_angle_output = 0;
+float pid_angular_speed_z = 0;
 
 // Timeout
 Timer cmd_timer, main_timer;
@@ -99,13 +99,17 @@ void processPacket(const std::string &packet)
     float lin_speed_y = std::atof(cmd[2].c_str());
     float angular_speed_z = std::atof(cmd[3].c_str());
 
+    expected_lin_speed_x = lin_speed_x;         // !
+    expected_lin_speed_y = lin_speed_y;         // !
+    expected_angular_speed_z = angular_speed_z; // TODO 0 if stop
+
     float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
     float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
-                    m[i].getWheelPosR() * angular_speed_z;
+                    m[i].getWheelPosR() * pid_angular_speed_z;
       if (abs(speed) < 1e-5)
       {
         m[i].stop();
@@ -115,10 +119,6 @@ void processPacket(const std::string &packet)
         m[i].setSpeedSetPoint(speed);
       }
     }
-
-    expected_lin_speed_x = lin_speed_x;         // !
-    expected_lin_speed_y = lin_speed_y;         // !
-    expected_angular_speed_z = angular_speed_z; // !
     cmd_timer.reset();
   }
   /*
@@ -180,6 +180,7 @@ void check_for_timeout()
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       m[i].stop();
+      // TODO stop odom expected
     }
   }
 }
@@ -205,14 +206,16 @@ int main()
   // MAIN LOOP
   while (true)
   {
+    odom_expected_.update(expected_lin_speed_x, expected_lin_speed_y, expected_angular_speed_z);
+
     main_timer.reset();
     main_timer.start();
-
     pid_angle.setSetPoint(odom_expected_.getOriZ());
+    // getAngVelZ() pid input todo
     pid_angle.setProcessValue(odom_.getOriZ());
-    pid_angle_output = pid_angle.compute();
+    pid_angular_speed_z = pid_angle.compute();
     
-    odom_expected_.update(expected_lin_speed_x, expected_lin_speed_y, expected_angular_speed_z);
+    
     
 
     /*
