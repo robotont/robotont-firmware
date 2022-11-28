@@ -207,6 +207,9 @@ int main()
   while (true)
   {
     odom_expected_.update(expected_lin_speed_x, expected_lin_speed_y, expected_angular_speed_z);
+    serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
+                     odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
+                     odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
 
     main_timer.reset();
     main_timer.start();
@@ -214,9 +217,6 @@ int main()
     // getAngVelZ() pid input todo
     pid_angle.setProcessValue(odom_.getOriZ());
     pid_angular_speed_z = pid_angle.compute();
-    
-    
-    
 
     /*
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
