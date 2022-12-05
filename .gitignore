@@ -8,3 +8,5 @@
 *.swp
 .pio
 .vscode/
+
+.vscode
