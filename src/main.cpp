@@ -35,7 +35,9 @@ Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T); // !
 float expected_lin_speed_x;
 float expected_lin_speed_y;
 float expected_angular_speed_z;
-float pid_angular_speed_z = 0;
+// float pid_angular_speed_z = 0;
+float lin_speed_dir;
+float lin_speed_mag; // TODO
 
 // Timeout
 Timer cmd_timer, main_timer;
@@ -99,25 +101,18 @@ void processPacket(const std::string &packet)
     float lin_speed_y = std::atof(cmd[2].c_str());
     float angular_speed_z = std::atof(cmd[3].c_str());
 
-    expected_lin_speed_x = lin_speed_x;         // !
-    expected_lin_speed_y = lin_speed_y;         // !
-    expected_angular_speed_z = angular_speed_z; // TODO 0 if stop
+    expected_lin_speed_x = lin_speed_x;
+    expected_lin_speed_y = lin_speed_y;
+    expected_angular_speed_z = angular_speed_z;
 
-    float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
+    lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
+    lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
 
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+    if (lin_speed_mag < 1e-3)
     {
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
-                    m[i].getWheelPosR() * pid_angular_speed_z;
-      if (abs(speed) < 1e-5)
-      {
-        m[i].stop();
-      }
-      else
-      {
-        m[i].setSpeedSetPoint(speed);
-      }
+      expected_lin_speed_x = 0;
+      expected_lin_speed_y = 0;
+      expected_angular_speed_z = 0;
     }
     cmd_timer.reset();
   }
@@ -197,8 +192,8 @@ int main()
   cmd_timer.start();
 
   // ! PID for angle
-  PID pid_angle(PID_KP, PID_TI, PID_TD, PID_DELTA_T);
-  pid_angle.setInputLimits(-1.0f, 1.0f);
+  PID pid_angle(PID_KP * 10, 0, 0, MAIN_DELTA_T);
+  pid_angle.setInputLimits(-10.0f, 10.0f);
   pid_angle.setOutputLimits(-1.0f, 1.0f);
   pid_angle.setBias(0.0);
   pid_angle.setMode(1);
@@ -206,6 +201,7 @@ int main()
   // MAIN LOOP
   while (true)
   {
+
     odom_expected_.update(expected_lin_speed_x, expected_lin_speed_y, expected_angular_speed_z);
     serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
                      odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
@@ -216,8 +212,24 @@ int main()
     pid_angle.setSetPoint(odom_expected_.getOriZ());
     // getAngVelZ() pid input todo
     pid_angle.setProcessValue(odom_.getOriZ());
-    pid_angular_speed_z = pid_angle.compute();
+    float pid_angular_speed_z = pid_angle.compute();
 
+    // serial_pc.printf("ORIZ:%f %f %f\n", odom_.getOriZ(), odom_expected_.getOriZ(), pid_angular_speed_z);
+
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+    {
+      // TODO motor speed to the odom expected
+      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
+                    m[i].getWheelPosR() * pid_angular_speed_z;
+      if (abs(speed) < 1e-3)
+      {
+        m[i].stop();
+      }
+      else
+      {
+        m[i].setSpeedSetPoint(speed);
+      }
+    }
     /*
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
