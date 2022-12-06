@@ -32,9 +32,9 @@ Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T); // !
 
-float expected_lin_speed_x;
-float expected_lin_speed_y;
-float expected_angular_speed_z;
+// !
+float expected_speeds_m[3] = {0, 0, 0};
+
 // float pid_angular_speed_z = 0;
 float lin_speed_dir;
 float lin_speed_mag; // TODO
@@ -101,19 +101,9 @@ void processPacket(const std::string &packet)
     float lin_speed_y = std::atof(cmd[2].c_str());
     float angular_speed_z = std::atof(cmd[3].c_str());
 
-    expected_lin_speed_x = lin_speed_x;
-    expected_lin_speed_y = lin_speed_y;
-    expected_angular_speed_z = angular_speed_z;
-
     lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
     lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
 
-    if (lin_speed_mag < 1e-3)
-    {
-      expected_lin_speed_x = 0;
-      expected_lin_speed_y = 0;
-      expected_angular_speed_z = 0;
-    }
     cmd_timer.reset();
   }
   /*
@@ -202,7 +192,7 @@ int main()
   while (true)
   {
 
-    odom_expected_.update(expected_lin_speed_x, expected_lin_speed_y, expected_angular_speed_z);
+    odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
     serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
                      odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
                      odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
@@ -228,22 +218,13 @@ int main()
       else
       {
         m[i].setSpeedSetPoint(speed);
+        expected_speeds_m[i] = speed; // !
       }
-    }
-    /*
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      // MOTOR DEBUG
-      serial_pc.printf("\r\n");
-      serial_pc.printf("MOTOR %d: \r\n", i);
-      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-                       m[i].getSpeedSetPoint());
-      serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
-    }
-    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
-    */
+      if (speed < 1e-3)
+      {
+        expected_speeds_m[i] = 0; // !
+      }
+        }
 
     // packet was completeted with \r \n
     if (packet_received_b)
