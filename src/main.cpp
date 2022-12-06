@@ -106,6 +106,16 @@ void processPacket(const std::string &packet)
 
     cmd_timer.reset();
   }
+  else if (cmd[0] == "DEBUG_IN")
+  {
+    float a = 0.0f;
+    float b = 0.0f;
+    float c = 0.0f;
+    float d = 0.0f;
+    float e = 0.0f;
+    sscanf(ss.str().c_str(), "%f:%f:%f:%f:%f", &a, &b, &c, &d, &e); // MAX_CMD_ARGS = 5
+    // TODO process debug data
+  }
   /*
   else if (cmd[0] == "PID") // Update PID parameters
   {
