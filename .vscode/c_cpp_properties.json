@@ -542,7 +542,7 @@
                 "__MBED__=1",
                 ""
             ],
-            "cppStandard": "c++11",
+            "cppStandard": "c++98",
             "forcedInclude": [
                 "/home/leonid/work/robotont-firmware/.pio/build/nucleo_l476rg/mbed_config.h",
                 ""
