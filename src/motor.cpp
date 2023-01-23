@@ -139,8 +139,8 @@ void Motor::update()
   // calculate new effort
   pid_.setProcessValue(speed_measured_);
   setEffort(pid_.compute());
-  speed_measured_ = enc_.getPulses() * pulse_to_speed_ratio_;
-  enc_.reset();
+  // speed_measured_ = enc_.getPulses() * pulse_to_speed_ratio_;
+  // enc_.reset();
 
 }
 
