@@ -204,12 +204,12 @@ int main()
   int counter = 0;
   while (true)
   {
-    // serial_pc.printf("DEBUG_OUT:%d:\r\n", ++counter);
+    serial_pc.printf("DEBUG_OUT:%d:\r\n", ++counter);
 
-    // odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
-    // serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
-    //                  odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
-    //                  odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
+    odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
+    serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
+                     odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
+                     odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
 
     // ! TODO pid for X and Y
 
