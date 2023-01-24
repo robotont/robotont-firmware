@@ -22,10 +22,20 @@
 #define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
 
 // Include motor configurations
-//#include "motor_config_v0_6.h"
+// #include "motor_config_v0_6.h"
 #include "motor_config_v2_1.h"
 
-// ! TODO aeg PID t66tlemiseks
+// TODO =======================================
+// // Derived class
+// class RobotSerial : public RawSerial
+// {
+// public:
+//   RobotSerial(int baudrate) {
+
+//   }
+// TODO ======================================
+
+// TODO aeg PID t66tlemiseks
 
 // Initialize motors
 Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
@@ -34,12 +44,12 @@ Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T); // !
 
-// !
+// ! Allocating expected values
 float expected_speeds_m[3] = {0, 0, 0};
-
-// float pid_angular_speed_z = 0;
-float lin_speed_dir;
-float lin_speed_mag; // TODO
+float RS_lin_speed_dir;
+float RS_lin_speed_mag;
+float RS_angular_speed_z;
+// !===========================
 
 // Timeout
 Timer cmd_timer, main_timer;
@@ -53,85 +63,6 @@ volatile bool packet_received_b = false;
 
 // For parsing command with arguments received over serial
 std::vector<std::string> cmd;
-
-// This method processes a received serial packet
-void processPacket(const std::string &packet)
-{
-  std::istringstream ss(packet);
-  std::string arg;
-  cmd.clear();
-
-  for (int i = 0; i <= MAX_CMD_ARGS; i++)
-  {
-    arg.clear();
-    std::getline(ss, arg, ':');
-    if (arg.length())
-    {
-      cmd.push_back(arg);
-      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
-    }
-    else
-    {
-      break;
-    }
-  }
-
-  if (!cmd.size())
-  {
-    return;
-  }
-
-  // MS - Set motor speeds manually (linear speed on wheel m/s)
-  /* MS:motor1_speed:motor2_speed:motor3_speed */
-  if (cmd[0] == "MS")
-  {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
-      m[i].setSpeedSetPoint(speed_setpoint);
-    }
-    cmd_timer.reset();
-  }
-
-  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
-  // y-left, theta-CCW rotation.
-  /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
-  else if (cmd[0] == "RS")
-  {
-    float lin_speed_x = std::atof(cmd[1].c_str());
-    float lin_speed_y = std::atof(cmd[2].c_str());
-    float angular_speed_z = std::atof(cmd[3].c_str());
-
-    lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
-
-    cmd_timer.reset();
-  }
-  else if (cmd[0] == "DEBUG_IN")
-  {
-    float a = 0.0f;
-    float b = 0.0f;
-    float c = 0.0f;
-    float d = 0.0f;
-    float e = 0.0f;
-    sscanf(ss.str().c_str(), "%f:%f:%f:%f:%f", &a, &b, &c, &d, &e); // MAX_CMD_ARGS = 5
-    // TODO process debug data
-  }
-  /*
-  else if (cmd[0] == "PID") // Update PID parameters
-  {
-    float k_p = 0.0f;
-    float tau_i = 0.0f;
-    float tau_d = 0.0f;
-    sscanf(ss.str().c_str(), "%f:%f:%f", &k_p, &tau_i, &tau_d);
-    for (uint8_t i = 0; i < 3; i++)
-    {
-     m[i].setPIDTunings(k_p, tau_i, tau_d);
-    }
-  }
-  */
-}
 
 // Process an incoming serial byte
 void pc_rx_callback()
@@ -182,9 +113,82 @@ void check_for_timeout()
   }
 }
 
+// This method processes a received serial packet
+void processPacket(const std::string &packet)
+{
+  std::istringstream ss(packet);
+  std::string arg;
+  cmd.clear();
+
+  for (int i = 0; i <= MAX_CMD_ARGS; i++)
+  {
+    arg.clear();
+    std::getline(ss, arg, ':');
+    if (arg.length())
+    {
+      cmd.push_back(arg);
+      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  if (!cmd.size())
+  {
+    return;
+  }
+
+  // MS - Set motor speeds manually (linear speed on wheel m/s)
+  /* MS:motor1_speed:motor2_speed:motor3_speed */
+  if (cmd[0] == "MS")
+  {
+    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
+    {
+      float speed_setpoint = std::atof(cmd[i + 1].c_str());
+      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
+      m[i].setSpeedSetPoint(speed_setpoint);
+    }
+    cmd_timer.reset();
+  }
+
+  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
+  // y-left, theta-CCW rotation.
+  /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
+  else if (cmd[0] == "RS")
+  {
+    float lin_speed_x = std::atof(cmd[1].c_str());
+    float lin_speed_y = std::atof(cmd[2].c_str());
+    float angular_speed_z = std::atof(cmd[3].c_str());
+
+    // ! Assigning expected values
+    RS_lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
+    RS_lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
+    RS_angular_speed_z = angular_speed_z;
+    // !==========================
+
+    cmd_timer.reset();
+  }
+  else if (cmd[0] == "DEBUG_IN")
+  {
+    float a = 0.0f;
+    float b = 0.0f;
+    float c = 0.0f;
+    float d = 0.0f;
+    float e = 0.0f;
+    sscanf(ss.str().c_str(), "%f:%f:%f:%f:%f", &a, &b, &c, &d, &e); // MAX_CMD_ARGS = 5
+    // TODO process debug data
+  }
+  // TODO test if reset works
+  else if (cmd[0] == "RESET")
+  {
+    NVIC_SystemReset();
+  }
+}
+
 int main()
 {
-  // Initialize serial connection
   serial_pc.baud(115200);
   serial_buf[0] = '\0';
   serial_pc.attach(&pc_rx_callback);
@@ -193,30 +197,29 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
-  // ! PID for angle
+  // ! Setting up PID for angle
   PID pid_angle(PID_KP * 10, 0, 0, MAIN_DELTA_T);
   pid_angle.setInputLimits(-10.0f, 10.0f);
   pid_angle.setOutputLimits(-1.0f, 1.0f);
   pid_angle.setBias(0.0);
   pid_angle.setMode(1);
+  // ! ========================
 
-  // MAIN LOOP
   int counter = 0;
   while (true)
   {
-    serial_pc.printf("DEBUG_OUT:%d:\r\n", ++counter);
+    // serial_pc.printf("DEBUG_OUT:%d:\r\n", ++counter);
 
     odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
     serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
                      odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
                      odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
 
-    // ! TODO pid for X and Y
+    // TODO pid for X and Y
 
     main_timer.reset();
     main_timer.start();
     pid_angle.setSetPoint(odom_expected_.getOriZ());
-    // getAngVelZ() pid input todo
     pid_angle.setProcessValue(odom_.getOriZ());
     float pid_angular_speed_z = pid_angle.compute();
 
@@ -224,8 +227,11 @@ int main()
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
-      // TODO motor speed to the odom expected
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
+      // ! Updating expected values
+      float expected_speed = RS_lin_speed_mag * sin(RS_lin_speed_dir - m[i].getWheelPosPhi()) +
+                             m[i].getWheelPosR() * RS_angular_speed_z;
+      // ! ========================
+      float speed = RS_lin_speed_mag * sin(RS_lin_speed_dir - m[i].getWheelPosPhi()) +
                     m[i].getWheelPosR() * pid_angular_speed_z;
       if (abs(speed) < 1e-3)
       {
@@ -234,7 +240,8 @@ int main()
       else
       {
         m[i].setSpeedSetPoint(speed);
-        expected_speeds_m[i] = speed; // !
+        expected_speeds_m[i] = expected_speed; // !
+        // expected_speeds_m[i] = speed; // ! Works (KP 0.8)
       }
       if (speed < 1e-3)
       {
