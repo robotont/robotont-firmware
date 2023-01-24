@@ -6,7 +6,6 @@
 
 #include "PID.h"
 
-// Common parameters for all motors
 #define ENC_CPR 64
 #define GEAR_RATIO 18.75
 #define WHEEL_RADIUS 0.035
@@ -19,18 +18,24 @@
 
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
-#define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
+#define CMD_TIMEOUT_MS 1000
 
-// Include motor configurations
-// #include "motor_config_v0_6.h"
 #include "motor_config_v2_1.h"
 
-// Initialize motors
 Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 
-// Initialize odometry
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T); // !
+
+Timer cmd_timer, main_timer;
+Ticker cmd_timeout_checker;
+
+RawSerial serial_pc(USBTX, USBRX);
+char serial_buf[256];
+volatile uint8_t serial_arrived = 0;
+volatile bool packet_received_b = false;
+
+std::vector<std::string> cmd;
 
 // ! Allocating expected values
 float expected_speeds_m[3] = {0, 0, 0};
@@ -39,24 +44,8 @@ float RS_lin_speed_mag;
 float RS_angular_speed_z;
 // !===========================
 
-// Timeout
-Timer cmd_timer, main_timer;
-Ticker cmd_timeout_checker;
-
-// Variables for serial connection
-RawSerial serial_pc(USBTX, USBRX);   // tx, rx
-char serial_buf[256];                // Buffer for incoming serial data
-volatile uint8_t serial_arrived = 0; // Number of bytes arrived
-volatile bool packet_received_b = false;
-
-// For parsing command with arguments received over serial
-std::vector<std::string> cmd;
-
-// Process an incoming serial byte
 void pc_rx_callback()
 {
-  // Store bytes from serial in our buffer until packet
-  // termination byte 'enter', '\n', '\r' etc has arrived
   while (serial_pc.readable())
   {
     char c = serial_pc.getc();
@@ -67,17 +56,15 @@ void pc_rx_callback()
       serial_arrived = 0;
     }
 
-    if (c == '\n' || c == '\r') // command terminated
+    if (c == '\n' || c == '\r')
     {
       if (serial_arrived > 3)
       {
-        // signal that the packet is complete for processing
         packet_received_b = true;
       }
     }
 
-    // if escape is received, clear the buffer and stop the motors for now
-    if (c == 27) // esc
+    if (c == 27)
     {
       for (uint8_t i = 0; i < MOTOR_COUNT; i++)
       {
@@ -96,12 +83,11 @@ void check_for_timeout()
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       m[i].stop();
-      // TODO stop odom expected
+      // TODO stop odom expected (it's done inside process packet, but need test here as well)
     }
   }
 }
 
-// This method processes a received serial packet
 void processPacket(const std::string &packet)
 {
   std::istringstream ss(packet);
@@ -115,7 +101,6 @@ void processPacket(const std::string &packet)
     if (arg.length())
     {
       cmd.push_back(arg);
-      // serial_pc.printf("Got arg %s\r\n", arg.c_str());
     }
     else
     {
@@ -128,22 +113,16 @@ void processPacket(const std::string &packet)
     return;
   }
 
-  // MS - Set motor speeds manually (linear speed on wheel m/s)
-  /* MS:motor1_speed:motor2_speed:motor3_speed */
   if (cmd[0] == "MS")
   {
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      // serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
       m[i].setSpeedSetPoint(speed_setpoint);
     }
     cmd_timer.reset();
   }
 
-  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
-  // y-left, theta-CCW rotation.
-  /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
   else if (cmd[0] == "RS")
   {
     float lin_speed_x = std::atof(cmd[1].c_str());
@@ -167,11 +146,6 @@ void processPacket(const std::string &packet)
     float e = 0.0f;
     sscanf(ss.str().c_str(), "%f:%f:%f:%f:%f", &a, &b, &c, &d, &e); // MAX_CMD_ARGS = 5
     // TODO process debug data
-  }
-  // TODO test if reset works
-  else if (cmd[0] == "RESET")
-  {
-    NVIC_SystemReset();
   }
 }
 
@@ -202,16 +176,13 @@ int main()
     serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
                      odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
                      odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
-
-    // TODO pid for X and Y
+    // TODO pid for X and Y speeds
 
     main_timer.reset();
     main_timer.start();
     pid_angle.setSetPoint(odom_expected_.getOriZ());
     pid_angle.setProcessValue(odom_.getOriZ());
     float pid_angular_speed_z = pid_angle.compute();
-
-    // serial_pc.printf("ORIZ:%f %f %f\n", odom_.getOriZ(), odom_expected_.getOriZ(), pid_angular_speed_z);
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
@@ -228,7 +199,7 @@ int main()
       else
       {
         m[i].setSpeedSetPoint(speed);
-        expected_speeds_m[i] = expected_speed; // !
+        expected_speeds_m[i] = expected_speed; // ! Kinda works with KP 8
         // expected_speeds_m[i] = speed; // ! Works (KP 0.8)
       }
       if (speed < 1e-3)
@@ -237,7 +208,6 @@ int main()
       }
     }
 
-    // packet was completeted with \r \n
     if (packet_received_b)
     {
       std::string packet(serial_buf);
@@ -247,13 +217,12 @@ int main()
       packet_received_b = false;
     }
 
-    // Update odometry
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
 
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    // Synchronize to given MAIN_DELTA_T
+
     wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
   }
 }
