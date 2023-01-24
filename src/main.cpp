@@ -25,18 +25,6 @@
 // #include "motor_config_v0_6.h"
 #include "motor_config_v2_1.h"
 
-// TODO =======================================
-// // Derived class
-// class RobotSerial : public RawSerial
-// {
-// public:
-//   RobotSerial(int baudrate) {
-
-//   }
-// TODO ======================================
-
-// TODO aeg PID t66tlemiseks
-
 // Initialize motors
 Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 
