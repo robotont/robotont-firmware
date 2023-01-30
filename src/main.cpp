@@ -13,8 +13,8 @@
 #define PID_KP 0.8
 #define PID_TI 0.05
 #define PID_TD 0.0
-#define PID_DELTA_T 0.01
-#define MAIN_DELTA_T 0.02
+#define PID_DELTA_T 0.01 / 2
+#define MAIN_DELTA_T 0.02 / 2
 
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
@@ -38,7 +38,7 @@ volatile bool packet_received_b = false;
 std::vector<std::string> cmd;
 
 // ! Allocating expected values
-float expected_speeds_m[3] = {0, 0, 0};
+volatile float expected_speeds_m[3] = {0, 0, 0};
 float RS_lin_speed_dir;
 float RS_lin_speed_mag;
 float RS_angular_speed_z;
@@ -137,16 +137,6 @@ void processPacket(const std::string &packet)
 
     cmd_timer.reset();
   }
-  else if (cmd[0] == "DEBUG_IN")
-  {
-    float a = 0.0f;
-    float b = 0.0f;
-    float c = 0.0f;
-    float d = 0.0f;
-    float e = 0.0f;
-    sscanf(ss.str().c_str(), "%f:%f:%f:%f:%f", &a, &b, &c, &d, &e); // MAX_CMD_ARGS = 5
-    // TODO process debug data
-  }
 }
 
 int main()
@@ -160,23 +150,25 @@ int main()
   cmd_timer.start();
 
   // ! Setting up PID for angle
-  PID pid_angle(PID_KP * 10, 0, 0, MAIN_DELTA_T);
-  pid_angle.setInputLimits(-10.0f, 10.0f);
+  PID pid_angle(PID_KP * 100, 0, 0, MAIN_DELTA_T);
+  pid_angle.setInputLimits(-10.0f, 10.0f); // Todo increase window size (10 rad ~ 2.5 square) (2nd prior)
   pid_angle.setOutputLimits(-1.0f, 1.0f);
   pid_angle.setBias(0.0);
   pid_angle.setMode(1);
   // ! ========================
 
-  int counter = 0;
   while (true)
   {
-    // serial_pc.printf("DEBUG_OUT:%d:\r\n", ++counter);
 
     odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
+    // serial_pc.printf("DEBUG_OUT:%d:%d:%d:\r\n", expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
+    // odom_expected_.print();
     serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
                      odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
                      odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
-    // TODO pid for X and Y speeds
+    // TODO pid for X and Y speeds (1st prior)
+
+    // TODO 3rd prior (motor encoder freq)
 
     main_timer.reset();
     main_timer.start();
@@ -192,7 +184,7 @@ int main()
       // ! ========================
       float speed = RS_lin_speed_mag * sin(RS_lin_speed_dir - m[i].getWheelPosPhi()) +
                     m[i].getWheelPosR() * pid_angular_speed_z;
-      if (abs(speed) < 1e-3)
+      if (abs(speed) < 1e-3) // TODO expected speed dosen't changed 
       {
         m[i].stop();
       }
