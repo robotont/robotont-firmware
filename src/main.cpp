@@ -150,6 +150,7 @@ int main()
   cmd_timer.start();
 
   // ! Setting up PID for angle
+  // TODO 0st test removem MOTOR PID
   PID pid_angle(PID_KP * 100, 0, 0, MAIN_DELTA_T);
   pid_angle.setInputLimits(-10.0f, 10.0f); // Todo increase window size (10 rad ~ 2.5 square) (2nd prior)
   pid_angle.setOutputLimits(-1.0f, 1.0f);
