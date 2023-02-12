@@ -20,6 +20,10 @@
 #define MOTOR_COUNT 3
 #define CMD_TIMEOUT_MS 1000
 
+#define ENABLE_PID_Z
+// #define ENABLE_PID_X
+// #define ENABLE_PID_Y
+
 #include "motor_config_v2_1.h"
 
 Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
@@ -39,6 +43,8 @@ std::vector<std::string> cmd;
 
 // ! Allocating expected values
 volatile float expected_speeds_m[3] = {0, 0, 0};
+float RS_lin_speed_x;
+float RS_lin_speed_y;
 float RS_lin_speed_dir;
 float RS_lin_speed_mag;
 float RS_angular_speed_z;
@@ -125,14 +131,13 @@ void processPacket(const std::string &packet)
 
   else if (cmd[0] == "RS")
   {
-    float lin_speed_x = std::atof(cmd[1].c_str());
-    float lin_speed_y = std::atof(cmd[2].c_str());
-    float angular_speed_z = std::atof(cmd[3].c_str());
+    RS_lin_speed_x = std::atof(cmd[1].c_str());
+    RS_lin_speed_y = std::atof(cmd[2].c_str());
+    RS_angular_speed_z = std::atof(cmd[3].c_str());
 
     // ! Assigning expected values
-    RS_lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    RS_lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
-    RS_angular_speed_z = angular_speed_z;
+    RS_lin_speed_dir = atan2(RS_lin_speed_y, RS_lin_speed_x);
+    RS_lin_speed_mag = sqrt(RS_lin_speed_x * RS_lin_speed_x + RS_lin_speed_y * RS_lin_speed_y);
     // !==========================
 
     cmd_timer.reset();
@@ -149,20 +154,24 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
-  // ! Setting up PID for angle
+// ! Setting up PID for angle
+#ifdef ENABLE_PID_Z
   PID pid_angle(PID_KP * 300, 0, 0, MAIN_DELTA_T);
   pid_angle.setInputLimits(-10.0f, 10.0f); // Todo increase window size (10 rad ~ 2.5 square) (2nd prior)
   pid_angle.setOutputLimits(-1.0f, 1.0f);
   pid_angle.setBias(0.0);
   pid_angle.setMode(1);
-
+#endif
+#ifdef ENABLE_PID_X
   PID pid_speed_x(PID_KP * 300, 0, 0, MAIN_DELTA_T);
   pid_speed_x.setInputLimits(-.0f, .0f); // ! TODO test appropriate range?
   pid_speed_x.setOutputLimits(-1.0f, 1.0f);
   pid_speed_x.setBias(0.0);
   pid_speed_x.setMode(1);
+#endif
 
-  PID pid_speed_y(PID_KP * 300, 0, 0, MAIN_DELTA_T);
+#ifdef ENABLE_PID_Y
+  PID pid_speed_y(PID_KP * 10, 0, 0, MAIN_DELTA_T);
   pid_speed_y.setInputLimits(-1.0f, 1.0f); // ! TODO test appropriate range?
   pid_speed_y.setOutputLimits(-1.0f, 1.0f);
   pid_speed_y.setBias(0.0);
@@ -173,11 +182,11 @@ int main()
   float pid_lin_speed_y;
   float pid_lin_speed_mag;
   float pid_lin_speed_dir;
+#endif
   // ! ========================
 
   while (true)
   {
-
     odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
     serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
                      odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
@@ -194,13 +203,13 @@ int main()
 
     pid_speed_x.setSetPoint(odom_expected_.getLinVelX());
     pid_speed_x.setProcessValue(odom_.getLinVelX());
-    pid_speed_y.setSetPoint(odom_expected_.getLinVelY());
-    pid_speed_y.setProcessValue(odom_.getLinVelY());
+    // pid_speed_y.setSetPoint(odom_expected_.getLinVelY());
+    // pid_speed_y.setProcessValue(odom_.getLinVelY());
     pid_lin_speed_x = pid_speed_x.compute();
-    pid_lin_speed_y = pid_speed_y.compute();
+    // pid_lin_speed_y = pid_speed_y.compute();
 
-    pid_lin_speed_dir = atan2(pid_lin_speed_y, pid_lin_speed_x);
-    pid_lin_speed_mag = sqrt(pid_lin_speed_x * pid_lin_speed_x + pid_lin_speed_y * pid_lin_speed_y);
+    pid_lin_speed_dir = atan2(RS_lin_speed_y, pid_lin_speed_x);
+    pid_lin_speed_mag = sqrt(pid_lin_speed_x * pid_lin_speed_x + RS_lin_speed_y * RS_lin_speed_y);
     // ! =================
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
@@ -209,7 +218,7 @@ int main()
       float expected_speed = RS_lin_speed_mag * sin(RS_lin_speed_dir - m[i].getWheelPosPhi()) +
                              m[i].getWheelPosR() * RS_angular_speed_z;
       // ! ========================
-      float speed = pid_lin_speed_mag * sin(pid_lin_speed_dir - m[i].getWheelPosPhi()) +
+      float speed = RS_lin_speed_mag * sin(RS_lin_speed_mag - m[i].getWheelPosPhi()) +
                     m[i].getWheelPosR() * pid_angular_speed_z;
       if (abs(speed) < 1e-3)
       {
