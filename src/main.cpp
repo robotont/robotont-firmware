@@ -25,7 +25,7 @@
 Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
-Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T); // !
+Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
@@ -149,33 +149,54 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
-  // ! Setting up PID for angle
-  // TODO 0st test removem MOTOR PID
-  PID pid_angle(PID_KP * 100, 0, 0, MAIN_DELTA_T);
+  // ! Setting up PIDs
+  PID pid_angle(PID_KP * 300, 0, 0, MAIN_DELTA_T);
   pid_angle.setInputLimits(-10.0f, 10.0f); // Todo increase window size (10 rad ~ 2.5 square) (2nd prior)
   pid_angle.setOutputLimits(-1.0f, 1.0f);
   pid_angle.setBias(0.0);
   pid_angle.setMode(1);
+
+  PID pid_speed_x(PID_KP * 300, 0, 0, MAIN_DELTA_T);
+  pid_speed_x.setInputLimits(-100.0f, 100.0f); // !! todo check appropriate values (?)
+  pid_speed_x.setOutputLimits(-1.0f, 1.0f);
+  pid_speed_x.setBias(0.0);
+  pid_speed_x.setMode(1);
+
+  PID pid_speed_y(PID_KP * 300, 0, 0, MAIN_DELTA_T);
+  pid_speed_y.setInputLimits(-100.0f, 100.0f); // !! todo check appropriate values (?)
+  pid_speed_y.setOutputLimits(-1.0f, 1.0f);
+  pid_speed_y.setBias(0.0);
+  pid_speed_y.setMode(1);
+
+  float pid_angular_speed_z;
+  float pid_lin_speed_x;
+  float pid_lin_speed_y;
+  float pid_lin_speed_dir;
+  float pid_lin_speed_mag;
   // ! ========================
 
   while (true)
   {
-
-    odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
-    // serial_pc.printf("DEBUG_OUT:%d:%d:%d:\r\n", expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
-    // odom_expected_.print();
-    serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
-                     odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
-                     odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
-    // TODO pid for X and Y speeds (1st prior)
-
     // TODO 3rd prior (motor encoder freq)
 
     main_timer.reset();
     main_timer.start();
+
+    // ! PIDs
     pid_angle.setSetPoint(odom_expected_.getOriZ());
     pid_angle.setProcessValue(odom_.getOriZ());
-    float pid_angular_speed_z = pid_angle.compute();
+    pid_angular_speed_z = pid_angle.compute();
+
+    pid_speed_x.setSetPoint(odom_expected_.getLinVelX());
+    pid_speed_x.setProcessValue(odom_.getLinVelX());
+    pid_speed_y.setSetPoint(odom_expected_.getLinVelY());
+    pid_speed_y.setProcessValue(odom_.getLinVelY());
+    pid_lin_speed_x = pid_speed_x.compute();
+    pid_lin_speed_y = pid_speed_y.compute();
+
+    pid_lin_speed_dir = atan2(pid_lin_speed_y, pid_lin_speed_x);
+    pid_lin_speed_mag = sqrt(pid_lin_speed_x * pid_lin_speed_x + pid_lin_speed_y * pid_lin_speed_y);
+    // ! ===
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
@@ -183,21 +204,20 @@ int main()
       float expected_speed = RS_lin_speed_mag * sin(RS_lin_speed_dir - m[i].getWheelPosPhi()) +
                              m[i].getWheelPosR() * RS_angular_speed_z;
       // ! ========================
-      float speed = RS_lin_speed_mag * sin(RS_lin_speed_dir - m[i].getWheelPosPhi()) +
+      float speed = pid_lin_speed_mag * sin(pid_lin_speed_dir - m[i].getWheelPosPhi()) +
                     m[i].getWheelPosR() * pid_angular_speed_z;
-      if (abs(speed) < 1e-3) // TODO expected speed dosen't changed 
+      if (abs(speed) < 1e-3)
       {
         m[i].stop();
       }
       else
       {
         m[i].setSpeedSetPoint(speed);
-        expected_speeds_m[i] = expected_speed; // ! Kinda works with KP 8
-        // expected_speeds_m[i] = speed; // ! Works (KP 0.8)
+        expected_speeds_m[i] = expected_speed;
       }
       if (speed < 1e-3)
       {
-        expected_speeds_m[i] = 0; // !
+        expected_speeds_m[i] = 0;
       }
     }
 
@@ -210,8 +230,12 @@ int main()
       packet_received_b = false;
     }
 
+    odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
 
+    serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
+                     odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
+                     odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
