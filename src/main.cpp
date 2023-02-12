@@ -154,13 +154,14 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
-// ! Setting up PID for angle
 #ifdef ENABLE_PID_Z
   PID pid_angle(PID_KP * 300, 0, 0, MAIN_DELTA_T);
   pid_angle.setInputLimits(-10.0f, 10.0f); // Todo increase window size (10 rad ~ 2.5 square) (2nd prior)
   pid_angle.setOutputLimits(-1.0f, 1.0f);
   pid_angle.setBias(0.0);
   pid_angle.setMode(1);
+
+  float pid_angular_speed_z;
 #endif
 #ifdef ENABLE_PID_X
   PID pid_speed_x(PID_KP * 300, 0, 0, MAIN_DELTA_T);
@@ -168,6 +169,8 @@ int main()
   pid_speed_x.setOutputLimits(-1.0f, 1.0f);
   pid_speed_x.setBias(0.0);
   pid_speed_x.setMode(1);
+
+  float pid_lin_speed_x;
 #endif
 
 #ifdef ENABLE_PID_Y
@@ -177,13 +180,14 @@ int main()
   pid_speed_y.setBias(0.0);
   pid_speed_y.setMode(1);
 
-  float pid_angular_speed_z;
-  float pid_lin_speed_x;
   float pid_lin_speed_y;
-  float pid_lin_speed_mag;
-  float pid_lin_speed_dir;
 #endif
-  // ! ========================
+
+  float robot_angular_speed_z;
+  float robot_lin_speed_x;
+  float robot_lin_speed_y;
+  float robot_lin_speed_mag;
+  float robot_lin_speed_dir;
 
   while (true)
   {
@@ -196,21 +200,22 @@ int main()
     main_timer.reset();
     main_timer.start();
 
-    // ! Calculating PIDs
+    #ifdef BLAH
     pid_angle.setSetPoint(odom_expected_.getOriZ());
     pid_angle.setProcessValue(odom_.getOriZ());
     pid_angular_speed_z = pid_angle.compute();
 
     pid_speed_x.setSetPoint(odom_expected_.getLinVelX());
     pid_speed_x.setProcessValue(odom_.getLinVelX());
-    // pid_speed_y.setSetPoint(odom_expected_.getLinVelY());
-    // pid_speed_y.setProcessValue(odom_.getLinVelY());
+    pid_speed_y.setSetPoint(odom_expected_.getLinVelY());
+    pid_speed_y.setProcessValue(odom_.getLinVelY());
     pid_lin_speed_x = pid_speed_x.compute();
-    // pid_lin_speed_y = pid_speed_y.compute();
+    pid_lin_speed_y = pid_speed_y.compute();
 
-    pid_lin_speed_dir = atan2(RS_lin_speed_y, pid_lin_speed_x);
-    pid_lin_speed_mag = sqrt(pid_lin_speed_x * pid_lin_speed_x + RS_lin_speed_y * RS_lin_speed_y);
-    // ! =================
+    // pid_lin_speed_dir = atan2(RS_lin_speed_y, pid_lin_speed_x);
+    // pid_lin_speed_mag = sqrt(pid_lin_speed_x * pid_lin_speed_x + RS_lin_speed_y * RS_lin_speed_y);
+    #endif
+    // !!!!!!!!!! TODO robot_speed calculate
 
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
@@ -218,8 +223,8 @@ int main()
       float expected_speed = RS_lin_speed_mag * sin(RS_lin_speed_dir - m[i].getWheelPosPhi()) +
                              m[i].getWheelPosR() * RS_angular_speed_z;
       // ! ========================
-      float speed = RS_lin_speed_mag * sin(RS_lin_speed_mag - m[i].getWheelPosPhi()) +
-                    m[i].getWheelPosR() * pid_angular_speed_z;
+      float speed = robot_lin_speed_mag * sin(robot_lin_speed_dir - m[i].getWheelPosPhi()) +
+                    m[i].getWheelPosR() * robot_angular_speed_z;
       if (abs(speed) < 1e-3)
       {
         m[i].stop();
