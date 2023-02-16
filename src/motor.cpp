@@ -2,7 +2,7 @@
 #include "motor.h"
 #include <algorithm>
 
-#define DEBUG_DISABLE_MOTOR_PID true
+// #define DEBUG_DISABLE_MOTOR_PID 
 
 Motor::Motor(const MotorConfig &cfg)
     : dir1_(cfg.pin_dir1), dir2_(cfg.pin_dir2), pwm_(cfg.pin_pwm), enc_(cfg.pin_enca, cfg.pin_encb, NC, cfg.enc_cpr, QEI::X4_ENCODING), fault_(cfg.pin_fault), pid_(cfg.pid_k_p, cfg.pid_tau_i, cfg.pid_tau_d, cfg.pid_dt), current_feedback_(NULL), status_(STATUS_UNINITIALIZED), current_measured_(100, 0.0f)

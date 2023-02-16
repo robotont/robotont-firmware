@@ -163,7 +163,7 @@ int main()
 #endif
 
 #ifdef ENABLE_PID_X
-  PID pid_speed_x(PID_KP * 10, 0, 0, MAIN_DELTA_T);
+  PID pid_speed_x(PID_KP * 5, 0, 0, MAIN_DELTA_T);
   pid_speed_x.setInputLimits(-1.0f, 1.0f); // ! TODO test appropriate range?
   pid_speed_x.setOutputLimits(-1.0f, 1.0f);
   pid_speed_x.setBias(0.0);
@@ -184,6 +184,7 @@ int main()
   float robot_lin_speed_mag;
   float robot_lin_speed_dir;
 
+  float counter = 0;
   while (true)
   {
     odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
@@ -258,6 +259,8 @@ int main()
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
+
+    // serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", robot_lin_speed_x, RS_lin_speed_x, counter++);
 
     wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
   }
