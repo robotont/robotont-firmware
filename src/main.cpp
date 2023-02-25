@@ -20,8 +20,8 @@
 #define MOTOR_COUNT 3
 #define CMD_TIMEOUT_MS 1000
 
-// #define ENABLE_PID_Z
-#define ENABLE_PID_X
+#define ENABLE_PID_Z
+// #define ENABLE_PID_X
 // #define ENABLE_PID_Y
 
 #include "motor_config_v2_1.h"
@@ -155,7 +155,7 @@ int main()
   cmd_timer.start();
 
 #ifdef ENABLE_PID_Z
-  PID pid_angle(PID_KP * 300, 0, 0, MAIN_DELTA_T);
+  PID pid_angle(PID_KP * 15, 0, 0, MAIN_DELTA_T);
   pid_angle.setInputLimits(-10.0f, 10.0f); // Todo increase window size (10 rad ~ 2.5 square) (2nd prior)
   pid_angle.setOutputLimits(-1.0f, 1.0f);
   pid_angle.setBias(0.0);
@@ -197,8 +197,8 @@ int main()
     main_timer.start();
 
 #ifdef ENABLE_PID_Z
-    pid_angle.setSetPoint(odom_expected_.getOriZ());
-    pid_angle.setProcessValue(odom_.getOriZ());
+    pid_angle.setSetPoint(odom_expected_.getAngVelZ());
+    pid_angle.setProcessValue(odom_.getAngVelZ());
     robot_angular_speed_z = pid_angle.compute();
 #else
     robot_angular_speed_z = RS_angular_speed_z;
@@ -259,8 +259,6 @@ int main()
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-
-    // serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", robot_lin_speed_x, RS_lin_speed_x, counter++);
 
     wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
   }
