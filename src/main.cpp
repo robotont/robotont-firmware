@@ -1,3 +1,21 @@
+/*
+#include "mbed.h"
+
+Ticker timer;
+const int FREQUENCY = 50; // Frequency in Hz
+const float PERIOD = 1.0 / FREQUENCY; // Period in seconds
+
+void timer_interrupt() {
+    // Your code here
+}
+
+int main() {
+    timer.attach(&timer_interrupt, PERIOD);
+
+    // Rest of your code
+}
+*/
+
 #include "mbed.h"
 #include "motor.h"
 #include "odom.h"
@@ -90,7 +108,6 @@ void check_for_timeout()
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       m[i].stop();
-      // expected_speeds_m[i] = 0;
       RS_lin_speed_x = 0;
       RS_lin_speed_y = 0;
       RS_angular_speed_z = 0;
@@ -152,7 +169,6 @@ void processPacket(const std::string &packet)
 int main()
 {
   serial_pc.baud(115200);
-  // serial_pc.baud(256000);
   serial_buf[0] = '\0';
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
