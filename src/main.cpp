@@ -3,6 +3,7 @@
 #include "odom.h"
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 #include "PID.h"
 
@@ -13,14 +14,14 @@
 #define PID_KP 0.8
 #define PID_TI 0.05
 #define PID_TD 0.0
-#define PID_DELTA_T 0.01 / 2
-#define MAIN_DELTA_T 0.02 / 2
+#define PID_DELTA_T 0.01
+#define MAIN_DELTA_T 0.02 // ! Todo cpu load
 
 #define MAX_CMD_ARGS 5
 #define MOTOR_COUNT 3
 #define CMD_TIMEOUT_MS 1000
 
-#define ENABLE_PID_Z
+// #define ENABLE_PID_Z
 // #define ENABLE_PID_X
 // #define ENABLE_PID_Y
 
@@ -43,11 +44,11 @@ std::vector<std::string> cmd;
 
 // ! Allocating expected values
 volatile float expected_speeds_m[3] = {0, 0, 0};
-float RS_lin_speed_x;
-float RS_lin_speed_y;
-float RS_lin_speed_dir;
-float RS_lin_speed_mag;
-float RS_angular_speed_z;
+float RS_lin_speed_x = 0;
+float RS_lin_speed_y = 0;
+float RS_lin_speed_dir = 0;
+float RS_lin_speed_mag = 0;
+float RS_angular_speed_z = 0;
 // !===========================
 
 void pc_rx_callback()
@@ -89,8 +90,12 @@ void check_for_timeout()
     for (uint8_t i = 0; i < MOTOR_COUNT; i++)
     {
       m[i].stop();
-      // TODO stop odom expected (it's done inside process packet, but need test here as well)
+      // expected_speeds_m[i] = 0;
+      RS_lin_speed_x = 0;
+      RS_lin_speed_y = 0;
+      RS_angular_speed_z = 0;
     }
+    cmd_timer.reset();
   }
 }
 
@@ -147,6 +152,7 @@ void processPacket(const std::string &packet)
 int main()
 {
   serial_pc.baud(115200);
+  // serial_pc.baud(256000);
   serial_buf[0] = '\0';
   serial_pc.attach(&pc_rx_callback);
   serial_pc.printf("**** MAIN ****\r\n");
@@ -155,15 +161,15 @@ int main()
   cmd_timer.start();
 
 #ifdef ENABLE_PID_Z
-  PID pid_angle(PID_KP * 15, 0, 0, MAIN_DELTA_T);
-  pid_angle.setInputLimits(-10.0f, 10.0f); // Todo increase window size (10 rad ~ 2.5 square) (2nd prior)
-  pid_angle.setOutputLimits(-1.0f, 1.0f);
-  pid_angle.setBias(0.0);
-  pid_angle.setMode(1);
+  PID pid_speed_z(2.0, 0.0, 0.0, MAIN_DELTA_T);
+  pid_speed_z.setInputLimits(-1.0f, 1.0f);
+  pid_speed_z.setOutputLimits(-1.0f, 1.0f);
+  pid_speed_z.setBias(0.0);
+  pid_speed_z.setMode(1);
 #endif
 
 #ifdef ENABLE_PID_X
-  PID pid_speed_x(PID_KP * 5, 0, 0, MAIN_DELTA_T);
+  PID pid_speed_x(PID_KP * 2, 0.02, 0.000, MAIN_DELTA_T);
   pid_speed_x.setInputLimits(-1.0f, 1.0f); // ! TODO test appropriate range?
   pid_speed_x.setOutputLimits(-1.0f, 1.0f);
   pid_speed_x.setBias(0.0);
@@ -171,7 +177,7 @@ int main()
 #endif
 
 #ifdef ENABLE_PID_Y
-  PID pid_speed_y(PID_KP * 10, 0, 0, MAIN_DELTA_T);
+  PID pid_speed_y(PID_KP * 2, 0.02, 0.000, MAIN_DELTA_T);
   pid_speed_y.setInputLimits(-1.0f, 1.0f); // ! TODO test appropriate range?
   pid_speed_y.setOutputLimits(-1.0f, 1.0f);
   pid_speed_y.setBias(0.0);
@@ -184,22 +190,17 @@ int main()
   float robot_lin_speed_mag;
   float robot_lin_speed_dir;
 
-  float counter = 0;
   while (true)
   {
-    odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
-    serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
-                     odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
-                     odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
-    // TODO 3rd prior (motor encoder freq)
-
     main_timer.reset();
     main_timer.start();
 
+    // TODO test (motor encoder freq)
+
 #ifdef ENABLE_PID_Z
-    pid_angle.setSetPoint(odom_expected_.getAngVelZ());
-    pid_angle.setProcessValue(odom_.getAngVelZ());
-    robot_angular_speed_z = pid_angle.compute();
+    pid_speed_z.setSetPoint(odom_expected_.getAngVelZ());
+    pid_speed_z.setProcessValue(odom_.getAngVelZ());
+    robot_angular_speed_z = pid_speed_z.compute();
 #else
     robot_angular_speed_z = RS_angular_speed_z;
 #endif
@@ -234,15 +235,12 @@ int main()
       if (abs(speed) < 1e-3)
       {
         m[i].stop();
+        expected_speeds_m[i] = 0;
       }
       else
       {
         m[i].setSpeedSetPoint(speed);
         expected_speeds_m[i] = expected_speed;
-      }
-      if (speed < 1e-3)
-      {
-        expected_speeds_m[i] = 0;
       }
     }
 
@@ -260,6 +258,13 @@ int main()
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
 
-    wait_us(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us());
+    odom_expected_.update(expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
+    serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
+                     odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
+                     odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
+
+    serial_pc.printf("DEBUG_OUT:%f:%f\r\n", odom_.getAngVelZ(), odom_expected_.getAngVelZ());
+
+    wait_us(std::max(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us(), 0.0));
   }
 }
