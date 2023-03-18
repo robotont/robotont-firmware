@@ -39,7 +39,7 @@ int main() {
 #define MOTOR_COUNT 3
 #define CMD_TIMEOUT_MS 1000
 
-// #define ENABLE_PID_Z
+#define ENABLE_PID_Z
 // #define ENABLE_PID_X
 // #define ENABLE_PID_Y
 
@@ -157,10 +157,8 @@ void processPacket(const std::string &packet)
     RS_lin_speed_y = std::atof(cmd[2].c_str());
     RS_angular_speed_z = std::atof(cmd[3].c_str());
 
-    // ! Assigning expected values
     RS_lin_speed_dir = atan2(RS_lin_speed_y, RS_lin_speed_x);
     RS_lin_speed_mag = sqrt(RS_lin_speed_x * RS_lin_speed_x + RS_lin_speed_y * RS_lin_speed_y);
-    // !==========================
 
     cmd_timer.reset();
   }
@@ -245,6 +243,7 @@ int main()
       // ! Updating expected values
       float expected_speed = RS_lin_speed_mag * sin(RS_lin_speed_dir - m[i].getWheelPosPhi()) +
                              m[i].getWheelPosR() * RS_angular_speed_z;
+
       float speed = robot_lin_speed_mag * sin(robot_lin_speed_dir - m[i].getWheelPosPhi()) +
                     m[i].getWheelPosR() * robot_angular_speed_z;
       // ! ========================
@@ -269,6 +268,8 @@ int main()
       packet_received_b = false;
     }
 
+    serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
+
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
@@ -278,8 +279,6 @@ int main()
     serial_pc.printf("ODOM_EXPECTED:%f:%f:%f:%f:%f:%f\r\n",
                      odom_expected_.getPosX(), odom_expected_.getPosY(), odom_expected_.getOriZ(),
                      odom_expected_.getLinVelX(), odom_expected_.getLinVelY(), odom_expected_.getAngVelZ());
-
-    serial_pc.printf("DEBUG_OUT:%f:%f\r\n", odom_.getAngVelZ(), odom_expected_.getAngVelZ());
 
     wait_us(std::max(MAIN_DELTA_T * 1000 * 1000 - main_timer.read_us(), 0.0));
   }
