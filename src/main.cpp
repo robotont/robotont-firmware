@@ -175,7 +175,7 @@ int main()
   cmd_timer.start();
 
 #ifdef ENABLE_PID_Z
-  PID pid_speed_z(2.0, 0.0, 0.0, MAIN_DELTA_T);
+  PID pid_speed_z(0.5, 0.001, 0.0, MAIN_DELTA_T);
   pid_speed_z.setInputLimits(-1.0f, 1.0f);
   pid_speed_z.setOutputLimits(-1.0f, 1.0f);
   pid_speed_z.setBias(0.0);
@@ -215,6 +215,7 @@ int main()
     pid_speed_z.setSetPoint(odom_expected_.getAngVelZ());
     pid_speed_z.setProcessValue(odom_.getAngVelZ());
     robot_angular_speed_z = pid_speed_z.compute();
+    serial_pc.printf("DEBUG_OUT:%f:%f:\r\n", odom_expected_.getAngVelZ(), odom_.getAngVelZ());
 #else
     robot_angular_speed_z = RS_angular_speed_z;
 #endif
@@ -247,15 +248,15 @@ int main()
       float speed = robot_lin_speed_mag * sin(robot_lin_speed_dir - m[i].getWheelPosPhi()) +
                     m[i].getWheelPosR() * robot_angular_speed_z;
       // ! ========================
+      expected_speeds_m[i] = expected_speed; // Nullindan seda mujal kohal
+
       if (abs(speed) < 1e-3)
       {
         m[i].stop();
-        expected_speeds_m[i] = 0;
       }
       else
       {
         m[i].setSpeedSetPoint(speed);
-        expected_speeds_m[i] = expected_speed;
       }
     }
 
@@ -267,8 +268,6 @@ int main()
       processPacket(packet);
       packet_received_b = false;
     }
-
-    serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", expected_speeds_m[0], expected_speeds_m[1], expected_speeds_m[2]);
 
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
