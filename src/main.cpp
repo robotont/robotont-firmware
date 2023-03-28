@@ -1,18 +1,15 @@
 /*
-#include "mbed.h"
-
 Ticker timer;
-const int FREQUENCY = 50; // Frequency in Hz
-const float PERIOD = 1.0 / FREQUENCY; // Period in seconds
+const int FREQUENCY = 50;
+const float PERIOD = 1.0 / FREQUENCY;
 
-void timer_interrupt() {
-    // Your code here
+void timer_interrupt()
+{
 }
 
-int main() {
-    timer.attach(&timer_interrupt, PERIOD);
-
-    // Rest of your code
+int main()
+{
+  timer.attach(&timer_interrupt, PERIOD);
 }
 */
 
@@ -24,6 +21,7 @@ int main() {
 #include <algorithm>
 
 #include "PID.h"
+#include "moving_average.h"
 
 #define ENC_CPR 64
 #define GEAR_RATIO 18.75
@@ -39,7 +37,7 @@ int main() {
 #define MOTOR_COUNT 3
 #define CMD_TIMEOUT_MS 1000
 
-#define ENABLE_PID_Z
+// #define ENABLE_PID_Z
 // #define ENABLE_PID_X
 // #define ENABLE_PID_Y
 
@@ -68,6 +66,8 @@ float RS_lin_speed_dir = 0;
 float RS_lin_speed_mag = 0;
 float RS_angular_speed_z = 0;
 // !===========================
+
+MovingAverage<float> odom_avg_z(64, 0.0);
 
 void pc_rx_callback()
 {
@@ -175,7 +175,7 @@ int main()
   cmd_timer.start();
 
 #ifdef ENABLE_PID_Z
-  PID pid_speed_z(0.5, 0.001, 0.0, MAIN_DELTA_T);
+  PID pid_speed_z(0.2, 0.1, 0.0, MAIN_DELTA_T);
   pid_speed_z.setInputLimits(-1.0f, 1.0f);
   pid_speed_z.setOutputLimits(-1.0f, 1.0f);
   pid_speed_z.setBias(0.0);
@@ -212,10 +212,14 @@ int main()
     // TODO test (motor encoder freq)
 
 #ifdef ENABLE_PID_Z
+    odom_avg_z.Insert(odom_.getAngVelZ());
+
     pid_speed_z.setSetPoint(odom_expected_.getAngVelZ());
-    pid_speed_z.setProcessValue(odom_.getAngVelZ());
+    pid_speed_z.setProcessValue(odom_avg_z.GetAverage());
     robot_angular_speed_z = pid_speed_z.compute();
-    serial_pc.printf("DEBUG_OUT:%f:%f:\r\n", odom_expected_.getAngVelZ(), odom_.getAngVelZ());
+    // serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getAngVelZ(), odom_.getAngVelZ());
+
+    
 #else
     robot_angular_speed_z = RS_angular_speed_z;
 #endif
@@ -270,6 +274,7 @@ int main()
     }
 
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+    serial_pc.printf("DEBUG_OUT:%f:%f:%f:\r\n", m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
