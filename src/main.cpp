@@ -37,7 +37,9 @@ int main()
 #define MOTOR_COUNT 3
 #define CMD_TIMEOUT_MS 1000
 
-// #define ENABLE_PID_Z
+#define PID_TYPE_SPEED
+
+#define ENABLE_PID_Z
 // #define ENABLE_PID_X
 // #define ENABLE_PID_Y
 
@@ -175,7 +177,8 @@ int main()
   cmd_timer.start();
 
 #ifdef ENABLE_PID_Z
-  PID pid_speed_z(0.2, 0.1, 0.0, MAIN_DELTA_T);
+  // PID pid_speed_z(0.3, 0.00000001 * 0, 0, MAIN_DELTA_T); // ! Kysida
+  PID pid_speed_z(1.7, 0.00000001 * 0, 0, MAIN_DELTA_T);
   pid_speed_z.setInputLimits(-1.0f, 1.0f);
   pid_speed_z.setOutputLimits(-1.0f, 1.0f);
   pid_speed_z.setBias(0.0);
@@ -212,14 +215,17 @@ int main()
     // TODO test (motor encoder freq)
 
 #ifdef ENABLE_PID_Z
-    odom_avg_z.Insert(odom_.getAngVelZ());
 
-    pid_speed_z.setSetPoint(odom_expected_.getAngVelZ());
-    pid_speed_z.setProcessValue(odom_avg_z.GetAverage());
+    // odom_avg_z.Insert(odom_.getAngVelZ());
+    // pid_speed_z.setSetPoint(odom_expected_.getAngVelZ());
+    // pid_speed_z.setProcessValue(odom_avg_z.GetAverage());
+
+    pid_speed_z.setSetPoint(odom_expected_.getOriZ());
+    pid_speed_z.setProcessValue(odom_.getOriZ());
+
     robot_angular_speed_z = pid_speed_z.compute();
-    // serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getAngVelZ(), odom_.getAngVelZ());
+    serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getOriZ(), odom_.getOriZ());
 
-    
 #else
     robot_angular_speed_z = RS_angular_speed_z;
 #endif
@@ -274,7 +280,7 @@ int main()
     }
 
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("DEBUG_OUT:%f:%f:%f:\r\n", m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+    // serial_pc.printf("DEBUG_OUT:%f:%f:%f:\r\n", m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());

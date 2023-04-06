@@ -10,7 +10,8 @@ Motor::Motor(const MotorConfig &cfg)
       ,
       speed_limit_(0.3) // 30 cm/s
       ,
-      effort_limit_(0.25f) // 25% duty cycle
+      // effort_limit_(0.25f) // 25% duty cycle
+      effort_limit_(1.0f)
 {
 
   // set input and output limits for pid
@@ -22,7 +23,8 @@ Motor::Motor(const MotorConfig &cfg)
   pid_.setBias(0.0);
   pid_.setMode(1);
 
-  pwm_.period_us(10000);
+  // pwm_.period_us(10000);
+  pwm_.period_us(5000);
 
   // Calculate the relation between an encoder pulse and
   // linear speed on the wheel where it contacts the ground
