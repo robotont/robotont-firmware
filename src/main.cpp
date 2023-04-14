@@ -178,8 +178,8 @@ int main()
 
 #ifdef ENABLE_PID_Z
   // PID pid_speed_z(0.3, 0.00000001 * 0, 0, MAIN_DELTA_T); // ! Kysida
-  PID pid_speed_z(1.7, 0.00000001 * 0, 0, MAIN_DELTA_T);
-  pid_speed_z.setInputLimits(-1.0f, 1.0f);
+  PID pid_speed_z(0.1, 1e-20, 0, MAIN_DELTA_T);
+  pid_speed_z.setInputLimits(-10.0f, 10.0f);
   pid_speed_z.setOutputLimits(-1.0f, 1.0f);
   pid_speed_z.setBias(0.0);
   pid_speed_z.setMode(1);
@@ -215,8 +215,8 @@ int main()
     // TODO test (motor encoder freq)
 
 #ifdef ENABLE_PID_Z
-
-    // odom_avg_z.Insert(odom_.getAngVelZ());
+                                              // ! 1st Oma PID
+    // odom_avg_z.Insert(odom_.getAngVelZ()); // TODO -pi (+-2?)pi, sii ei tee midagi, muidu MODULO ()
     // pid_speed_z.setSetPoint(odom_expected_.getAngVelZ());
     // pid_speed_z.setProcessValue(odom_avg_z.GetAverage());
 
@@ -224,7 +224,7 @@ int main()
     pid_speed_z.setProcessValue(odom_.getOriZ());
 
     robot_angular_speed_z = pid_speed_z.compute();
-    serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getOriZ(), odom_.getOriZ());
+    serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getOriZ(), odom_.getOriZ(), robot_angular_speed_z);
 
 #else
     robot_angular_speed_z = RS_angular_speed_z;
