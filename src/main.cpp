@@ -177,7 +177,7 @@ int main()
   cmd_timer.start();
 
 #ifdef ENABLE_PID_Z
-  // PID pid_speed_z(0.3, 0.00000001 * 0, 0, MAIN_DELTA_T); // ! Kysida
+  // PID pid_speed_z(0.3, 0.00000001 * 0, 0, MAIN_DELTA_T);
   PID pid_speed_z(0.1, 1e-20, 0, MAIN_DELTA_T);
   pid_speed_z.setInputLimits(-10.0f, 10.0f);
   pid_speed_z.setOutputLimits(-1.0f, 1.0f);
@@ -187,7 +187,7 @@ int main()
 
 #ifdef ENABLE_PID_X
   PID pid_speed_x(PID_KP * 2, 0.02, 0.000, MAIN_DELTA_T);
-  pid_speed_x.setInputLimits(-1.0f, 1.0f); // ! TODO test appropriate range?
+  pid_speed_x.setInputLimits(-1.0f, 1.0f);
   pid_speed_x.setOutputLimits(-1.0f, 1.0f);
   pid_speed_x.setBias(0.0);
   pid_speed_x.setMode(1);
@@ -195,7 +195,7 @@ int main()
 
 #ifdef ENABLE_PID_Y
   PID pid_speed_y(PID_KP * 2, 0.02, 0.000, MAIN_DELTA_T);
-  pid_speed_y.setInputLimits(-1.0f, 1.0f); // ! TODO test appropriate range?
+  pid_speed_y.setInputLimits(-1.0f, 1.0f);
   pid_speed_y.setOutputLimits(-1.0f, 1.0f);
   pid_speed_y.setBias(0.0);
   pid_speed_y.setMode(1);
@@ -207,23 +207,32 @@ int main()
   float robot_lin_speed_mag;
   float robot_lin_speed_dir;
 
+  // ! MINU PID (TODO refactor)
+  float speed_z_error;
+  float speed_z_error_sum = 0;
+
+  float ZK_P = 1.0;
+  float ZK_I = 1e-20;
+  float ZK_D = 0.0;
+  // ! ========
   while (true)
   {
     main_timer.reset();
     main_timer.start();
 
-    // TODO test (motor encoder freq)
-
 #ifdef ENABLE_PID_Z
-                                              // ! 1st Oma PID
     // odom_avg_z.Insert(odom_.getAngVelZ()); // TODO -pi (+-2?)pi, sii ei tee midagi, muidu MODULO ()
     // pid_speed_z.setSetPoint(odom_expected_.getAngVelZ());
     // pid_speed_z.setProcessValue(odom_avg_z.GetAverage());
 
-    pid_speed_z.setSetPoint(odom_expected_.getOriZ());
-    pid_speed_z.setProcessValue(odom_.getOriZ());
-
-    robot_angular_speed_z = pid_speed_z.compute();
+    // ! MINU PID
+    speed_z_error = odom_expected_.getOriZ() - odom_.getOriZ();
+    speed_z_error_sum += speed_z_error;
+    robot_angular_speed_z = ZK_P * speed_z_error + ZK_I * speed_z_error_sum * MAIN_DELTA_T + ZK_D * speed_z_error / MAIN_DELTA_T;
+    // ! ========
+    // pid_speed_z.setSetPoint(odom_expected_.getOriZ());
+    // pid_speed_z.setProcessValue(odom_.getOriZ());
+    // robot_angular_speed_z = pid_speed_z.compute();
     serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getOriZ(), odom_.getOriZ(), robot_angular_speed_z);
 
 #else
