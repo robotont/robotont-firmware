@@ -185,7 +185,7 @@ int main()
     pid_x.set_real_value(odom_.getPosX());
     robot_lin_speed_x = pid_x.calculate_output();
     serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getPosX(), odom_.getPosX(), robot_lin_speed_x);
-    robot_lin_speed_x = RS_lin_speed_x;
+    // robot_lin_speed_x = RS_lin_speed_x;
 
     // pid_y.set_target_value(odom_expected_.getPosY());
     // pid_y.set_real_value(odom_.getPosY());
