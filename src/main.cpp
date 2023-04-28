@@ -12,43 +12,23 @@ int main()
   timer.attach(&timer_interrupt, PERIOD);
 }
 */
+#include "main.h"
 
-#include "mbed.h"
-#include "motor.h"
-#include "odom.h"
-#include <sstream>
 #include <vector>
 #include <algorithm>
 
+#include "mbed.h"
+#include "motor.h"
+#include "motor_config_v2_1.h"
+#include "odom.h"
 #include "PID.h"
 #include "moving_average.h"
-
-#define ENC_CPR 64
-#define GEAR_RATIO 18.75
-#define WHEEL_RADIUS 0.035
-#define WHEEL_POS_R 0.145
-#define PID_KP 0.8
-#define PID_TI 0.05
-#define PID_TD 0.0
-#define PID_DELTA_T 0.01
-#define MAIN_DELTA_T 0.02 // ! Todo cpu load
-
-#define MAX_CMD_ARGS 5
-#define MOTOR_COUNT 3
-#define CMD_TIMEOUT_MS 1000
-
-#define PID_TYPE_SPEED
-
-#define ENABLE_PID_Z
-// #define ENABLE_PID_X
-// #define ENABLE_PID_Y
-
-#include "motor_config_v2_1.h"
+#include "my_pid.h"
 
 Motor m[] = {{cfg0}, {cfg1}, {cfg2}};
 
 Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
-Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T); // !
+Odom odom_expected_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
 
 Timer cmd_timer, main_timer;
 Ticker cmd_timeout_checker;
@@ -176,30 +156,9 @@ int main()
   cmd_timeout_checker.attach(check_for_timeout, 0.1);
   cmd_timer.start();
 
-#ifdef ENABLE_PID_Z
-  // PID pid_speed_z(0.3, 0.00000001 * 0, 0, MAIN_DELTA_T);
-  PID pid_speed_z(0.1, 1e-20, 0, MAIN_DELTA_T);
-  pid_speed_z.setInputLimits(-10.0f, 10.0f);
-  pid_speed_z.setOutputLimits(-1.0f, 1.0f);
-  pid_speed_z.setBias(0.0);
-  pid_speed_z.setMode(1);
-#endif
-
-#ifdef ENABLE_PID_X
-  PID pid_speed_x(PID_KP * 2, 0.02, 0.000, MAIN_DELTA_T);
-  pid_speed_x.setInputLimits(-1.0f, 1.0f);
-  pid_speed_x.setOutputLimits(-1.0f, 1.0f);
-  pid_speed_x.setBias(0.0);
-  pid_speed_x.setMode(1);
-#endif
-
-#ifdef ENABLE_PID_Y
-  PID pid_speed_y(PID_KP * 2, 0.02, 0.000, MAIN_DELTA_T);
-  pid_speed_y.setInputLimits(-1.0f, 1.0f);
-  pid_speed_y.setOutputLimits(-1.0f, 1.0f);
-  pid_speed_y.setBias(0.0);
-  pid_speed_y.setMode(1);
-#endif
+  MY_PID pid_z(1, 0.3, 0.0, MAIN_DELTA_T);
+  MY_PID pid_x(0.1, 0.3, 0.0, MAIN_DELTA_T);
+  MY_PID pid_y(0.1, 0.3, 0.0, MAIN_DELTA_T);
 
   float robot_angular_speed_z;
   float robot_lin_speed_x;
@@ -207,53 +166,32 @@ int main()
   float robot_lin_speed_mag;
   float robot_lin_speed_dir;
 
-  // ! MINU PID (TODO refactor)
-  float speed_z_error;
-  float speed_z_error_sum = 0;
-
-  float ZK_P = 1.0;
-  float ZK_I = 1e-20;
-  float ZK_D = 0.0;
-  // ! ========
   while (true)
   {
     main_timer.reset();
     main_timer.start();
 
-#ifdef ENABLE_PID_Z
-    // odom_avg_z.Insert(odom_.getAngVelZ()); // TODO -pi (+-2?)pi, sii ei tee midagi, muidu MODULO ()
-    // pid_speed_z.setSetPoint(odom_expected_.getAngVelZ());
-    // pid_speed_z.setProcessValue(odom_avg_z.GetAverage());
-
-    // ! MINU PID
-    speed_z_error = odom_expected_.getOriZ() - odom_.getOriZ();
-    speed_z_error_sum += speed_z_error;
-    robot_angular_speed_z = ZK_P * speed_z_error + ZK_I * speed_z_error_sum * MAIN_DELTA_T + ZK_D * speed_z_error / MAIN_DELTA_T;
-    // ! ========
-    // pid_speed_z.setSetPoint(odom_expected_.getOriZ());
-    // pid_speed_z.setProcessValue(odom_.getOriZ());
-    // robot_angular_speed_z = pid_speed_z.compute();
-    serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getOriZ(), odom_.getOriZ(), robot_angular_speed_z);
-
-#else
+    // TODO
+    // ! PID tuning seletus, filter(?)
+    // ! BAAS LAHENDUS - KIIRUSE KONTROLL (X, Y, Z)
+    // ! LISA LAHENDUS - POS KONTROLL ("kas yldse vaja on?")
+    // pid_z.set_target_value(odom_expected_.getOriZ()); // TODO -pi (+-2?)pi, sii ei tee midagi, muidu MODULO ()
+    // pid_z.set_real_value(odom_.getOriZ());
+    // robot_angular_speed_z = pid_z.calculate_output();
+    // serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getOriZ(), odom_.getOriZ(), robot_angular_speed_z);
     robot_angular_speed_z = RS_angular_speed_z;
-#endif
 
-#ifdef ENABLE_PID_X
-    pid_speed_x.setSetPoint(odom_expected_.getLinVelX());
-    pid_speed_x.setProcessValue(odom_.getLinVelX());
-    robot_lin_speed_x = pid_speed_x.compute();
-#else
+    pid_x.set_target_value(odom_expected_.getPosX());
+    pid_x.set_real_value(odom_.getPosX());
+    robot_lin_speed_x = pid_x.calculate_output();
+    serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getPosX(), odom_.getPosX(), robot_lin_speed_x);
     robot_lin_speed_x = RS_lin_speed_x;
-#endif
 
-#ifdef ENABLE_PID_Y
-    pid_speed_y.setSetPoint(odom_expected_.getLinVelY());
-    pid_speed_y.setProcessValue(odom_.getLinVelY());
-    robot_lin_speed_y = pid_speed_y.compute();
-#else
+    // pid_y.set_target_value(odom_expected_.getPosY());
+    // pid_y.set_real_value(odom_.getPosY());
+    // robot_lin_speed_y = pid_y.calculate_output();
+    // serial_pc.printf("DEBUG_OUT:%f:%f:%f\r\n", odom_expected_.getPosY(), odom_.getPosY(), robot_lin_speed_y);
     robot_lin_speed_y = RS_lin_speed_y;
-#endif
 
     robot_lin_speed_dir = atan2(robot_lin_speed_y, robot_lin_speed_x);
     robot_lin_speed_mag = sqrt(robot_lin_speed_x * robot_lin_speed_x + robot_lin_speed_y * robot_lin_speed_y);
@@ -267,7 +205,7 @@ int main()
       float speed = robot_lin_speed_mag * sin(robot_lin_speed_dir - m[i].getWheelPosPhi()) +
                     m[i].getWheelPosR() * robot_angular_speed_z;
       // ! ========================
-      expected_speeds_m[i] = expected_speed; // Nullindan seda mujal kohal
+      expected_speeds_m[i] = expected_speed;
 
       if (abs(speed) < 1e-3)
       {
@@ -289,7 +227,7 @@ int main()
     }
 
     odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    // serial_pc.printf("DEBUG_OUT:%f:%f:%f:\r\n", m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
+
     serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n",
                      odom_.getPosX(), odom_.getPosY(), odom_.getOriZ(),
                      odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
