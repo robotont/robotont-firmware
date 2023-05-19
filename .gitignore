@@ -6,4 +6,5 @@
 /mbed-os*
 .clang_complete
 *.swp
-.pio
+/.pio*
+/.vscode*
