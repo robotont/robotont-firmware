@@ -1,221 +1,208 @@
-#include "mbed.h"
-#include "motor.h"
-#include "odom.h"
-#include <sstream>
-#include <vector>
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : Main program body
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2023 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
 
-// Common parameters for all motors
-#define ENC_CPR 64
-#define GEAR_RATIO 18.75
-#define WHEEL_RADIUS 0.035
-#define WHEEL_POS_R 0.145
-#define PID_KP 0.8
-#define PID_TI 0.05
-#define PID_TD 0.0
-#define PID_DELTA_T 0.01
-#define MAIN_DELTA_T 0.02
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 
-#define MAX_CMD_ARGS 5
-#define MOTOR_COUNT 3
-#define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
+/* USER CODE END Includes */
 
-// Include motor configurations
-//#include "motor_config_v0_6.h"
-#include "motor_config_v2_1.h"
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
 
-// Initialize motors
-Motor m[] = { { cfg0 }, { cfg1 }, { cfg2 } };
+/* USER CODE END PTD */
 
-// Initialize odometry
-Odom odom_(cfg0, cfg1, cfg2, MAIN_DELTA_T);
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
 
-// Timeout
-Timer cmd_timer, main_timer;
-Ticker cmd_timeout_checker;
+/* USER CODE END PD */
 
-// Variables for serial connection
-RawSerial serial_pc(USBTX, USBRX);  // tx, rx
-char serial_buf[256];        // Buffer for incoming serial data
-volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
-volatile bool packet_received_b = false;
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
 
-// For parsing command with arguments received over serial
-std::vector<std::string> cmd;
+/* USER CODE END PM */
 
-// This method processes a received serial packet
-void processPacket(const std::string& packet)
+/* Private variables ---------------------------------------------------------*/
+
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+// void HAL_MspInit(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
 {
-  std::istringstream ss(packet);
-  std::string arg;
-  cmd.clear();
+  /* USER CODE BEGIN 1 */
 
-  for (int i = 0; i <= MAX_CMD_ARGS; i++)
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  /* USER CODE BEGIN 2 */
+
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
   {
-    arg.clear();
-    std::getline(ss, arg, ':');
-    if (arg.length())
-    {
-      cmd.push_back(arg);
-      //serial_pc.printf("Got arg %s\r\n", arg.c_str());
-    }
-    else
-    {
-      break;
-    }
+    /* USER CODE END WHILE */
+    HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
+    HAL_Delay(100);
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
+}
+
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+  /** Configure the main internal regulator output voltage
+  */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
   }
 
-  if (!cmd.size())
-  {
-    return;
-  }
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  // MS - Set motor speeds manually (linear speed on wheel m/s)
-  /* MS:motor1_speed:motor2_speed:motor3_speed */
-  if (cmd[0] == "MS")
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed_setpoint = std::atof(cmd[i + 1].c_str());
-      //serial_pc.printf("Setpoint %d, %f\r\n", i, speed_setpoint);
-      m[i].setSpeedSetPoint(speed_setpoint);
-    }
-    cmd_timer.reset();
-  }
-
-  // RS - Set motor speeds based on robot velocities. We use ROS coordinate convention: x-forward,
-  // y-left, theta-CCW rotation.
-  /* RS:robot_speed_x(m/s):robot_speed_y(m/s):robot_speed_theta(rad/s) */
-  else if (cmd[0] == "RS")
-  {
-    float lin_speed_x = std::atof(cmd[1].c_str());
-    float lin_speed_y = std::atof(cmd[2].c_str());
-    float angular_speed_z = std::atof(cmd[3].c_str());
-
-    float lin_speed_dir = atan2(lin_speed_y, lin_speed_x);
-    float lin_speed_mag = sqrt(lin_speed_x * lin_speed_x + lin_speed_y * lin_speed_y);
-
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      float speed = lin_speed_mag * sin(lin_speed_dir - m[i].getWheelPosPhi()) +
-                    m[i].getWheelPosR() * angular_speed_z;
-      if (abs(speed) < 1e-5)
-      {
-        m[i].stop();
-      }
-      else
-      {
-        m[i].setSpeedSetPoint(speed);
-      }
-    }
-    cmd_timer.reset();
-  }
-  else if (cmd[0] == "PID")  // Update PID parameters
-  {
-    float k_p = 0.0f;
-    float tau_i = 0.0f;
-    float tau_d = 0.0f;
-    // sscanf(ss.str().c_str(), "%f:%f:%f", &k_p, &tau_i, &tau_d);
-    // for (uint8_t i = 0; i < 3; i++)
-    //{
-    //  m[i].setPIDTunings(k_p, tau_i, tau_d);
-    //}
+    Error_Handler();
   }
 }
 
-// Process an incoming serial byte
-void pc_rx_callback()
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPIO_Init(void)
 {
-  // Store bytes from serial in our buffer until packet
-  // termination byte 'enter', '\n', '\r' etc has arrived
-  while (serial_pc.readable())
-  {
-    char c = serial_pc.getc();
-    serial_buf[serial_arrived++] = c;
-    serial_buf[serial_arrived] = '\0';
-    if (serial_arrived > 254)
-    {
-      serial_arrived = 0;
-    }
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
-    if (c == '\n' || c == '\r')  // command terminated
-    {
-      if (serial_arrived > 3)
-      {
-        // signal that the packet is complete for processing
-	packet_received_b = true;
-      }
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOE_CLK_ENABLE();
 
-    }
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(PIN_LED_GPIO_Port, PIN_LED_Pin, GPIO_PIN_RESET);
 
-    // if escape is received, clear the buffer and stop the motors for now
-    if (c == 27)  // esc
-    {
-      for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-      {
-        m[i].stop();
-      }
-      serial_buf[0] = '\0';
-      serial_arrived = 0;
-    }
-  }
+  /*Configure GPIO pin : PIN_LED_Pin */
+  GPIO_InitStruct.Pin = PIN_LED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(PIN_LED_GPIO_Port, &GPIO_InitStruct);
+
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
-void check_for_timeout()
+/* USER CODE BEGIN 4 */
+
+/* USER CODE END 4 */
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
 {
-  if ((cmd_timer.read_ms()) > CMD_TIMEOUT_MS)
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
   {
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      m[i].stop();
-    }
   }
+  /* USER CODE END Error_Handler_Debug */
 }
 
-int main()
+#ifdef  USE_FULL_ASSERT
+/**
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
+void assert_failed(uint8_t *file, uint32_t line)
 {
-  // Initialize serial connection
-  serial_pc.baud(115200);
-  serial_buf[0] = '\0';
-  serial_pc.attach(&pc_rx_callback);
-  serial_pc.printf("**** MAIN ****\r\n");
-
-  cmd_timeout_checker.attach(check_for_timeout, 0.1);
-  cmd_timer.start();
-
-
-  // MAIN LOOP
-  while (true)
-  {
-    main_timer.reset();
-    main_timer.start();
-    for (uint8_t i = 0; i < MOTOR_COUNT; i++)
-    {
-      // MOTOR DEBUG
-      // serial_pc.printf("\r\n");
-//      serial_pc.printf("MOTOR %d: \r\n", i);
-//      serial_pc.printf("Speed[%d]: %f (%f): \r\n", i, m[i].getMeasuredSpeed(),
-//                       m[i].getSpeedSetPoint());
-//      // serial_pc.printf("Effort: %f: \r\n", m[i].getEffort());
-//      serial_pc.printf("Fault: %u: \r\n", m[i].getFaultPulseCount());
-//      serial_pc.printf("Current[%d]: %f: \r\n", i, m[i].getCurrent());
-    }
-
-//    serial_pc.printf("Serial arrived: %d\r\n", serial_arrived);
-    
-    if (packet_received_b) // packet was completeted with \r \n
-    {
-      std::string packet(serial_buf);
-      serial_buf[0] = '\0';
-      serial_arrived = 0;
-      processPacket(packet);
-      packet_received_b = false;
-    }
-    
-    // Update odometry
-    odom_.update(m[0].getMeasuredSpeed(), m[1].getMeasuredSpeed(), m[2].getMeasuredSpeed());
-    serial_pc.printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", odom_.getPosX(), odom_.getPosY(),
-                     odom_.getOriZ(), odom_.getLinVelX(), odom_.getLinVelY(), odom_.getAngVelZ());
-    // Synchronize to given MAIN_DELTA_T
-    wait_us(MAIN_DELTA_T*1000*1000 - main_timer.read_us());
-  }
+  /* USER CODE BEGIN 6 */
+  /* User can add his own implementation to report the file name and line number,
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  /* USER CODE END 6 */
 }
+#endif /* USE_FULL_ASSERT */

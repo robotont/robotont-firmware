@@ -1,9 +1,0 @@
-#!/bin/bash
-DEV_NAME=`lshw -c disk 2>/dev/null | grep "vendor: MBED" -A 3 | grep "logical name:" | awk '{print $3}'`
-echo "Mounting $DEV_NAME ..."
-gvfs-mount -d $DEV_NAME > /dev/null 2>&1
-echo "Uploading to board ..."
-cp BUILD/NUCLEO_L476RG/GCC_ARM/robotont-firmware.bin /media/$USER/NODE_L476RG/
-sync
-echo "Done."
-
