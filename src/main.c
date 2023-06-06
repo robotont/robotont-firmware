@@ -17,13 +17,12 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+
 #include "main.h"
 #include "usb_device.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
+#include "usbd_cdc_if.h"
+#include <stdio.h>
+#include <sw_enc.h>
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
@@ -45,10 +44,13 @@ CAN_HandleTypeDef hcan1;
 
 I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
-
+TIM_HandleTypeDef htim14;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+
+// Create encoders
+sw_enc_t henc0, henc1, henc2;
 
 /* USER CODE END PV */
 
@@ -59,13 +61,13 @@ static void MX_CAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_TIM14_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /**
@@ -101,21 +103,32 @@ int main(void)
   MX_I2C2_Init();
   MX_USART3_UART_Init();
   MX_USB_DEVICE_Init();
+  MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
+
+  swEncoderInit(&henc0, PIN_M0_ENCA_GPIO_Port, PIN_M0_ENCA_Pin, PIN_M0_ENCB_GPIO_Port, PIN_M0_ENCB_Pin);
+  //swEncoderInit(&henc1, PIN_M1_ENCA_Pin, PIN_M1_ENCB_Pin);
+  //swEncoderInit(&henc2, PIN_M2_ENCA_Pin, PIN_M2_ENCB_Pin);
+
+  HAL_TIM_Base_Start_IT(&htim14);
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t Text[] = "Hello from Robotont\r\n";
+  //uint8_t Text[] = "Hello from Robotont\r\n";
   HAL_Delay(1000);
 
+  
   while (1)
   {
     /* USER CODE END WHILE */
     HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
  
-    CDC_Transmit_FS(Text,20);
+    //CDC_Transmit_FS(Text,20);
+    printf("Encoder0: %ld\n", henc0.counter);
+    printf("PinA: %d\n", HAL_GPIO_ReadPin(henc0.a_port, henc0.a_pin));
+    printf("PinB: %d\n", HAL_GPIO_ReadPin(henc0.b_port, henc0.b_pin));
     HAL_Delay(250);
     /* USER CODE BEGIN 3 */
   }
@@ -275,6 +288,37 @@ static void MX_I2C2_Init(void)
 }
 
 /**
+  * @brief TIM14 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM14_Init(void)
+{
+
+  /* USER CODE BEGIN TIM14_Init 0 */
+
+  /* USER CODE END TIM14_Init 0 */
+
+  /* USER CODE BEGIN TIM14_Init 1 */
+
+  /* USER CODE END TIM14_Init 1 */
+  htim14.Instance = TIM14;
+  htim14.Init.Prescaler = 1600-1;
+  htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim14.Init.Period = 10;
+  htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM14_Init 2 */
+
+  /* USER CODE END TIM14_Init 2 */
+
+}
+
+/**
   * @brief USART3 Initialization Function
   * @param None
   * @retval None
@@ -416,7 +460,36 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/**
+  * @brief  Retargets the C library printf function to the VIRTUAL COM PORT.
+  * @param  None
+  * @retval None
+  */
+int _write(int file, char *ptr, int len) {
+    static uint8_t rc = USBD_OK;
 
+    // loop commented out for a non-blocking behavior
+    //do {
+        rc = CDC_Transmit_FS((unsigned char *)ptr, len);
+    //} while (USBD_BUSY == rc);
+
+    if (USBD_FAIL == rc) {
+        /// NOTE: Should never reach here.
+        /// TODO: Handle this error.
+        return 0;
+    }
+    return len;
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if(htim->Instance == TIM14)
+  {
+    //HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
+    //printf("Encoder0: %ld\n", henc0.counter);
+    swEncoderInterrupt(&henc0);
+  }
+}
 /* USER CODE END 4 */
 
 /**
