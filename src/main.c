@@ -22,7 +22,10 @@
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include <stdio.h>
-#include <sw_enc.h>
+#include "sw_enc.h"
+#include "motor.h"
+#include <math.h>
+#include <stdbool.h>
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
@@ -51,6 +54,13 @@ UART_HandleTypeDef huart3;
 
 // Create encoders
 sw_enc_t henc0, henc1, henc2;
+
+// Create motors
+motor_t hm0, hm1, hm2;
+
+char serial_buf[256];        // Buffer for incoming serial data
+volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
+volatile bool packet_received_b = false;
 
 /* USER CODE END PV */
 
@@ -107,8 +117,31 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   swEncoderInit(&henc0, PIN_M0_ENCA_GPIO_Port, PIN_M0_ENCA_Pin, PIN_M0_ENCB_GPIO_Port, PIN_M0_ENCB_Pin);
-  //swEncoderInit(&henc1, PIN_M1_ENCA_Pin, PIN_M1_ENCB_Pin);
-  //swEncoderInit(&henc2, PIN_M2_ENCA_Pin, PIN_M2_ENCB_Pin);
+  swEncoderInit(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
+  swEncoderInit(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
+
+  motor_config_t mcfg0;
+  mcfg0.nsleep_port = PIN_M0_NSLEEP_GPIO_Port;
+  mcfg0.en1_port = PIN_M0_EN1_GPIO_Port;
+  mcfg0.en2_port = PIN_M0_EN2_GPIO_Port;
+  mcfg0.fault_port = PIN_M0_FAULT_GPIO_Port;
+  mcfg0.ipropi_port = PIN_M0_IPROPI_GPIO_Port;
+  mcfg0.nsleep_pin = PIN_M0_NSLEEP_Pin;
+  mcfg0.en1_pin = PIN_M0_EN1_Pin;
+  mcfg0.en2_pin = PIN_M0_EN2_Pin;
+  mcfg0.fault_pin = PIN_M0_FAULT_Pin;
+  mcfg0.ipropi_pin = PIN_M0_IPROPI_Pin;
+  mcfg0.pid_k_p = 0.5;
+  mcfg0.pid_tau_i = 0;
+  mcfg0.pid_tau_d = 0;
+  mcfg0.pid_dt = 0.01;
+  mcfg0.enc_cpr = 64;
+  mcfg0.gear_ratio = 18.75;
+  mcfg0.wheel_radius = 0.035;
+  mcfg0.wheel_pos_r = 0.145;
+  mcfg0.wheel_pos_phi = M_PI/3.0;
+
+  MotorInit(&hm0, &mcfg0, &henc0);
 
   HAL_TIM_Base_Start_IT(&htim14);
 
@@ -126,9 +159,13 @@ int main(void)
     HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
  
     //CDC_Transmit_FS(Text,20);
-    printf("Encoder0: %ld\n", henc0.counter);
-    printf("PinA: %d\n", HAL_GPIO_ReadPin(henc0.a_port, henc0.a_pin));
-    printf("PinB: %d\n", HAL_GPIO_ReadPin(henc0.b_port, henc0.b_pin));
+    printf("henc0:\t"); swEncoderDebug(&henc0);
+    printf("henc1:\t"); swEncoderDebug(&henc1);
+    printf("henc2:\t"); swEncoderDebug(&henc2);
+    
+    // Adjust M0 pwm speed
+    TIM3->CCR1 = 10;
+    
     HAL_Delay(250);
     /* USER CODE BEGIN 3 */
   }
@@ -312,7 +349,8 @@ static void MX_TIM14_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM14_Init 2 */
+  /* USER CODE BEGIN TIM14_Init 2 */    //hm->effort = 0.1;
+
 
   /* USER CODE END TIM14_Init 2 */
 
@@ -371,10 +409,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, M2_NSLEEP_Pin|PIN_M2_EN2_Pin|PIN_M2_EN1_Pin|PIN_M2_ENCB_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(PIN_M0_ENCB_GPIO_Port, PIN_M0_ENCB_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, M2_NSLEEP_Pin|PIN_M2_EN2_Pin|PIN_M2_EN1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, PIN_M0_NSLEEP_Pin|PIN_M0_EN2_Pin|PIN_M0_EN1_Pin|PIN_LED_Pin
@@ -395,31 +430,24 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : M2_NSLEEP_Pin PIN_M2_EN2_Pin PIN_M2_EN1_Pin PIN_M2_ENCB_Pin */
-  GPIO_InitStruct.Pin = M2_NSLEEP_Pin|PIN_M2_EN2_Pin|PIN_M2_EN1_Pin|PIN_M2_ENCB_Pin;
+  /*Configure GPIO pins : M2_NSLEEP_Pin PIN_M2_EN2_Pin PIN_M2_EN1_Pin */
+  GPIO_InitStruct.Pin = M2_NSLEEP_Pin|PIN_M2_EN2_Pin|PIN_M2_EN1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PIN_M1_ENCA_Pin PIN_M1_ENCB_Pin PIN_M2_ENCA_Pin */
-  GPIO_InitStruct.Pin = PIN_M1_ENCA_Pin|PIN_M1_ENCB_Pin|PIN_M2_ENCA_Pin;
+  /*Configure GPIO pins : PIN_M1_ENCA_Pin PIN_M1_ENCB_Pin PIN_M2_ENCA_Pin PIN_M2_ENCB_Pin */
+  GPIO_InitStruct.Pin = PIN_M1_ENCA_Pin|PIN_M1_ENCB_Pin|PIN_M2_ENCA_Pin|PIN_M2_ENCB_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PIN_M0_ENCA_Pin */
-  GPIO_InitStruct.Pin = PIN_M0_ENCA_Pin;
+  /*Configure GPIO pins : PIN_M0_ENCA_Pin PIN_M0_ENCB_Pin */
+  GPIO_InitStruct.Pin = PIN_M0_ENCA_Pin|PIN_M0_ENCB_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(PIN_M0_ENCA_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PIN_M0_ENCB_Pin */
-  GPIO_InitStruct.Pin = PIN_M0_ENCB_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(PIN_M0_ENCB_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PIN_M0_NSLEEP_Pin PIN_M0_EN2_Pin PIN_M0_EN1_Pin PIN_LED_Pin
                            PIN_LED_DATA_Pin PIN_M1_EN2_Pin PIN_M1_EN1_Pin */
@@ -472,7 +500,6 @@ int _write(int file, char *ptr, int len) {
     //do {
         rc = CDC_Transmit_FS((unsigned char *)ptr, len);
     //} while (USBD_BUSY == rc);
-
     if (USBD_FAIL == rc) {
         /// NOTE: Should never reach here.
         /// TODO: Handle this error.
@@ -488,6 +515,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     //HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
     //printf("Encoder0: %ld\n", henc0.counter);
     swEncoderInterrupt(&henc0);
+    swEncoderInterrupt(&henc1);
+    swEncoderInterrupt(&henc2);
+  }
+  else if(htim->Instance == TIM3)
+  {
+    HAL_GPIO_WritePin(PIN_M0_EN1_GPIO_Port, PIN_M0_EN1_Pin, SET);
+  }
+}
+
+
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+{
+  if(htim->Instance == TIM3 && htim->Channel == TIM_CHANNEL_1)
+  {
+    HAL_GPIO_WritePin(PIN_M0_EN1_GPIO_Port, PIN_M0_EN1_Pin, RESET);
   }
 }
 /* USER CODE END 4 */

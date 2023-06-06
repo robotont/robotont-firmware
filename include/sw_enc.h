@@ -1,3 +1,6 @@
+#ifndef __SW_ENC_H__
+#define __SW_ENC_H__
+
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
 
@@ -16,3 +19,6 @@ typedef struct
 void swEncoderInit(sw_enc_t *henc, GPIO_TypeDef* enca_port, uint16_t enca_pin, 
                                    GPIO_TypeDef* encb_port, uint16_t encb_pin);
 void swEncoderInterrupt(sw_enc_t* henc);
+void swEncoderDebug(sw_enc_t* henc);
+
+#endif

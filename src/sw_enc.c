@@ -1,6 +1,7 @@
 // Implementation adapted from https://electronics.stackexchange.com/questions/360637/quadrature-encoder-most-efficient-software-implementation
 
 #include <stdint.h>
+#include <stdio.h>
 #include "sw_enc.h"
 #include "stm32f4xx_hal.h"
 
@@ -72,5 +73,13 @@ void swEncoderInterrupt(sw_enc_t *henc)
 
     //Prepare for next iteration by shifting current state
     //bits to old state bits and also the direction bit
-    henc->lut_index = ((henc->lut_index << 2) & 0b1100) | (henc->direction<<4);
+    henc->lut_index = (((henc->lut_index) << 2) & 0b1100) | ((henc->direction)<<4);
+    
+}
+
+void swEncoderDebug(sw_enc_t* henc)
+{
+    printf("ENCA: %d\t", HAL_GPIO_ReadPin(henc->a_port, henc->a_pin));
+    printf("ENCB: %d\t", HAL_GPIO_ReadPin(henc->b_port, henc->b_pin));
+    printf("CNT: %ld\n", henc->counter);
 }
