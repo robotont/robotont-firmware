@@ -78,6 +78,7 @@ static void MX_TIM14_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void motor_test(motor_config_t* mcfg);
 /* USER CODE END 0 */
 
 /**
@@ -141,6 +142,48 @@ int main(void)
   mcfg0.wheel_pos_r = 0.145;
   mcfg0.wheel_pos_phi = M_PI/3.0;
 
+  motor_config_t mcfg1;
+  mcfg1.nsleep_port = PIN_M1_NSLEEP_GPIO_Port;
+  mcfg1.en1_port = PIN_M1_EN1_GPIO_Port;
+  mcfg1.en2_port = PIN_M1_EN2_GPIO_Port;
+  mcfg1.fault_port = PIN_M1_FAULT_GPIO_Port;
+  mcfg1.ipropi_port = PIN_M1_IPROPI_GPIO_Port;
+  mcfg1.nsleep_pin = PIN_M1_NSLEEP_Pin;
+  mcfg1.en1_pin = PIN_M1_EN1_Pin;
+  mcfg1.en2_pin = PIN_M1_EN2_Pin;
+  mcfg1.fault_pin = PIN_M1_FAULT_Pin;
+  mcfg1.ipropi_pin = PIN_M1_IPROPI_Pin;
+  mcfg1.pid_k_p = 0.5;
+  mcfg1.pid_tau_i = 0;
+  mcfg1.pid_tau_d = 0;
+  mcfg1.pid_dt = 0.01;
+  mcfg1.enc_cpr = 64;
+  mcfg1.gear_ratio = 18.75;
+  mcfg1.wheel_radius = 0.035;
+  mcfg1.wheel_pos_r = 0.145;
+  mcfg1.wheel_pos_phi = M_PI/3.0*2.0;
+
+    motor_config_t mcfg2;
+    mcfg2.nsleep_port = PIN_M2_NSLEEP_GPIO_Port;
+    mcfg2.en1_port = PIN_M2_EN1_GPIO_Port;
+    mcfg2.en2_port = PIN_M2_EN2_GPIO_Port;
+    mcfg2.fault_port = PIN_M2_FAULT_GPIO_Port;
+    mcfg2.ipropi_port = PIN_M2_IPROPI_GPIO_Port;
+    mcfg2.nsleep_pin = PIN_M2_NSLEEP_Pin;
+    mcfg2.en1_pin = PIN_M2_EN1_Pin;
+    mcfg2.en2_pin = PIN_M2_EN2_Pin;
+    mcfg2.fault_pin = PIN_M2_FAULT_Pin;
+    mcfg2.ipropi_pin = PIN_M2_IPROPI_Pin;
+    mcfg2.pid_k_p = 0.5;
+    mcfg2.pid_tau_i = 0;
+    mcfg2.pid_tau_d = 0;
+    mcfg2.pid_dt = 0.01;
+    mcfg2.enc_cpr = 64;
+    mcfg2.gear_ratio = 18.75;
+    mcfg2.wheel_radius = 0.035;
+    mcfg2.wheel_pos_r = 0.145;
+    mcfg2.wheel_pos_phi = M_PI;
+
   MotorInit(&hm0, &mcfg0, &henc0);
 
   HAL_TIM_Base_Start_IT(&htim14);
@@ -152,7 +195,6 @@ int main(void)
   //uint8_t Text[] = "Hello from Robotont\r\n";
   HAL_Delay(1000);
 
-  
   while (1)
   {
     /* USER CODE END WHILE */
@@ -162,14 +204,34 @@ int main(void)
     printf("henc0:\t"); swEncoderDebug(&henc0);
     printf("henc1:\t"); swEncoderDebug(&henc1);
     printf("henc2:\t"); swEncoderDebug(&henc2);
-    
+    motor_test(&mcfg2);
+  
     // Adjust M0 pwm speed
     TIM3->CCR1 = 10;
     
-    HAL_Delay(250);
+    HAL_Delay(1000);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+void motor_test(motor_config_t* mcfg)
+{
+    HAL_GPIO_WritePin(mcfg->nsleep_port,mcfg->nsleep_pin, SET);
+    HAL_GPIO_WritePin(mcfg->en1_port,mcfg->en1_pin, RESET);
+    HAL_GPIO_WritePin(mcfg->en2_port,mcfg->en2_pin, SET);
+    HAL_Delay(1000);
+    HAL_GPIO_WritePin(mcfg->en1_port,mcfg->en1_pin, RESET);
+    HAL_GPIO_WritePin(mcfg->en2_port,mcfg->en2_pin, RESET);
+    HAL_Delay(1000);
+
+    HAL_GPIO_WritePin(mcfg->en1_port,mcfg->en1_pin, SET);
+    HAL_GPIO_WritePin(mcfg->en2_port,mcfg->en2_pin, RESET);
+    HAL_Delay(1000);
+
+    HAL_GPIO_WritePin(mcfg->en1_port,mcfg->en1_pin, SET);
+    HAL_GPIO_WritePin(mcfg->en2_port,mcfg->en2_pin, SET);
+    HAL_Delay(1000);
 }
 
 /**
@@ -409,7 +471,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, M2_NSLEEP_Pin|PIN_M2_EN2_Pin|PIN_M2_EN1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, PIN_M2_NSLEEP_Pin|PIN_M2_EN2_Pin|PIN_M2_EN1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, PIN_M0_NSLEEP_Pin|PIN_M0_EN2_Pin|PIN_M0_EN1_Pin|PIN_LED_Pin
@@ -430,8 +492,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : M2_NSLEEP_Pin PIN_M2_EN2_Pin PIN_M2_EN1_Pin */
-  GPIO_InitStruct.Pin = M2_NSLEEP_Pin|PIN_M2_EN2_Pin|PIN_M2_EN1_Pin;
+  /*Configure GPIO pins : PIN_M2_NSLEEP_Pin PIN_M2_EN2_Pin PIN_M2_EN1_Pin */
+  GPIO_InitStruct.Pin = PIN_M2_NSLEEP_Pin|PIN_M2_EN2_Pin|PIN_M2_EN1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

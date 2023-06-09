@@ -67,8 +67,8 @@ void Error_Handler(void);
 #define PIN_M2_IPROPI_GPIO_Port GPIOE
 #define PIN_M2_FAULT_Pin GPIO_PIN_6
 #define PIN_M2_FAULT_GPIO_Port GPIOE
-#define M2_NSLEEP_Pin GPIO_PIN_13
-#define M2_NSLEEP_GPIO_Port GPIOC
+#define PIN_M2_NSLEEP_Pin GPIO_PIN_13
+#define PIN_M2_NSLEEP_GPIO_Port GPIOC
 #define PIN_M2_EN2_Pin GPIO_PIN_14
 #define PIN_M2_EN2_GPIO_Port GPIOC
 #define PIN_M2_EN1_Pin GPIO_PIN_15
