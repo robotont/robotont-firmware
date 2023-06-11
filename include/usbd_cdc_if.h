@@ -93,7 +93,10 @@
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-
+extern uint16_t bytes_received;
+extern uint16_t last_packet_length;
+extern uint8_t packet_buf[APP_RX_DATA_SIZE];
+extern uint8_t last_packet[APP_RX_DATA_SIZE];
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**

@@ -36,8 +36,9 @@ typedef struct
 {
     motor_config_t* cfg;
     sw_enc_t* enc;
-    int32_t velocity;
-    uint32_t effort;
+    double linear_velocity;
+    double linear_velocity_setpoint;
+    double effort;
 } motor_t;
 
 void MotorInit(motor_t *hm, motor_config_t* cfg, sw_enc_t* enc);

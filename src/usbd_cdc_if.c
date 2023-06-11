@@ -22,7 +22,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include <stdbool.h>
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,7 +94,10 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-
+uint16_t bytes_received = 0;
+uint16_t last_packet_length = 0;
+uint8_t packet_buf[APP_RX_DATA_SIZE];
+uint8_t last_packet[APP_RX_DATA_SIZE];
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -263,6 +266,41 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  
+  uint32_t len = (uint32_t)*Len; // for convenience
+
+
+  
+  // walk through the buffer and check for command termination
+  for (int i = 0; i< len; i++)
+  {
+    if (Buf[i] == '\r' || Buf[i] == '\n') // Packet complete
+    {
+      // complete
+    //memset(last_packet, '\0',APP_RX_DATA_SIZE);
+    last_packet_length = bytes_received + i + 1;
+    if(last_packet_length>3)
+    {
+      memcpy(last_packet, packet_buf, last_packet_length);
+    }
+    else
+    {
+      memset(last_packet, '\0',APP_RX_DATA_SIZE);
+      last_packet_length = 0;
+    }
+    
+    UserRxBufferFS[0] = '\0';
+    memset(UserRxBufferFS, '\0',APP_RX_DATA_SIZE);
+    bytes_received = 0;
+    break;
+    }
+    else
+    {
+      packet_buf[bytes_received++] = Buf[i];
+      packet_buf[bytes_received] = '\0';
+    }
+  }
+  
   return (USBD_OK);
   /* USER CODE END 6 */
 }
