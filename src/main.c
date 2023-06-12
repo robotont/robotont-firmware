@@ -62,7 +62,7 @@ sw_enc_t henc0, henc1, henc2;
 motor_t hm0, hm1, hm2;
 motor_config_t mcfg0, mcfg1, mcfg2;
 
-PID_TypeDef hPID;
+PID_TypeDef hPID0;
 
 //static uint8_t last_packet[APP_RX_DATA_SIZE];        // Buffer for incoming command
 //uint8_t packet_buf[APP_RX_DATA_SIZE];        // Buffer for incoming command
@@ -212,9 +212,9 @@ int main(void)
   //uint8_t Text[] = "Hello from Robotont\r\n";
   HAL_Delay(1000);
   
-  PID(&hPID, &hm0.linear_velocity, &hm0.effort, &hm0.linear_velocity_setpoint, 0.5, 5, 1, _PID_P_ON_E, _PID_CD_DIRECT);
-  PID_SetOutputLimits(&hPID, -1000, 1000);
-  PID_SetSampleTime(&hPID,0.01);
+  PID(&hPID0, &hm0.linear_velocity, &hm0.effort, &hm0.linear_velocity_setpoint, 0.5, 5, 1, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID_SetOutputLimits(&hPID0, -1000, 1000);
+  PID_SetSampleTime(&hPID0,0.01);
 
   while (1)
   {
@@ -222,7 +222,7 @@ int main(void)
     HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
  
     //CDC_Transmit_FS(Text,20);
-    //printf("henc0:\t"); swEncoderDebug(&henc0);
+    printf("henc0:\t"); swEncoderDebug(&henc0);
     //printf("henc1:\t"); swEncoderDebug(&henc1);
     //printf("henc2:\t"); swEncoderDebug(&henc2);
     //motor_test(&mcfg0);
@@ -277,13 +277,19 @@ int main(void)
       last_packet_length = 0;
     }
 
-    printf("Motor linear velocities: %f %f %f\r\n", hm0.linear_velocity_setpoint, hm1.linear_velocity_setpoint, hm2.linear_velocity_setpoint);
+    printf("Motor setpoints: %f %f %f\r\n", hm0.linear_velocity_setpoint, hm1.linear_velocity_setpoint, hm2.linear_velocity_setpoint);
+    printf("Motor lin vel: %f %f %f\r\n", hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity);
+    printf("Motor effort: %f %f %f\r\n", hm0.effort, hm1.effort, hm2.effort);
     //printf("last packet len: %d\r\n", last_packet_length);
     //printf("m0 lin vel setpoint: %.3f\r\n", hm0.linear_velocity_setpoint);
     //printf("m0 lin vel: %.3f\r\n", hm0.linear_velocity);
     //printf("m0 lin vel: %.3f\r\n\r\n", hm0.effort);
     
-    
+    hm0.effort = 900;
+    HAL_Delay(1000);
+    hm0.effort = -900;
+    HAL_Delay(1000);
+    hm0.effort = 0;
     // for (int i = 0; i<500;i+=100)
     // {
     //   // Adjust M0 pwm speed
@@ -545,7 +551,7 @@ static void MX_TIM13_Init(void)
   htim13.Instance = TIM13;
   htim13.Init.Prescaler = 1600-1;
   htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim13.Init.Period = 100-1;
+  htim13.Init.Period = 100-1; // 1kHz
   htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
@@ -574,9 +580,9 @@ static void MX_TIM14_Init(void)
 
   /* USER CODE END TIM14_Init 1 */
   htim14.Instance = TIM14;
-  htim14.Init.Prescaler = 1600-1;
+  htim14.Init.Prescaler = 160-1;
   htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim14.Init.Period = 10-1;
+  htim14.Init.Period = 10-1;  // 100 kHz
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
@@ -754,17 +760,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
   else if(htim->Instance == TIM3)
   {
-    //counter++;
-    HAL_GPIO_WritePin(mcfg0.nsleep_port,mcfg0.nsleep_pin, SET);
-    HAL_GPIO_WritePin(mcfg0.en1_port,mcfg0.en1_pin, RESET);
-    HAL_GPIO_WritePin(mcfg0.en2_port,mcfg0.en2_pin, SET);
+    HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, SET);
+    HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, SET);
+    HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, SET);
   }
   else if(htim->Instance == TIM13)
   {
     // timer for PID
-    counter++;
-    PID_Compute(&hPID);
+    //counter++;
+    //PID_Compute(&hPID0);
+    //PID_Compute(&hPID1);
+    //PID_Compute(&hPID2);
     MotorUpdate(&hm0);
+    MotorUpdate(&hm1);
+    MotorUpdate(&hm2);
   }
 }
 
@@ -774,7 +783,9 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
   if(htim->Instance == TIM3)
   {
     counter++;
-    HAL_GPIO_WritePin(mcfg0.en2_port,mcfg0.en2_pin, RESET);
+    HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, RESET);
+    HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, RESET);
+    HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, RESET);
   }
 }
 /* USER CODE END 4 */

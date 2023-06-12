@@ -11,9 +11,9 @@ typedef struct
     uint16_t a_pin;
     uint16_t b_pin;
 
-    uint32_t counter;
-    uint32_t direction;
-    uint32_t lut_index;
+    int32_t counter;
+    uint8_t direction;
+    uint8_t lut_index;
 } sw_enc_t;
 
 void swEncoderInit(sw_enc_t *henc, GPIO_TypeDef* enca_port, uint16_t enca_pin, 

@@ -81,5 +81,5 @@ void swEncoderDebug(sw_enc_t* henc)
 {
     printf("ENCA: %d\t", HAL_GPIO_ReadPin(henc->a_port, henc->a_pin));
     printf("ENCB: %d\t", HAL_GPIO_ReadPin(henc->b_port, henc->b_pin));
-    printf("CNT: %ld\n", henc->counter);
+    printf("CNT: %ld\r\n", henc->counter);
 }

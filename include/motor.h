@@ -39,6 +39,8 @@ typedef struct
     double linear_velocity;
     double linear_velocity_setpoint;
     double effort;
+    GPIO_TypeDef* pwm_port;
+    uint16_t pwm_pin;
 } motor_t;
 
 void MotorInit(motor_t *hm, motor_config_t* cfg, sw_enc_t* enc);
