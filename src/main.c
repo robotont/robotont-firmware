@@ -28,32 +28,17 @@
 #include <stdbool.h>
 #include "pid.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
+#define MAIN_LOOP_DT_MS 10
 
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan1;
 
 I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim11;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 UART_HandleTypeDef huart3;
-
-/* USER CODE BEGIN PV */
 
 // Create encoders
 sw_enc_t henc0, henc1, henc2;
@@ -61,14 +46,7 @@ sw_enc_t henc0, henc1, henc2;
 // Create motors and their configuration datastructures
 motor_t hm0, hm1, hm2;
 motor_config_t mcfg0, mcfg1, mcfg2;
-
-PID_TypeDef hPID0;
-
-//static uint8_t last_packet[APP_RX_DATA_SIZE];        // Buffer for incoming command
-//uint8_t packet_buf[APP_RX_DATA_SIZE];        // Buffer for incoming command
-//volatile uint8_t serial_arrived = 0;  // Number of bytes arrived
-//uint16_t last_packet_length;
-volatile uint32_t counter = 0;
+PID_TypeDef hPID0, hPID1, hPID2;
 
 /* USER CODE END PV */
 
@@ -80,16 +58,12 @@ static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM11_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM14_Init(void);
-/* USER CODE BEGIN PFP */
 
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
 void motor_test(motor_config_t* mcfg);
-/* USER CODE END 0 */
+
 
 /**
   * @brief  The application entry point.
@@ -97,25 +71,11 @@ void motor_test(motor_config_t* mcfg);
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
   /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -125,15 +85,16 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_DEVICE_Init();
   MX_TIM3_Init();
+  MX_TIM11_Init();
   MX_TIM13_Init();
   MX_TIM14_Init();
-  /* USER CODE BEGIN 2 */
 
+  // Initialize software encoders
   swEncoderInit(&henc0, PIN_M0_ENCA_GPIO_Port, PIN_M0_ENCA_Pin, PIN_M0_ENCB_GPIO_Port, PIN_M0_ENCB_Pin);
   swEncoderInit(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
   swEncoderInit(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
 
-  
+  // Motor configurations
   mcfg0.nsleep_port = PIN_M0_NSLEEP_GPIO_Port;
   mcfg0.en1_port = PIN_M0_EN1_GPIO_Port;
   mcfg0.en2_port = PIN_M0_EN2_GPIO_Port;
@@ -194,27 +155,46 @@ int main(void)
   mcfg2.wheel_pos_r = 0.145;
   mcfg2.wheel_pos_phi = 5.0f / 3.0f * M_PI;
 
-  MotorInit(&hm0, &mcfg0, &henc0);
-  MotorInit(&hm1, &mcfg1, &henc1);
-  MotorInit(&hm2, &mcfg2, &henc2);
+  // Initialize motors
+  MotorInit(&hm0, &mcfg0, &henc0, &(TIM3->CCR1));
+  MotorInit(&hm1, &mcfg1, &henc1, &(TIM11->CCR1));
+  MotorInit(&hm2, &mcfg2, &henc2, &(TIM13->CCR1));
 
-  HAL_TIM_Base_Start_IT(&htim13); // Start timer for PID update
-  HAL_TIM_Base_Start_IT(&htim14); // Start timer for reading encoders
-
-  // Start timers for motor PWM generation
-  HAL_TIM_Base_Start_IT(&htim3);
+  // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
+  HAL_TIM_Base_Start_IT(&htim3); // motor 0
   HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_Base_Start_IT(&htim11); // motor 1
+  HAL_TIM_PWM_Start_IT(&htim11, TIM_CHANNEL_1);
+  HAL_TIM_Base_Start_IT(&htim13); // motor 2
+  HAL_TIM_PWM_Start_IT(&htim13, TIM_CHANNEL_1);
 
-  /* USER CODE END 2 */
+  // Start timer for reading encoders
+  HAL_TIM_Base_Start_IT(&htim14); 
+  // HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_2);
+  // HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_3);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   //uint8_t Text[] = "Hello from Robotont\r\n";
   HAL_Delay(1000);
+  PID(&hPID0, &(hm0.linear_velocity), &(hm0.effort), &(hm0.linear_velocity_setpoint), 750, 12000, 0, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID(&hPID1, &(hm1.linear_velocity), &(hm1.effort), &(hm1.linear_velocity_setpoint), 750, 12000, 0, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID(&hPID2, &(hm2.linear_velocity), &(hm2.effort), &(hm2.linear_velocity_setpoint), 750, 12000, 0, _PID_P_ON_E, _PID_CD_DIRECT);
   
-  PID(&hPID0, &hm0.linear_velocity, &hm0.effort, &hm0.linear_velocity_setpoint, 0.5, 5, 1, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID_SetMode(&hPID0, _PID_MODE_AUTOMATIC);
   PID_SetOutputLimits(&hPID0, -1000, 1000);
-  PID_SetSampleTime(&hPID0,0.01);
+  PID_SetSampleTime(&hPID0,MAIN_LOOP_DT_MS);
+  PID_SetMode(&hPID1, _PID_MODE_AUTOMATIC);
+  PID_SetOutputLimits(&hPID1, -1000, 1000);
+  PID_SetSampleTime(&hPID1,MAIN_LOOP_DT_MS);
+  PID_SetMode(&hPID2, _PID_MODE_AUTOMATIC);
+  PID_SetOutputLimits(&hPID2, -1000, 1000);
+  PID_SetSampleTime(&hPID2,MAIN_LOOP_DT_MS);
+
+  uint32_t counter = 0; //for debugging purposes
+
+  uint32_t last_tick = HAL_GetTick();
+  uint32_t delay_tick = 0;
 
   while (1)
   {
@@ -222,12 +202,13 @@ int main(void)
     HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
  
     //CDC_Transmit_FS(Text,20);
-    printf("henc0:\t"); swEncoderDebug(&henc0);
+    //printf("henc0:\t"); swEncoderDebug(&henc0);
     //printf("henc1:\t"); swEncoderDebug(&henc1);
     //printf("henc2:\t"); swEncoderDebug(&henc2);
     //motor_test(&mcfg0);
     //printf("counter: %ld\n", counter);
 
+    // Process data that was received over the USB virtual COM port.
     if (last_packet_length)
     {
       printf("processing packet (%d): %s\r\n", last_packet_length, (char *) last_packet);
@@ -243,7 +224,7 @@ int main(void)
         int arg=0;
         while (pch != NULL)
         {
-          printf ("arg %d: %s (%f)\r\n",arg, pch, atof(pch));
+          //printf ("arg %d: %s (%f)\r\n",arg, pch, atof(pch));
           if (arg==1) {lin_vel_x = atof(pch);}
           else if (arg==2) {lin_vel_y = atof(pch);}
           else if (arg==3) {ang_vel_z = atof(pch);}
@@ -265,10 +246,26 @@ int main(void)
         int arg=0;
         while (pch != NULL)
         {
-          printf ("arg %d: %s (%f)\r\n",arg, pch, atof(pch));
+          //printf ("arg %d: %s (%f)\r\n",arg, pch, atof(pch));
           if (arg==1) {hm0.linear_velocity_setpoint = atof(pch);}
           else if (arg==2) {hm1.linear_velocity_setpoint = atof(pch);}
           else if (arg==3) {hm2.linear_velocity_setpoint = atof(pch);}
+          pch = strtok (NULL, ":");
+          arg++;
+        }
+      }
+      // EF command for Effort control
+      else if(last_packet[0]=='E' && last_packet[1]=='F') 
+      {
+        char * pch;
+        pch = strtok ((char *) last_packet, ":");
+        int arg=0;
+        while (pch != NULL)
+        {
+          //printf ("arg %d: %s (%f)\r\n",arg, pch, atof(pch));
+          if (arg==1) {hm0.effort = atof(pch);}
+          else if (arg==2) {hm1.effort = atof(pch);}
+          else if (arg==3) {hm2.effort = atof(pch);}
           pch = strtok (NULL, ":");
           arg++;
         }
@@ -277,34 +274,51 @@ int main(void)
       last_packet_length = 0;
     }
 
-    printf("Motor setpoints: %f %f %f\r\n", hm0.linear_velocity_setpoint, hm1.linear_velocity_setpoint, hm2.linear_velocity_setpoint);
-    printf("Motor lin vel: %f %f %f\r\n", hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity);
-    printf("Motor effort: %f %f %f\r\n", hm0.effort, hm1.effort, hm2.effort);
+    //printf("PID: in %f, out %f\r\n", vel, effort);
+    if (counter%10 == 0)
+    {
+      printf("PID0: sp: %f; vel: %f, effort: %f, TIM3->CCR1: %ld\r\n", hm0.linear_velocity_setpoint, hm0.linear_velocity, hm0.effort, TIM3->CCR1);
+      printf("PID1: sp: %f; vel: %f, effort: %f, TIM11->CCR1: %ld\r\n", hm1.linear_velocity_setpoint, hm1.linear_velocity, hm1.effort, TIM11->CCR1);
+      printf("PID2: sp: %f; vel: %f, effort: %f, TIM13->CCR1: %ld\r\n", hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort, TIM13->CCR2);
+      printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
+
+    // printf("Motor setpoints: %f %f %f\r\n", hm0.linear_velocity_setpoint, hm1.linear_velocity_setpoint, hm2.linear_velocity_setpoint);
+    // printf("Motor lin vel: %f %f %f\r\n", hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity);
+    // printf("Motor effort: %f %f %f\r\n", hm0.effort, hm1.effort, hm2.effort);
+   
     //printf("last packet len: %d\r\n", last_packet_length);
     //printf("m0 lin vel setpoint: %.3f\r\n", hm0.linear_velocity_setpoint);
     //printf("m0 lin vel: %.3f\r\n", hm0.linear_velocity);
     //printf("m0 lin vel: %.3f\r\n\r\n", hm0.effort);
     
-    hm0.effort = 900;
-    HAL_Delay(1000);
-    hm0.effort = -900;
-    HAL_Delay(1000);
-    hm0.effort = 0;
-    // for (int i = 0; i<500;i+=100)
+    }
+    // for (int i = 0; i<=1000; i+=100)
     // {
-    //   // Adjust M0 pwm speed
-      
-      
-    //   HAL_Delay(100); 
+    //   hm0.linear_velocity_setpoint = i;
+    //   //TIM3->CCR1 = i;
+    //   HAL_Delay(1000);
+    //   printf("hm0.setpoint: %d\r\n",i);
     // }
     // Adjust M0 pwm speed
     //TIM3->CCR1 = 300;
     
-    HAL_Delay(1000);
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
-}
+    PID_Compute(&hPID0);
+    PID_Compute(&hPID1);
+    PID_Compute(&hPID2);
+    MotorUpdate(&hm0);
+    MotorUpdate(&hm1);
+    MotorUpdate(&hm2);
+    
+    delay_tick = MAIN_LOOP_DT_MS - (HAL_GetTick() - last_tick);
+    if (delay_tick > MAIN_LOOP_DT_MS) // check for overflow
+    {
+      delay_tick = 0;
+    }
+    HAL_Delay(delay_tick);
+    last_tick = HAL_GetTick();
+    counter++;
+  } // end of main while loop
+} // end of main
 
 void motor_test(motor_config_t* mcfg)
 {
@@ -363,7 +377,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
@@ -379,14 +393,6 @@ void SystemClock_Config(void)
   */
 static void MX_CAN1_Init(void)
 {
-
-  /* USER CODE BEGIN CAN1_Init 0 */
-
-  /* USER CODE END CAN1_Init 0 */
-
-  /* USER CODE BEGIN CAN1_Init 1 */
-
-  /* USER CODE END CAN1_Init 1 */
   hcan1.Instance = CAN1;
   hcan1.Init.Prescaler = 16;
   hcan1.Init.Mode = CAN_MODE_NORMAL;
@@ -403,10 +409,6 @@ static void MX_CAN1_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN CAN1_Init 2 */
-
-  /* USER CODE END CAN1_Init 2 */
-
 }
 
 /**
@@ -416,14 +418,6 @@ static void MX_CAN1_Init(void)
   */
 static void MX_I2C1_Init(void)
 {
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
   hi2c1.Init.ClockSpeed = 100000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -437,10 +431,6 @@ static void MX_I2C1_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
@@ -450,14 +440,6 @@ static void MX_I2C1_Init(void)
   */
 static void MX_I2C2_Init(void)
 {
-
-  /* USER CODE BEGIN I2C2_Init 0 */
-
-  /* USER CODE END I2C2_Init 0 */
-
-  /* USER CODE BEGIN I2C2_Init 1 */
-
-  /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
   hi2c2.Init.ClockSpeed = 100000;
   hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -471,34 +453,21 @@ static void MX_I2C2_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C2_Init 2 */
-
-  /* USER CODE END I2C2_Init 2 */
-
 }
 
 /**
-  * @brief TIM3 Initialization Function
+  * @brief TIM3 Initialization Function (for motors PWM generation)
   * @param None
   * @retval None
   */
 static void MX_TIM3_Init(void)
 {
-
-  /* USER CODE BEGIN TIM3_Init 0 */
-
-  /* USER CODE END TIM3_Init 0 */
-
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM3_Init 1 */
-
-  /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 16-1;
+  htim3.Init.Prescaler = 80-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1000;
+  htim3.Init.Period = 1000; //200 Hz
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -514,86 +483,95 @@ static void MX_TIM3_Init(void)
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM3_Init 2 */
-
-  /* USER CODE END TIM3_Init 2 */
 
 }
 
 /**
-  * @brief TIM13 Initialization Function
+  * @brief TIM11 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM11_Init(void)
+{
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  htim11.Instance = TIM11;
+  htim11.Init.Prescaler = 80-1;
+  htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim11.Init.Period = 1000;
+  htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim11) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim11, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief TIM13 Initialization Function (for calling PID_Compute)
   * @param None
   * @retval None
   */
 static void MX_TIM13_Init(void)
 {
-
-  /* USER CODE BEGIN TIM13_Init 0 */
-
-  /* USER CODE END TIM13_Init 0 */
-
-  /* USER CODE BEGIN TIM13_Init 1 */
-
-  /* USER CODE END TIM13_Init 1 */
+  TIM_OC_InitTypeDef sConfigOC = {0};
   htim13.Instance = TIM13;
-  htim13.Init.Prescaler = 1600-1;
+  htim13.Init.Prescaler = 16-1;
   htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim13.Init.Period = 100-1; // 1kHz
+  htim13.Init.Period = 100-1; //10 kHz
   htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM13_Init 2 */
-
-  /* USER CODE END TIM13_Init 2 */
-
+  if (HAL_TIM_PWM_Init(&htim13) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim13, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /**
-  * @brief TIM14 Initialization Function
+  * @brief TIM14 Initialization Function (used for encoders)
   * @param None
   * @retval None
   */
 static void MX_TIM14_Init(void)
 {
-
-  /* USER CODE BEGIN TIM14_Init 0 */
-
-  /* USER CODE END TIM14_Init 0 */
-
-  /* USER CODE BEGIN TIM14_Init 1 */
-
-  /* USER CODE END TIM14_Init 1 */
   htim14.Instance = TIM14;
-  htim14.Init.Prescaler = 160-1;
+  htim14.Init.Prescaler = 1600-1;
   htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim14.Init.Period = 10-1;  // 100 kHz
+  htim14.Init.Period = 2-1;  // 10 kHz
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM14_Init 2 */    //hm->effort = 0.1;
-
-
-  /* USER CODE END TIM14_Init 2 */
-
 }
 
 /**
@@ -603,14 +581,6 @@ static void MX_TIM14_Init(void)
   */
 static void MX_USART3_UART_Init(void)
 {
-
-  /* USER CODE BEGIN USART3_Init 0 */
-
-  /* USER CODE END USART3_Init 0 */
-
-  /* USER CODE BEGIN USART3_Init 1 */
-
-  /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
   huart3.Init.BaudRate = 115200;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
@@ -623,10 +593,6 @@ static void MX_USART3_UART_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN USART3_Init 2 */
-
-  /* USER CODE END USART3_Init 2 */
-
 }
 
 /**
@@ -637,8 +603,6 @@ static void MX_USART3_UART_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -695,7 +659,7 @@ static void MX_GPIO_Init(void)
                           |PIN_LED_DATA_Pin|PIN_M1_EN2_Pin|PIN_M1_EN1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PIN_ROT_ENC_SW_Pin PIN_ROT_ENC_B_Pin PIN_ROT_ENC_A_Pin PIN_ESTOP_Pin */
@@ -722,12 +686,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(PIN_M1_NSLEEP_GPIO_Port, &GPIO_InitStruct);
-
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
 }
 
-/* USER CODE BEGIN 4 */
 /**
   * @brief  Retargets the C library printf function to the VIRTUAL COM PORT.
   * @param  None
@@ -748,9 +708,31 @@ int _write(int file, char *ptr, int len) {
     return len;
 }
 
+// void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+// {
+//   if(htim->Instance == htim3.Instance)
+//   {
+//     HAL_GPIO_TogglePin(hm0.pwm_port, hm0.pwm_pin);
+//   }
+// }
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if(htim->Instance == TIM14)
+  if(htim->Instance == htim3.Instance)
+  {
+    // HAL_GPIO_TogglePin(hm0.pwm_port, hm0.pwm_pin);
+    // HAL_GPIO_TogglePin(hm1.pwm_port, hm1.pwm_pin);
+    // HAL_GPIO_TogglePin(hm2.pwm_port, hm2.pwm_pin);
+    HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, SET);
+  }else if(htim->Instance == htim11.Instance)
+  {
+    HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, SET);
+  }
+  else if(htim->Instance == htim13.Instance)
+  {
+    HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, SET);
+  }
+  else if(htim->Instance == htim14.Instance)
   {
     //HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
     //printf("Encoder0: %ld\n", henc0.counter);
@@ -758,37 +740,60 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     swEncoderInterrupt(&henc1);
     swEncoderInterrupt(&henc2);
   }
-  else if(htim->Instance == TIM3)
-  {
-    HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, SET);
-    HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, SET);
-    HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, SET);
-  }
-  else if(htim->Instance == TIM13)
-  {
-    // timer for PID
-    //counter++;
-    //PID_Compute(&hPID0);
-    //PID_Compute(&hPID1);
-    //PID_Compute(&hPID2);
-    MotorUpdate(&hm0);
-    MotorUpdate(&hm1);
-    MotorUpdate(&hm2);
-  }
 }
+
+// void TIM14_IRQHandler(void)
+// {
+// 	if(LL_TIM_IsActiveFlag_UPDATE(TIM14))
+// 	{
+// 		LL_GPIO_SetOutputPin(hm0.pwm_port, hm0.pwm_pin);
+// 		LL_TIM_ClearFlag_UPDATE(TIM14);
+// 	}
+// }
+
+// void TIM3_IRQHandler(void)
+// {
+// 	if(LL_TIM_IsActiveFlag_UPDATE(TIM3))
+// 	{
+// 		LL_GPIO_SetOutputPin(hm0.pwm_port, hm0.pwm_pin);
+// 		LL_TIM_ClearFlag_UPDATE(TIM3);
+// 	}
+// }
+
+// void TIM11_IRQHandler(void)
+// {
+// 	if(LL_TIM_IsActiveFlag_UPDATE(TIM11))
+// 	{
+// 		LL_GPIO_SetOutputPin(hm1.pwm_port, hm1.pwm_pin);
+// 		LL_TIM_ClearFlag_UPDATE(TIM11);
+// 	}
+// }
+
+// void TIM13_IRQHandler(void)
+// {
+// 	if(LL_TIM_IsActiveFlag_UPDATE(TIM13))
+// 	{
+// 		LL_GPIO_SetOutputPin(hm2.pwm_port, hm2.pwm_pin);
+// 		LL_TIM_ClearFlag_UPDATE(TIM13);
+// 	}
+// }
+
 
 
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
-  if(htim->Instance == TIM3)
+  if(htim->Instance == htim3.Instance) //motor 0
   {
-    counter++;
     HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, RESET);
+  }else if(htim->Instance == htim11.Instance) // motor 1
+  {
     HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, RESET);
+  }
+  else if(htim->Instance == htim13.Instance) //motor 2
+  {
     HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, RESET);
   }
 }
-/* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.

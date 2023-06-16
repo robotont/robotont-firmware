@@ -41,9 +41,11 @@ typedef struct
     double effort;
     GPIO_TypeDef* pwm_port;
     uint16_t pwm_pin;
+    volatile uint32_t* effort_output_reg;
+
 } motor_t;
 
-void MotorInit(motor_t *hm, motor_config_t* cfg, sw_enc_t* enc);
+void MotorInit(motor_t *hm, motor_config_t* cfg, sw_enc_t* enc, uint32_t* effort_output_reg);
 void MotorUpdate(motor_t* hm);
 void MotorDebug(motor_t* hm);
 
