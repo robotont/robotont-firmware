@@ -156,9 +156,9 @@ int main(void)
   mcfg2.wheel_pos_phi = 5.0f / 3.0f * M_PI;
 
   // Initialize motors
-  MotorInit(&hm0, &mcfg0, &henc0, &(TIM3->CCR1));
-  MotorInit(&hm1, &mcfg1, &henc1, &(TIM11->CCR1));
-  MotorInit(&hm2, &mcfg2, &henc2, &(TIM13->CCR1));
+  MotorInit(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
+  MotorInit(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
+  MotorInit(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
 
   // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
   HAL_TIM_Base_Start_IT(&htim3); // motor 0
@@ -177,9 +177,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   //uint8_t Text[] = "Hello from Robotont\r\n";
   HAL_Delay(1000);
-  PID(&hPID0, &(hm0.linear_velocity), &(hm0.effort), &(hm0.linear_velocity_setpoint), 750, 12000, 0, _PID_P_ON_E, _PID_CD_DIRECT);
-  PID(&hPID1, &(hm1.linear_velocity), &(hm1.effort), &(hm1.linear_velocity_setpoint), 750, 12000, 0, _PID_P_ON_E, _PID_CD_DIRECT);
-  PID(&hPID2, &(hm2.linear_velocity), &(hm2.effort), &(hm2.linear_velocity_setpoint), 750, 12000, 0, _PID_P_ON_E, _PID_CD_DIRECT);
+  uint32_t pid_k = 600;
+  uint32_t pid_i = 15000;
+  uint32_t pid_d = 0;
+  PID(&hPID0, &(hm0.linear_velocity), &(hm0.effort), &(hm0.linear_velocity_setpoint), pid_k, pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID(&hPID1, &(hm1.linear_velocity), &(hm1.effort), &(hm1.linear_velocity_setpoint), pid_k, pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID(&hPID2, &(hm2.linear_velocity), &(hm2.effort), &(hm2.linear_velocity_setpoint), pid_k, pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
   
   PID_SetMode(&hPID0, _PID_MODE_AUTOMATIC);
   PID_SetOutputLimits(&hPID0, -1000, 1000);
@@ -192,19 +195,29 @@ int main(void)
   PID_SetSampleTime(&hPID2,MAIN_LOOP_DT_MS);
 
   uint32_t counter = 0; //for debugging purposes
+  uint32_t duty = 0; //for debugging purposes
 
   uint32_t last_tick = HAL_GetTick();
   uint32_t delay_tick = 0;
 
+  HAL_GPIO_WritePin(hm0.cfg->en2_port, hm0.cfg->en2_pin, RESET); 
+  HAL_GPIO_WritePin(hm1.cfg->en2_port, hm1.cfg->en2_pin, RESET);
+  HAL_GPIO_WritePin(hm2.cfg->en2_port, hm2.cfg->en2_pin, RESET);
+  HAL_GPIO_WritePin(hm0.cfg->nsleep_port, hm0.cfg->nsleep_pin, SET); // Enable driver of motor 0
+  HAL_GPIO_WritePin(hm1.cfg->nsleep_port, hm1.cfg->nsleep_pin, SET); // Enable driver of motor 1
+  HAL_GPIO_WritePin(hm2.cfg->nsleep_port, hm2.cfg->nsleep_pin, SET); // Enable driver of motor 2
+
+  counter = 1;
+  duty = 50;
   while (1)
   {
-    /* USER CODE END WHILE */
     HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
+    
+//    printf("henc0:\t"); swEncoderDebug(&henc0);
+//    printf("henc1:\t"); swEncoderDebug(&henc1);
+//    printf("henc2:\t"); swEncoderDebug(&henc2);
  
     //CDC_Transmit_FS(Text,20);
-    //printf("henc0:\t"); swEncoderDebug(&henc0);
-    //printf("henc1:\t"); swEncoderDebug(&henc1);
-    //printf("henc2:\t"); swEncoderDebug(&henc2);
     //motor_test(&mcfg0);
     //printf("counter: %ld\n", counter);
 
@@ -275,32 +288,34 @@ int main(void)
     }
 
     //printf("PID: in %f, out %f\r\n", vel, effort);
-    if (counter%10 == 0)
+    if (counter % 10 == 0)
     {
-      printf("PID0: sp: %f; vel: %f, effort: %f, TIM3->CCR1: %ld\r\n", hm0.linear_velocity_setpoint, hm0.linear_velocity, hm0.effort, TIM3->CCR1);
-      printf("PID1: sp: %f; vel: %f, effort: %f, TIM11->CCR1: %ld\r\n", hm1.linear_velocity_setpoint, hm1.linear_velocity, hm1.effort, TIM11->CCR1);
-      printf("PID2: sp: %f; vel: %f, effort: %f, TIM13->CCR1: %ld\r\n", hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort, TIM13->CCR2);
-      printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
+    printf("M0: sp: %f; vel: %f, effort: %f, TIM3->CCR1: %ld\r\n", hm0.linear_velocity_setpoint, hm0.linear_velocity, hm0.effort, TIM3->CCR1);
+    printf("M1: sp: %f; vel: %f, effort: %f, TIM11->CCR1: %ld\r\n", hm1.linear_velocity_setpoint, hm1.linear_velocity, hm1.effort, TIM11->CCR1);
+    printf("M2: sp: %f; vel: %f, effort: %f, TIM13->CCR1: %ld\r\n", hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort, TIM13->CCR1);
+    printf("PID0.OutputSum %f;\r\n", hPID0.OutputSum);
+    printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
+    //  //Adjust pwm duty cycle
+    //  TIM3->CCR1 = duty;
+    //  TIM11->CCR1 = duty;
+    //  TIM13->CCR1 = duty;
+    //  
+    //  if (duty > 1000)
+    //  {
+    //    duty = 100;
+    //  }
+    //  else
+    //  {
+    //    duty += 100;
+    //  }
+    }
+
+    
 
     // printf("Motor setpoints: %f %f %f\r\n", hm0.linear_velocity_setpoint, hm1.linear_velocity_setpoint, hm2.linear_velocity_setpoint);
     // printf("Motor lin vel: %f %f %f\r\n", hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity);
     // printf("Motor effort: %f %f %f\r\n", hm0.effort, hm1.effort, hm2.effort);
-   
-    //printf("last packet len: %d\r\n", last_packet_length);
-    //printf("m0 lin vel setpoint: %.3f\r\n", hm0.linear_velocity_setpoint);
-    //printf("m0 lin vel: %.3f\r\n", hm0.linear_velocity);
-    //printf("m0 lin vel: %.3f\r\n\r\n", hm0.effort);
     
-    }
-    // for (int i = 0; i<=1000; i+=100)
-    // {
-    //   hm0.linear_velocity_setpoint = i;
-    //   //TIM3->CCR1 = i;
-    //   HAL_Delay(1000);
-    //   printf("hm0.setpoint: %d\r\n",i);
-    // }
-    // Adjust M0 pwm speed
-    //TIM3->CCR1 = 300;
     
     PID_Compute(&hPID0);
     PID_Compute(&hPID1);
@@ -308,6 +323,7 @@ int main(void)
     MotorUpdate(&hm0);
     MotorUpdate(&hm1);
     MotorUpdate(&hm2);
+
     
     delay_tick = MAIN_LOOP_DT_MS - (HAL_GetTick() - last_tick);
     if (delay_tick > MAIN_LOOP_DT_MS) // check for overflow
@@ -317,27 +333,8 @@ int main(void)
     HAL_Delay(delay_tick);
     last_tick = HAL_GetTick();
     counter++;
-  } // end of main while loop
+    } // end of main while loop
 } // end of main
-
-void motor_test(motor_config_t* mcfg)
-{
-    HAL_GPIO_WritePin(mcfg->nsleep_port,mcfg->nsleep_pin, SET);
-    HAL_GPIO_WritePin(mcfg->en1_port,mcfg->en1_pin, RESET);
-    HAL_GPIO_WritePin(mcfg->en2_port,mcfg->en2_pin, SET);
-    HAL_Delay(1000);
-    HAL_GPIO_WritePin(mcfg->en1_port,mcfg->en1_pin, RESET);
-    HAL_GPIO_WritePin(mcfg->en2_port,mcfg->en2_pin, RESET);
-    HAL_Delay(1000);
-
-    HAL_GPIO_WritePin(mcfg->en1_port,mcfg->en1_pin, SET);
-    HAL_GPIO_WritePin(mcfg->en2_port,mcfg->en2_pin, RESET);
-    HAL_Delay(1000);
-
-    HAL_GPIO_WritePin(mcfg->en1_port,mcfg->en1_pin, SET);
-    HAL_GPIO_WritePin(mcfg->en2_port,mcfg->en2_pin, SET);
-    HAL_Delay(1000);
-}
 
 /**
   * @brief System Clock Configuration
@@ -467,7 +464,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 80-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1000; //200 Hz
+  htim3.Init.Period = 1000-1; //200 Hz
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -502,7 +499,7 @@ static void MX_TIM11_Init(void)
   htim11.Instance = TIM11;
   htim11.Init.Prescaler = 80-1;
   htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim11.Init.Period = 1000;
+  htim11.Init.Period = 1000-1;
   htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
@@ -532,9 +529,9 @@ static void MX_TIM13_Init(void)
 {
   TIM_OC_InitTypeDef sConfigOC = {0};
   htim13.Instance = TIM13;
-  htim13.Init.Prescaler = 16-1;
+  htim13.Init.Prescaler = 80-1;
   htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim13.Init.Period = 100-1; //10 kHz
+  htim13.Init.Period = 1000-1; //1 kHz
   htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
@@ -563,7 +560,8 @@ static void MX_TIM13_Init(void)
 static void MX_TIM14_Init(void)
 {
   htim14.Instance = TIM14;
-  htim14.Init.Prescaler = 1600-1;
+//  htim14.Init.Prescaler = 1600-1;
+  htim14.Init.Prescaler = 400-1;
   htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim14.Init.Period = 2-1;  // 10 kHz
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

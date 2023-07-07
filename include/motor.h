@@ -39,14 +39,19 @@ typedef struct
     double linear_velocity;
     double linear_velocity_setpoint;
     double effort;
+    double effort_limit;
     GPIO_TypeDef* pwm_port;
     uint16_t pwm_pin;
     volatile uint32_t* effort_output_reg;
+    TIM_HandleTypeDef* htim;
+    uint32_t last_enc_update;
 
 } motor_t;
 
-void MotorInit(motor_t *hm, motor_config_t* cfg, sw_enc_t* enc, uint32_t* effort_output_reg);
+void MotorInit(motor_t *hm, motor_config_t* cfg, sw_enc_t* enc, volatile uint32_t* effort_output_reg, TIM_HandleTypeDef* htim);
 void MotorUpdate(motor_t* hm);
 void MotorDebug(motor_t* hm);
+void MotorEnable(motor_t* hm);
+void MotorDisable(motor_t* hm);
 
 #endif
