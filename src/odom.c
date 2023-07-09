@@ -87,12 +87,28 @@ void OdomUpdate(odom_t* ho, float vel_1, float vel_2, float vel_3, float dt)
 	}
 
   // transform velocities from robot frame to odom frame
-  ho->odom_vel[0] = ho->robot_vel[0] * cos(ho->odom_pos[2]) - ho->robot_vel[1] * sin(ho->odom_pos[2]);
+/*	for (int i = 0; i < 3; i++)
+	{
+		ho->odom_vel[i] = 0;
+		for (int j = 0; j < 3; j++)
+		{
+			ho->odom_vel[i] += ho->odom_matrix[i][j] * ho->robot_vel[j];
+		}
+	}
+	*/
+	
+	
+	ho->odom_vel[0] = ho->robot_vel[0] * cos(ho->odom_pos[2]) - ho->robot_vel[1] * sin(ho->odom_pos[2]);
   ho->odom_vel[1] = ho->robot_vel[0] * sin(ho->odom_pos[2]) + ho->robot_vel[1] * cos(ho->odom_pos[2]);
   ho->odom_vel[2] = ho->robot_vel[2];
+	
 
   // position integration
     ho->odom_pos[0] += ho->odom_vel[0] * dt;
     ho->odom_pos[1] += ho->odom_vel[1] * dt;
     ho->odom_pos[2] += ho->odom_vel[2] * dt;
+
+		// Transform velocities from robot coordinates to odom coordinates
+		
+		
 }

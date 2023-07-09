@@ -218,21 +218,11 @@ int main(void)
   duty = 50;
   while (1)
   {
-    HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
-    
-//    printf("henc0:\t"); swEncoderDebug(&henc0);
-//    printf("henc1:\t"); swEncoderDebug(&henc1);
-//    printf("henc2:\t"); swEncoderDebug(&henc2);
- 
-    //CDC_Transmit_FS(Text,20);
-    //motor_test(&mcfg0);
-    //printf("counter: %ld\n", counter);
-
     // Process data that was received over the USB virtual COM port.
     if (last_packet_length)
     {
       printf("processing packet (%d): %s\r\n", last_packet_length, (char *) last_packet);
-      // Check if command is RS (Robot Speed)
+      // Command: RS (Robot Speed)
       if (last_packet[0]=='R' && last_packet[1]=='S')
       {
         float lin_vel_x = 0;
@@ -244,7 +234,6 @@ int main(void)
         int arg=0;
         while (pch != NULL)
         {
-          //printf ("arg %d: %s (%f)\r\n",arg, pch, atof(pch));
           if (arg==1) {lin_vel_x = atof(pch);}
           else if (arg==2) {lin_vel_y = atof(pch);}
           else if (arg==3) {ang_vel_z = atof(pch);}
@@ -258,7 +247,7 @@ int main(void)
         hm1.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm1.cfg->wheel_pos_phi) + hm1.cfg->wheel_pos_r * ang_vel_z;
         hm2.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm2.cfg->wheel_pos_phi) + hm2.cfg->wheel_pos_r * ang_vel_z;
       }
-      // Check if command is MS (Motor Speed)
+      // Command: MS (Motor Speed)
       else if(last_packet[0]=='M' && last_packet[1]=='S')
       {
         char * pch;
@@ -266,7 +255,6 @@ int main(void)
         int arg=0;
         while (pch != NULL)
         {
-          //printf ("arg %d: %s (%f)\r\n",arg, pch, atof(pch));
           if (arg==1) {hm0.linear_velocity_setpoint = atof(pch);}
           else if (arg==2) {hm1.linear_velocity_setpoint = atof(pch);}
           else if (arg==3) {hm2.linear_velocity_setpoint = atof(pch);}
@@ -274,7 +262,7 @@ int main(void)
           arg++;
         }
       }
-      // EF command for Effort control
+      // Command: EF (Effort control)
       else if(last_packet[0]=='E' && last_packet[1]=='F') 
       {
         char * pch;
@@ -282,7 +270,6 @@ int main(void)
         int arg=0;
         while (pch != NULL)
         {
-          //printf ("arg %d: %s (%f)\r\n",arg, pch, atof(pch));
           if (arg==1) {hm0.effort = atof(pch);}
           else if (arg==2) {hm1.effort = atof(pch);}
           else if (arg==3) {hm2.effort = atof(pch);}
@@ -290,6 +277,7 @@ int main(void)
           arg++;
         }
       }
+			// Command: OR (Odom Reset)
 			else if(last_packet[0]=='O' && last_packet[1]=='R') 
       {
 				OdomReset(&hodom);
@@ -298,48 +286,28 @@ int main(void)
       last_packet_length = 0;
     }
 
-    //printf("PID: in %f, out %f\r\n", vel, effort);
-    if (counter % 10 == 0)
-    {
-    printf("M0: sp: %f; vel: %f, effort: %f, TIM3->CCR1: %ld\r\n", hm0.linear_velocity_setpoint, hm0.linear_velocity, hm0.effort, TIM3->CCR1);
-    printf("M1: sp: %f; vel: %f, effort: %f, TIM11->CCR1: %ld\r\n", hm1.linear_velocity_setpoint, hm1.linear_velocity, hm1.effort, TIM11->CCR1);
-    printf("M2: sp: %f; vel: %f, effort: %f, TIM13->CCR1: %ld\r\n", hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort, TIM13->CCR1);
-    printf("PID0.OutputSum %f;\r\n", hPID0.OutputSum);
-    printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
+		// Print out some debugging information at 10 lower rate.
+    if (counter % 100 == 0)
+		{
+			HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
+			//printf("M0: sp: %f; vel: %f, effort: %f\r\n", hm0.linear_velocity_setpoint, hm0.linear_velocity, hm0.effort);
+			//printf("M1: sp: %f; vel: %f, effort: %f\r\n", hm1.linear_velocity_setpoint, hm1.linear_velocity, hm1.effort);
+			//printf("M2: sp: %f; vel: %f, effort: %f\r\n", hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort);
+			//printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
+		}
 
-		// send odometry data
-		printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos[0], hodom.odom_pos[1], hodom.odom_pos[2], hodom.robot_vel[0], hodom.robot_vel[1], hodom.robot_vel[2]);
-
-    //  //Adjust pwm duty cycle
-    //  TIM3->CCR1 = duty;
-    //  TIM11->CCR1 = duty;
-    //  TIM13->CCR1 = duty;
-    //  
-    //  if (duty > 1000)
-    //  {
-    //    duty = 100;
-    //  }
-    //  else
-    //  {
-    //    duty += 100;
-    //  }
-    }
-
-    
-
-    // printf("Motor setpoints: %f %f %f\r\n", hm0.linear_velocity_setpoint, hm1.linear_velocity_setpoint, hm2.linear_velocity_setpoint);
-    // printf("Motor lin vel: %f %f %f\r\n", hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity);
-    // printf("Motor effort: %f %f %f\r\n", hm0.effort, hm1.effort, hm2.effort);
-    
-    
-    PID_Compute(&hPID0);
+		PID_Compute(&hPID0);
     PID_Compute(&hPID1);
     PID_Compute(&hPID2);
     MotorUpdate(&hm0);
     MotorUpdate(&hm1);
     MotorUpdate(&hm2);
-		OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS*1000.0f);
+		OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
 
+		// Send odometry command to the on-board computer
+		printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos[0], hodom.odom_pos[1], hodom.odom_pos[2], hodom.robot_vel[0], hodom.robot_vel[1], hodom.robot_vel[2]);
+
+		// Wait until the desired loop time has elapsed
     delay_tick = MAIN_LOOP_DT_MS - (HAL_GetTick() - last_tick);
     if (delay_tick > MAIN_LOOP_DT_MS) // check for overflow
     {
@@ -721,23 +689,14 @@ int _write(int file, char *ptr, int len) {
     return len;
 }
 
-// void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-// {
-//   if(htim->Instance == htim3.Instance)
-//   {
-//     HAL_GPIO_TogglePin(hm0.pwm_port, hm0.pwm_pin);
-//   }
-// }
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	// Set PWM pin to high depending on which pwm timer triggered the interrupt
   if(htim->Instance == htim3.Instance)
   {
-    // HAL_GPIO_TogglePin(hm0.pwm_port, hm0.pwm_pin);
-    // HAL_GPIO_TogglePin(hm1.pwm_port, hm1.pwm_pin);
-    // HAL_GPIO_TogglePin(hm2.pwm_port, hm2.pwm_pin);
     HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, SET);
-  }else if(htim->Instance == htim11.Instance)
+  }
+	else if(htim->Instance == htim11.Instance)
   {
     HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, SET);
   }
@@ -745,54 +704,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
     HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, SET);
   }
+	// Check if the timer for the encoder interrupt triggered
   else if(htim->Instance == htim14.Instance)
   {
-    //HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
-    //printf("Encoder0: %ld\n", henc0.counter);
     swEncoderInterrupt(&henc0);
     swEncoderInterrupt(&henc1);
     swEncoderInterrupt(&henc2);
   }
 }
 
-// void TIM14_IRQHandler(void)
-// {
-// 	if(LL_TIM_IsActiveFlag_UPDATE(TIM14))
-// 	{
-// 		LL_GPIO_SetOutputPin(hm0.pwm_port, hm0.pwm_pin);
-// 		LL_TIM_ClearFlag_UPDATE(TIM14);
-// 	}
-// }
-
-// void TIM3_IRQHandler(void)
-// {
-// 	if(LL_TIM_IsActiveFlag_UPDATE(TIM3))
-// 	{
-// 		LL_GPIO_SetOutputPin(hm0.pwm_port, hm0.pwm_pin);
-// 		LL_TIM_ClearFlag_UPDATE(TIM3);
-// 	}
-// }
-
-// void TIM11_IRQHandler(void)
-// {
-// 	if(LL_TIM_IsActiveFlag_UPDATE(TIM11))
-// 	{
-// 		LL_GPIO_SetOutputPin(hm1.pwm_port, hm1.pwm_pin);
-// 		LL_TIM_ClearFlag_UPDATE(TIM11);
-// 	}
-// }
-
-// void TIM13_IRQHandler(void)
-// {
-// 	if(LL_TIM_IsActiveFlag_UPDATE(TIM13))
-// 	{
-// 		LL_GPIO_SetOutputPin(hm2.pwm_port, hm2.pwm_pin);
-// 		LL_TIM_ClearFlag_UPDATE(TIM13);
-// 	}
-// }
-
-
-
+/**
+  * @brief  This function is executed when the PWM pulses finish. Depending on which timer triggered the interrupt, the corresponding PWM pin is set to low.
+  * @retval None
+  */
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
   if(htim->Instance == htim3.Instance) //motor 0
