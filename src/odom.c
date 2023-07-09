@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include "odom.h"
 
-#define ARM_MATH_CM4
-#include <arm_math.h>
+
 
 void OdomInit(odom_t* ho, motor_config_t* hmc0, motor_config_t* hmc1, motor_config_t* hmc2)
 {
@@ -14,41 +13,24 @@ void OdomInit(odom_t* ho, motor_config_t* hmc0, motor_config_t* hmc1, motor_conf
   // add elements to odom matrix row by row (each row is a wheel)
   for (int i = 0; i < 3; i++)
   {
-    ho->odom_matrix[i][0] = -sin(motor_configs[i]->wheel_pos_phi);
-    ho->odom_matrix[i][1] = cos(motor_configs[i]->wheel_pos_phi);
-    ho->odom_matrix[i][2] = motor_configs[i]->wheel_pos_r;
+    ho->odom_matrix_data[i*3+0] = -sin(motor_configs[i]->wheel_pos_phi);
+    ho->odom_matrix_data[i*3+1] = cos(motor_configs[i]->wheel_pos_phi);
+    ho->odom_matrix_data[i*3+2] = motor_configs[i]->wheel_pos_r;
   }
+	// Initialize matrix instances for wheel velocities, robot velocities, odom velocities and odom position
+	arm_mat_init_f32(&(ho->wheel_vel), 3, 1, ho->wheel_vel_data);
+	arm_mat_init_f32(&(ho->robot_vel), 3, 1, ho->robot_vel_data);
+	arm_mat_init_f32(&(ho->odom_vel), 3, 1, ho->odom_vel_data);
+	arm_mat_init_f32(&(ho->odom_pos), 3, 1, ho->odom_pos_data);
+
+	// Initialize data structures for odom matrix and it's inverse
+	arm_mat_init_f32(&(ho->odom_matrix), 3, 3, ho->odom_matrix_data);
+	arm_mat_init_f32(&(ho->odom_matrix_inv), 3, 3, ho->odom_matrix_inv_data);
 
 	// Calculate inverse of odom matrix
-	double det = 
-		ho->odom_matrix[0][0] * ho->odom_matrix[1][1] * ho->odom_matrix[2][2] +  ho->odom_matrix[0][1] * ho->odom_matrix[1][2] * ho->odom_matrix[2][0] +
-		ho->odom_matrix[0][2] * ho->odom_matrix[1][0] * ho->odom_matrix[2][1] - ho->odom_matrix[0][2] * ho->odom_matrix[1][1] * ho->odom_matrix[2][0] -
-		ho->odom_matrix[0][1] * ho->odom_matrix[1][0] * ho->odom_matrix[2][2] - ho->odom_matrix[0][0] * ho->odom_matrix[1][2] * ho->odom_matrix[2][1];
-  
-	if (det == 0)
+	if (arm_mat_inverse_f32(&(ho->odom_matrix), &(ho->odom_matrix_inv)) == ARM_MATH_SINGULAR)
 	{
-		printf("Odom matrix is singular!!!\n");
-		ho->odom_matrix_inv[0][0] = 1;
-		ho->odom_matrix_inv[0][1] = 0;
-		ho->odom_matrix_inv[0][2] = 0;
-		ho->odom_matrix_inv[1][0] = 0;
-		ho->odom_matrix_inv[1][1] = 1;
-		ho->odom_matrix_inv[1][2] = 0;
-		ho->odom_matrix_inv[2][0] = 0;
-		ho->odom_matrix_inv[2][1] = 0;
-		ho->odom_matrix_inv[2][2] = 1;
-	}
-	else
-	{
-		ho->odom_matrix_inv[0][0] = (ho->odom_matrix[1][1] * ho->odom_matrix[2][2] - ho->odom_matrix[1][2] * ho->odom_matrix[2][1]) / det;
-		ho->odom_matrix_inv[0][1] = (ho->odom_matrix[0][2] * ho->odom_matrix[2][1] - ho->odom_matrix[0][1] * ho->odom_matrix[2][2]) / det;
-		ho->odom_matrix_inv[0][2] = (ho->odom_matrix[0][1] * ho->odom_matrix[1][2] - ho->odom_matrix[0][2] * ho->odom_matrix[1][1]) / det;
-		ho->odom_matrix_inv[1][0] = (ho->odom_matrix[1][2] * ho->odom_matrix[2][0] - ho->odom_matrix[1][0] * ho->odom_matrix[2][2]) / det;
-		ho->odom_matrix_inv[1][1] = (ho->odom_matrix[0][0] * ho->odom_matrix[2][2] - ho->odom_matrix[0][2] * ho->odom_matrix[2][0]) / det;
-		ho->odom_matrix_inv[1][2] = (ho->odom_matrix[0][2] * ho->odom_matrix[1][0] - ho->odom_matrix[0][0] * ho->odom_matrix[1][2]) / det;
-		ho->odom_matrix_inv[2][0] = (ho->odom_matrix[1][0] * ho->odom_matrix[2][1] - ho->odom_matrix[1][1] * ho->odom_matrix[2][0]) / det;
-		ho->odom_matrix_inv[2][1] = (ho->odom_matrix[0][1] * ho->odom_matrix[2][0] - ho->odom_matrix[0][0] * ho->odom_matrix[2][1]) / det;
-		ho->odom_matrix_inv[2][2] = (ho->odom_matrix[0][0] * ho->odom_matrix[1][1] - ho->odom_matrix[0][1] * ho->odom_matrix[1][0]) / det;
+		printf("Odom matrix is singular and finding it's inverse is not possible!!\n");
 	}
 
 	// initialize vectors with zeros
@@ -57,58 +39,26 @@ void OdomInit(odom_t* ho, motor_config_t* hmc0, motor_config_t* hmc1, motor_conf
 
 void OdomReset(odom_t* ho)
 {
-  ho->odom_pos[0] = 0;
-  ho->odom_pos[1] = 0;
-  ho->odom_pos[2] = 0;
-
-  ho->odom_vel[0] = 0;
-  ho->odom_vel[1] = 0;
-  ho->odom_vel[2] = 0;
-
-  ho->wheel_vel[0] = 0;
-  ho->wheel_vel[1] = 0;
-  ho->wheel_vel[2] = 0;
+	arm_scale_f32(ho->wheel_vel_data, 0, ho->wheel_vel_data, 3);
+	arm_scale_f32(ho->robot_vel_data, 0, ho->robot_vel_data, 3);
+	arm_scale_f32(ho->odom_vel_data, 0, ho->odom_vel_data, 3);
+	arm_scale_f32(ho->odom_pos_data, 0, ho->odom_pos_data, 3);
 }
 
 void OdomUpdate(odom_t* ho, float vel_1, float vel_2, float vel_3, float dt)
 {
-  ho->wheel_vel[0] = vel_1;
-  ho->wheel_vel[1] = vel_2;
-  ho->wheel_vel[2] = vel_3;
+  ho->wheel_vel_data[0] = vel_1;
+  ho->wheel_vel_data[1] = vel_2;
+  ho->wheel_vel_data[2] = vel_3;
 
 	// Calculate robot velocity
-	for (int i = 0; i < 3; i++)
-	{
-		ho->robot_vel[i] = 0;
-		for (int j = 0; j < 3; j++)
-		{
-			ho->robot_vel[i] += ho->odom_matrix_inv[i][j] * ho->wheel_vel[j];
-		}
-	}
+	arm_mat_mult_f32(&(ho->odom_matrix_inv), &(ho->wheel_vel), &(ho->robot_vel));
 
-  // transform velocities from robot frame to odom frame
-/*	for (int i = 0; i < 3; i++)
-	{
-		ho->odom_vel[i] = 0;
-		for (int j = 0; j < 3; j++)
-		{
-			ho->odom_vel[i] += ho->odom_matrix[i][j] * ho->robot_vel[j];
-		}
-	}
-	*/
-	
-	
-	ho->odom_vel[0] = ho->robot_vel[0] * cos(ho->odom_pos[2]) - ho->robot_vel[1] * sin(ho->odom_pos[2]);
-  ho->odom_vel[1] = ho->robot_vel[0] * sin(ho->odom_pos[2]) + ho->robot_vel[1] * cos(ho->odom_pos[2]);
-  ho->odom_vel[2] = ho->robot_vel[2];
-	
+	// Transform velocities from robot frame to odom frame
+	arm_mat_mult_f32(&(ho->odom_matrix), &(ho->robot_vel), &(ho->odom_vel));
 
-  // position integration
-    ho->odom_pos[0] += ho->odom_vel[0] * dt;
-    ho->odom_pos[1] += ho->odom_vel[1] * dt;
-    ho->odom_pos[2] += ho->odom_vel[2] * dt;
-
-		// Transform velocities from robot coordinates to odom coordinates
-		
-		
+  // position integration (odom_pos = odom_pos + odom_vel * dt)
+	float32_t odom_vel_times_dt[3];
+	arm_scale_f32(ho->odom_vel_data, dt, odom_vel_times_dt, 3);
+	arm_add_f32(ho->odom_pos_data, odom_vel_times_dt, ho->odom_pos_data, 3);
 }
