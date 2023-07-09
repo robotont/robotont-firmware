@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include "sw_enc.h"
 #include "motor.h"
+#include "odom.h"
 #include <math.h>
 #include <stdbool.h>
 #include "pid.h"
@@ -47,6 +48,9 @@ sw_enc_t henc0, henc1, henc2;
 motor_t hm0, hm1, hm2;
 motor_config_t mcfg0, mcfg1, mcfg2;
 PID_TypeDef hPID0, hPID1, hPID2;
+
+// Create Odometry datastructure
+odom_t hodom;
 
 /* USER CODE END PV */
 
@@ -159,6 +163,9 @@ int main(void)
   MotorInit(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
   MotorInit(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
   MotorInit(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
+
+	// Initialize odometry
+	OdomInit(&hodom, &mcfg0, &mcfg1, &mcfg2);
 
   // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
   HAL_TIM_Base_Start_IT(&htim3); // motor 0
@@ -283,6 +290,10 @@ int main(void)
           arg++;
         }
       }
+			else if(last_packet[0]=='O' && last_packet[1]=='R') 
+      {
+				OdomReset(&hodom);
+      }
       last_packet[0] = '\0';  // indicate that packet has been processed
       last_packet_length = 0;
     }
@@ -295,6 +306,10 @@ int main(void)
     printf("M2: sp: %f; vel: %f, effort: %f, TIM13->CCR1: %ld\r\n", hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort, TIM13->CCR1);
     printf("PID0.OutputSum %f;\r\n", hPID0.OutputSum);
     printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
+
+		// send odometry data
+		printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos[0], hodom.odom_pos[1], hodom.odom_pos[2], hodom.robot_vel[0], hodom.robot_vel[1], hodom.robot_vel[2]);
+
     //  //Adjust pwm duty cycle
     //  TIM3->CCR1 = duty;
     //  TIM11->CCR1 = duty;
@@ -323,8 +338,8 @@ int main(void)
     MotorUpdate(&hm0);
     MotorUpdate(&hm1);
     MotorUpdate(&hm2);
+		OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS*1000.0f);
 
-    
     delay_tick = MAIN_LOOP_DT_MS - (HAL_GetTick() - last_tick);
     if (delay_tick > MAIN_LOOP_DT_MS) // check for overflow
     {
