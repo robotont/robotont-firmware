@@ -22,3 +22,10 @@ To work on this code just clone the repo and open it in the PlatformIO IDE (or b
 
 To build and upload, in project root, do
 `pio run -t upload`
+
+
+### Error: libusb_open() failed
+
+Do:
+`sudo apt -y install stlink-tools`
+`sudo systemctl restart udev`
