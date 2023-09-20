@@ -2,18 +2,17 @@
 #include "motor.h"
 #include <algorithm>
 
+// #define DEBUG_DISABLE_MOTOR_PID 
+
 Motor::Motor(const MotorConfig &cfg)
     : dir1_(cfg.pin_dir1), dir2_(cfg.pin_dir2), pwm_(cfg.pin_pwm), enc_(cfg.pin_enca, cfg.pin_encb, NC, cfg.enc_cpr, QEI::X4_ENCODING), fault_(cfg.pin_fault), pid_(cfg.pid_k_p, cfg.pid_tau_i, cfg.pid_tau_d, cfg.pid_dt), current_feedback_(NULL), status_(STATUS_UNINITIALIZED), current_measured_(100, 0.0f)
       //  , speed_limit_(2*M_PI) // 1 revolution per second
       ,
       speed_limit_(0.3) // 30 cm/s
       ,
-      effort_limit_(0.25f) // 25% duty cycle
+      // effort_limit_(0.25f) // 25% duty cycle
+      effort_limit_(1.0f)
 {
-
-  // initialize pid to defaults
-  //   pid_.setInputLimits(-1.0, 1.0);  // set default limits to 10 cm/s
-  //   pid_.setOutputLimits(-1.0, 1.0);
 
   // set input and output limits for pid
   // setSpeedLimit(speed_limit_);
@@ -24,7 +23,8 @@ Motor::Motor(const MotorConfig &cfg)
   pid_.setBias(0.0);
   pid_.setMode(1);
 
-  pwm_.period_us(10000);
+  // pwm_.period_us(10000);
+  pwm_.period_us(5000);
 
   // Calculate the relation between an encoder pulse and
   // linear speed on the wheel where it contacts the ground
@@ -138,10 +138,16 @@ void Motor::update()
 
   // calculate new effort
   pid_.setProcessValue(speed_measured_);
-  setEffort(pid_.compute());
-  speed_measured_ = enc_.getPulses() * pulse_to_speed_ratio_;
-  enc_.reset();
 
+// ! Disabled motor pid
+#ifdef DEBUG_DISABLE_MOTOR_PID
+  setEffort(speed_setpoint_);
+#else
+  setEffort(pid_.compute());
+#endif
+
+  // speed_measured_ = enc_.getPulses() * pulse_to_speed_ratio_; // TODO why is it here
+  // enc_.reset();
 }
 
 void Motor::onCurrentPulse(void)

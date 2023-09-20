@@ -1,0 +1,6 @@
+#ifndef ROBOT_SERIAL_H
+#define ROBOT_SERIAL_H
+
+#define UART_BAUDRATE 115200
+
+#endif
