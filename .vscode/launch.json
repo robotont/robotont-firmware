@@ -14,9 +14,9 @@
             "name": "PIO Debug",
             "executable": "/home/leonid/work/robotont-firmware/.pio/build/nucleo_l476rg/firmware.elf",
             "projectEnvName": "nucleo_l476rg",
-            "toolchainBinDir": "/home/leonid/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
+            "toolchainBinDir": "/home/leonid/.platformio/packages/toolchain-gccarmnoneeabi/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "/home/leonid/.platformio/platforms/ststm32@5.3.0/misc/svd/STM32L4x6.svd",
+            "svdPath": "/home/leonid/.platformio/platforms/ststm32@15.3.0/misc/svd/STM32L476.svd",
             "preLaunchTask": {
                 "type": "PlatformIO",
                 "task": "Pre-Debug"
@@ -28,9 +28,9 @@
             "name": "PIO Debug (skip Pre-Debug)",
             "executable": "/home/leonid/work/robotont-firmware/.pio/build/nucleo_l476rg/firmware.elf",
             "projectEnvName": "nucleo_l476rg",
-            "toolchainBinDir": "/home/leonid/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
+            "toolchainBinDir": "/home/leonid/.platformio/packages/toolchain-gccarmnoneeabi/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "/home/leonid/.platformio/platforms/ststm32@5.3.0/misc/svd/STM32L4x6.svd"
+            "svdPath": "/home/leonid/.platformio/platforms/ststm32@15.3.0/misc/svd/STM32L476.svd"
         },
         {
             "type": "platformio-debug",
@@ -38,9 +38,9 @@
             "name": "PIO Debug (without uploading)",
             "executable": "/home/leonid/work/robotont-firmware/.pio/build/nucleo_l476rg/firmware.elf",
             "projectEnvName": "nucleo_l476rg",
-            "toolchainBinDir": "/home/leonid/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
+            "toolchainBinDir": "/home/leonid/.platformio/packages/toolchain-gccarmnoneeabi/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "/home/leonid/.platformio/platforms/ststm32@5.3.0/misc/svd/STM32L4x6.svd",
+            "svdPath": "/home/leonid/.platformio/platforms/ststm32@15.3.0/misc/svd/STM32L476.svd",
             "loadMode": "manual"
         }
     ]
