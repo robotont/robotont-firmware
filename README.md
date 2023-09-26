@@ -3,8 +3,8 @@
 Simplistic firmware for the Robotex platform mainboard.
 
 # IMPORTANT !!!
-Framerowk `mbed` version 5.x.x, used in current firmware, considered deprecated by framework developers. That leads, that platform `ststm32@~5.x.x`. version (don't confuse with `mbded 5.x.x`) can not de installed either, because they depend on each other. Solution is to use ``ststm32@~15.3.0 and above, but `mbded 6.x.x` required. So this firmware need to be portet on `mbed 6.x.x` //
-TO BE CONSIDERED, is this an option, or no longer support for GEN2 versions.
+Framerowk `mbed 5.x.x` version, used in current firmware, considered deprecated by framework developers. That leads, that platform `ststm32@~5.x.x` version (don't confuse with `mbded 5.x.x`) can not de installed either, because they depend on each other. Solution is to use `ststm32@~15.3.0` and above, but `mbded 6.x.x` required. So this firmware need to be portet on `mbed 6.x.x` <br />
+State at 26.09.2023: No current plans for porting GEN2 version to `mbded 6.x.x`. GEN3 repository maintained.
 
 ## Serial protocol
 
