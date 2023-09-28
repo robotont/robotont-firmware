@@ -2,8 +2,10 @@
 #define __MOTOR_H__
 
 #include <stdint.h>
+
 #include "stm32f4xx_hal.h"
 #include "sw_enc.h"
+
 
 typedef struct
 {
@@ -17,19 +19,19 @@ typedef struct
     uint16_t en2_pin;
     uint16_t fault_pin;
     uint16_t ipropi_pin;
-    //Default PID parameters
+    // Default PID parameters
     float pid_k_p;
     float pid_tau_i;
     float pid_tau_d;
     float pid_dt;
 
-    uint16_t enc_cpr; // encoder counts per revolution
-    float gear_ratio; // gearbox reduction ratio
-    float wheel_radius; // wheel outer radius
+    uint16_t enc_cpr;    // encoder counts per revolution
+    float gear_ratio;    // gearbox reduction ratio
+    float wheel_radius;  // wheel outer radius
 
     // wheel position in polar coordinates
-    float wheel_pos_r; // distance from center
-    float wheel_pos_phi; // angle relative to x-axis (forward)
+    float wheel_pos_r;    // distance from center
+    float wheel_pos_phi;  // angle relative to x-axis (forward)
 } motor_config_t;
 
 typedef struct
@@ -48,7 +50,8 @@ typedef struct
 
 } motor_t;
 
-void MotorInit(motor_t *hm, motor_config_t* cfg, sw_enc_t* enc, volatile uint32_t* effort_output_reg, TIM_HandleTypeDef* htim);
+void MotorInit(
+    motor_t* hm, motor_config_t* cfg, sw_enc_t* enc, volatile uint32_t* effort_output_reg, TIM_HandleTypeDef* htim);
 void MotorUpdate(motor_t* hm);
 void MotorDebug(motor_t* hm);
 void MotorEnable(motor_t* hm);
