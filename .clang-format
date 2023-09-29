@@ -127,7 +127,7 @@ PenaltyBreakTemplateDeclaration: 10
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 200
 PenaltyIndentedWhitespace: 0
-PointerAlignment: Middle
+PointerAlignment: Right
 PPIndentWidth:   -1
 ReferenceAlignment: Pointer
 ReflowComments:  true

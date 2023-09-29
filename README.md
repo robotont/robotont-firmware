@@ -26,44 +26,21 @@ There's examples of how code should be formatted:
 <details>
   <summary>sample.h</summary>
   
-  `<details>` afterward.
+  `<details>`
 ```cpp
-/**
-\file     sample.h
-\brief    Sample module to demonstrate code format and naming
-\detail   Demonstrates format and naming
-
-\author   Leonid Tšigrinski
-\copyright To be defined
-*/
-
-#ifndef SAMPLE_H
-#define SAMPLE_H
-
-#include <stdint.h>
-
-// Macro and constant naming
-#define SAMPLE_GLOBAL_DEFINE 0
-
-// Global variable naming
-extern uint8_t g_global_variable;
-uint8_t g_global_variable = 0U;
-
-// Suppression for clang-tidy
-typedef float float32_t; // NOLINT
-
-// typedef and pointer
-typedef struct OpaqueSampleType const *SampleIdType;
-
-// Public function naming (NAMING-2)
-void sample_init(const uint8_t * p_ptr_argument);
-SampleIdType sample_createInstance(void);
-// Use types from stdint (TYPES-1)
-uint32_t sample_runDiagnostics(SampleIdType p_id);
-
-#endif /* SAMPLE_H */
+// To be filled
 ```
 </details>
+
+<details>
+  <summary>sample.c</summary>
+  
+  `<details>` afterward.
+```cpp
+// To be filled
+```
+</details>
+
 
 **Integration with VSCode** 
 
