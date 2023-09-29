@@ -106,7 +106,7 @@ With a uniform source code layout and style we will speed up the development and
  * Static function definitions
  * */
 ```
-15. Keep filenames short, lowercase and avoid using dases and underscores. **Good:** `usbdrv.c` or `usb.c`, **Bad:** `USB_driver.c`
+15. Keep filenames short, lowercase and avoid using dashes and underscores. **Good:** `usbdrv.c` or `usb.c`, **Bad:** `USB_driver.c`
 
 **Style**
 
@@ -129,8 +129,11 @@ typedef struct
     uint32_t pos_y;
 } RobotPositionType;
 ```
-19. Name typedefs in `PascalCase` with suffix `Type`. E.g. `typedef uint32_t RobotSpeedType;`
-20. Name enums in `PascalCase` and enum elements in `UPPER_CASE`
+19. Name typedefs in `PascalCase`
+```cpp
+typedef uint32_t RobotSpeed;
+```
+20. Name enums in `PascalCase`; elements in `UPPER_CASE`
 ```cpp
 enum PinState
 {
