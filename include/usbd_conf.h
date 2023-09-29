@@ -31,11 +31,9 @@ extern "C"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "main.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
-
 
 /* USER CODE BEGIN INCLUDE */
 
@@ -156,8 +154,8 @@ extern "C"
      */
 
     /* Exported functions -------------------------------------------------------*/
-    void *USBD_static_malloc(uint32_t size);
-    void USBD_static_free(void *p);
+    void * USBD_static_malloc(uint32_t size);
+    void USBD_static_free(void * p);
 
     /**
      * @}

@@ -1,11 +1,9 @@
+#include "odom.h"
 #include <stdio.h>
 
-#include "odom.h"
-
-
-void OdomInit(odom_t* ho, motor_config_t* hmc0, motor_config_t* hmc1, motor_config_t* hmc2)
+void OdomInit(odom_t * ho, motor_config_t * hmc0, motor_config_t * hmc1, motor_config_t * hmc2)
 {
-    motor_config_t* motor_configs[3];
+    motor_config_t * motor_configs[3];
     motor_configs[0] = hmc0;
     motor_configs[1] = hmc1;
     motor_configs[2] = hmc2;
@@ -38,7 +36,7 @@ void OdomInit(odom_t* ho, motor_config_t* hmc0, motor_config_t* hmc1, motor_conf
     OdomReset(ho);
 }
 
-void OdomReset(odom_t* ho)
+void OdomReset(odom_t * ho)
 {
     arm_scale_f32(ho->wheel_vel_data, 0, ho->wheel_vel_data, 3);
     arm_scale_f32(ho->robot_vel_data, 0, ho->robot_vel_data, 3);
@@ -46,7 +44,7 @@ void OdomReset(odom_t* ho)
     arm_scale_f32(ho->odom_pos_data, 0, ho->odom_pos_data, 3);
 }
 
-void OdomUpdate(odom_t* ho, float vel_1, float vel_2, float vel_3, float dt)
+void OdomUpdate(odom_t * ho, float vel_1, float vel_2, float vel_3, float dt)
 {
     ho->wheel_vel_data[0] = vel_1;
     ho->wheel_vel_data[1] = vel_2;
@@ -56,9 +54,9 @@ void OdomUpdate(odom_t* ho, float vel_1, float vel_2, float vel_3, float dt)
     arm_mat_mult_f32(&(ho->odom_matrix_inv), &(ho->wheel_vel), &(ho->robot_vel));
 
     // Transform velocities from robot frame to odom frame
-    float32_t sin_ang_z = arm_sin_f32(ho->odom_pos_data[2]);  // fast sine calculation
-    float32_t cos_ang_z = arm_cos_f32(ho->odom_pos_data[2]);  // fast cos calculation
-    float32_t rotation_data[9] = {cos_ang_z, -sin_ang_z, 0, sin_ang_z, cos_ang_z, 0, 0, 0, 1};
+    float32_t sin_ang_z = arm_sin_f32(ho->odom_pos_data[2]); // fast sine calculation
+    float32_t cos_ang_z = arm_cos_f32(ho->odom_pos_data[2]); // fast cos calculation
+    float32_t rotation_data[9] = { cos_ang_z, -sin_ang_z, 0, sin_ang_z, cos_ang_z, 0, 0, 0, 1 };
     arm_matrix_instance_f32 rotation_matrix;
     arm_mat_init_f32(&rotation_matrix, 3, 3, rotation_data);
     arm_mat_mult_f32(&rotation_matrix, &(ho->robot_vel), &(ho->odom_vel));

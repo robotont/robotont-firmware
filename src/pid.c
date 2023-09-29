@@ -22,7 +22,7 @@
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 /* ~~~~~~~~~~~~~~~~~ Initialize ~~~~~~~~~~~~~~~~ */
-void PID_Init(PID_TypeDef *uPID)
+void PID_Init(PID_TypeDef * uPID)
 {
     /* ~~~~~~~~~~ Set parameter ~~~~~~~~~~ */
     uPID->OutputSum = *uPID->MyOutput;
@@ -41,9 +41,8 @@ void PID_Init(PID_TypeDef *uPID)
     }
 }
 
-void PID(
-    PID_TypeDef *uPID, double *Input, double *Output, double *Setpoint, double Kp, double Ki, double Kd,
-    PIDPON_TypeDef POn, PIDCD_TypeDef ControllerDirection)
+void PID(PID_TypeDef * uPID, double * Input, double * Output, double * Setpoint, double Kp, double Ki, double Kd,
+         PIDPON_TypeDef POn, PIDCD_TypeDef ControllerDirection)
 {
     /* ~~~~~~~~~~ Set parameter ~~~~~~~~~~ */
     uPID->MyOutput = Output;
@@ -61,15 +60,14 @@ void PID(
     uPID->LastTime = GetTime() - uPID->SampleTime;
 }
 
-void PID2(
-    PID_TypeDef *uPID, double *Input, double *Output, double *Setpoint, double Kp, double Ki, double Kd,
-    PIDCD_TypeDef ControllerDirection)
+void PID2(PID_TypeDef * uPID, double * Input, double * Output, double * Setpoint, double Kp, double Ki, double Kd,
+          PIDCD_TypeDef ControllerDirection)
 {
     PID(uPID, Input, Output, Setpoint, Kp, Ki, Kd, _PID_P_ON_E, ControllerDirection);
 }
 
 /* ~~~~~~~~~~~~~~~~~ Computing ~~~~~~~~~~~~~~~~~ */
-uint8_t PID_Compute(PID_TypeDef *uPID)
+uint8_t PID_Compute(PID_TypeDef * uPID)
 {
     uint32_t now;
     uint32_t timeChange;
@@ -156,7 +154,7 @@ uint8_t PID_Compute(PID_TypeDef *uPID)
 }
 
 /* ~~~~~~~~~~~~~~~~~ PID Mode ~~~~~~~~~~~~~~~~~~ */
-void PID_SetMode(PID_TypeDef *uPID, PIDMode_TypeDef Mode)
+void PID_SetMode(PID_TypeDef * uPID, PIDMode_TypeDef Mode)
 {
     uint8_t newAuto = (Mode == _PID_MODE_AUTOMATIC);
 
@@ -168,13 +166,13 @@ void PID_SetMode(PID_TypeDef *uPID, PIDMode_TypeDef Mode)
 
     uPID->InAuto = (PIDMode_TypeDef)newAuto;
 }
-PIDMode_TypeDef PID_GetMode(PID_TypeDef *uPID)
+PIDMode_TypeDef PID_GetMode(PID_TypeDef * uPID)
 {
     return uPID->InAuto ? _PID_MODE_AUTOMATIC : _PID_MODE_MANUAL;
 }
 
 /* ~~~~~~~~~~~~~~~~ PID Limits ~~~~~~~~~~~~~~~~~ */
-void PID_SetOutputLimits(PID_TypeDef *uPID, double Min, double Max)
+void PID_SetOutputLimits(PID_TypeDef * uPID, double Min, double Max)
 {
     /* ~~~~~~~~~~ Check value ~~~~~~~~~~ */
     if (Min >= Max)
@@ -217,11 +215,11 @@ void PID_SetOutputLimits(PID_TypeDef *uPID, double Min, double Max)
 }
 
 /* ~~~~~~~~~~~~~~~~ PID Tunings ~~~~~~~~~~~~~~~~ */
-void PID_SetTunings(PID_TypeDef *uPID, double Kp, double Ki, double Kd)
+void PID_SetTunings(PID_TypeDef * uPID, double Kp, double Ki, double Kd)
 {
     PID_SetTunings2(uPID, Kp, Ki, Kd, uPID->POn);
 }
-void PID_SetTunings2(PID_TypeDef *uPID, double Kp, double Ki, double Kd, PIDPON_TypeDef POn)
+void PID_SetTunings2(PID_TypeDef * uPID, double Kp, double Ki, double Kd, PIDPON_TypeDef POn)
 {
     double SampleTimeInSec;
 
@@ -256,7 +254,7 @@ void PID_SetTunings2(PID_TypeDef *uPID, double Kp, double Ki, double Kd, PIDPON_
 }
 
 /* ~~~~~~~~~~~~~~~ PID Direction ~~~~~~~~~~~~~~~ */
-void PID_SetControllerDirection(PID_TypeDef *uPID, PIDCD_TypeDef Direction)
+void PID_SetControllerDirection(PID_TypeDef * uPID, PIDCD_TypeDef Direction)
 {
     /* ~~~~~~~~~~ Check parameters ~~~~~~~~~~ */
     if ((uPID->InAuto) && (Direction != uPID->ControllerDirection))
@@ -268,13 +266,13 @@ void PID_SetControllerDirection(PID_TypeDef *uPID, PIDCD_TypeDef Direction)
 
     uPID->ControllerDirection = Direction;
 }
-PIDCD_TypeDef PID_GetDirection(PID_TypeDef *uPID)
+PIDCD_TypeDef PID_GetDirection(PID_TypeDef * uPID)
 {
     return uPID->ControllerDirection;
 }
 
 /* ~~~~~~~~~~~~~~~ PID Sampling ~~~~~~~~~~~~~~~~ */
-void PID_SetSampleTime(PID_TypeDef *uPID, int32_t NewSampleTime)
+void PID_SetSampleTime(PID_TypeDef * uPID, int32_t NewSampleTime)
 {
     double ratio;
 
@@ -290,15 +288,15 @@ void PID_SetSampleTime(PID_TypeDef *uPID, int32_t NewSampleTime)
 }
 
 /* ~~~~~~~~~~~~~ Get Tunings Param ~~~~~~~~~~~~~ */
-double PID_GetKp(PID_TypeDef *uPID)
+double PID_GetKp(PID_TypeDef * uPID)
 {
     return uPID->DispKp;
 }
-double PID_GetKi(PID_TypeDef *uPID)
+double PID_GetKi(PID_TypeDef * uPID)
 {
     return uPID->DispKi;
 }
-double PID_GetKd(PID_TypeDef *uPID)
+double PID_GetKd(PID_TypeDef * uPID)
 {
     return uPID->DispKd;
 }

@@ -18,11 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 
+#include "main.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
-
-#include "main.h"
 #include "motor.h"
 #include "odom.h"
 #include "pid.h"
@@ -67,7 +66,7 @@ static void MX_TIM11_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM14_Init(void);
 
-void motor_test(motor_config_t *mcfg);
+void motor_test(motor_config_t * mcfg);
 
 /**
  * @brief  The application entry point.
@@ -170,11 +169,11 @@ int main(void)
 
     // Start timers for motor PWM generation (gpios are SET in
     // periodelapsedCallback and RESET in pulseFinishedCallback)
-    HAL_TIM_Base_Start_IT(&htim3);  // motor 0
+    HAL_TIM_Base_Start_IT(&htim3); // motor 0
     HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_1);
-    HAL_TIM_Base_Start_IT(&htim11);  // motor 1
+    HAL_TIM_Base_Start_IT(&htim11); // motor 1
     HAL_TIM_PWM_Start_IT(&htim11, TIM_CHANNEL_1);
-    HAL_TIM_Base_Start_IT(&htim13);  // motor 2
+    HAL_TIM_Base_Start_IT(&htim13); // motor 2
     HAL_TIM_PWM_Start_IT(&htim13, TIM_CHANNEL_1);
 
     // Start timer for reading encoders
@@ -206,8 +205,8 @@ int main(void)
     PID_SetOutputLimits(&hPID2, -1000, 1000);
     PID_SetSampleTime(&hPID2, MAIN_LOOP_DT_MS);
 
-    uint32_t counter = 0;  // for debugging purposes
-    uint32_t duty = 0;     // for debugging purposes
+    uint32_t counter = 0; // for debugging purposes
+    uint32_t duty = 0;    // for debugging purposes
 
     uint32_t last_tick = HAL_GetTick();
     uint32_t delay_tick = 0;
@@ -216,11 +215,11 @@ int main(void)
     HAL_GPIO_WritePin(hm1.cfg->en2_port, hm1.cfg->en2_pin, RESET);
     HAL_GPIO_WritePin(hm2.cfg->en2_port, hm2.cfg->en2_pin, RESET);
     HAL_GPIO_WritePin(hm0.cfg->nsleep_port, hm0.cfg->nsleep_pin,
-                      SET);  // Enable driver of motor 0
+                      SET); // Enable driver of motor 0
     HAL_GPIO_WritePin(hm1.cfg->nsleep_port, hm1.cfg->nsleep_pin,
-                      SET);  // Enable driver of motor 1
+                      SET); // Enable driver of motor 1
     HAL_GPIO_WritePin(hm2.cfg->nsleep_port, hm2.cfg->nsleep_pin,
-                      SET);  // Enable driver of motor 2
+                      SET); // Enable driver of motor 2
 
     counter = 1;
     duty = 50;
@@ -237,7 +236,7 @@ int main(void)
                 float lin_vel_y = 0;
                 float ang_vel_z = 0;
 
-                char *pch;
+                char * pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -270,7 +269,7 @@ int main(void)
             // Command: MS (Motor Speed)
             else if (last_packet[0] == 'M' && last_packet[1] == 'S')
             {
-                char *pch;
+                char * pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -294,7 +293,7 @@ int main(void)
             // Command: EF (Effort control)
             else if (last_packet[0] == 'E' && last_packet[1] == 'F')
             {
-                char *pch;
+                char * pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -320,7 +319,7 @@ int main(void)
             {
                 OdomReset(&hodom);
             }
-            last_packet[0] = '\0';  // indicate that packet has been processed
+            last_packet[0] = '\0'; // indicate that packet has been processed
             last_packet_length = 0;
         }
 
@@ -346,21 +345,20 @@ int main(void)
         OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
 
         // Send odometry command to the on-board computer
-        printf(
-            "ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
-            hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
+        printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
+               hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
 
         // Wait until the desired loop time has elapsed
         delay_tick = MAIN_LOOP_DT_MS - (HAL_GetTick() - last_tick);
-        if (delay_tick > MAIN_LOOP_DT_MS)  // check for overflow
+        if (delay_tick > MAIN_LOOP_DT_MS) // check for overflow
         {
             delay_tick = 0;
         }
         HAL_Delay(delay_tick);
         last_tick = HAL_GetTick();
         counter++;
-    }  // end of main while loop
-}  // end of main
+    } // end of main while loop
+} // end of main
 
 /**
  * @brief System Clock Configuration
@@ -368,8 +366,8 @@ int main(void)
  */
 void SystemClock_Config(void)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
     /** Configure the main internal regulator output voltage
      */
@@ -484,12 +482,12 @@ static void MX_I2C2_Init(void)
  */
 static void MX_TIM3_Init(void)
 {
-    TIM_MasterConfigTypeDef sMasterConfig = {0};
-    TIM_OC_InitTypeDef sConfigOC = {0};
+    TIM_MasterConfigTypeDef sMasterConfig = { 0 };
+    TIM_OC_InitTypeDef sConfigOC = { 0 };
     htim3.Instance = TIM3;
     htim3.Init.Prescaler = 80 - 1;
     htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim3.Init.Period = 1000 - 1;  // 200 Hz
+    htim3.Init.Period = 1000 - 1; // 200 Hz
     htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -519,7 +517,7 @@ static void MX_TIM3_Init(void)
  */
 static void MX_TIM11_Init(void)
 {
-    TIM_OC_InitTypeDef sConfigOC = {0};
+    TIM_OC_InitTypeDef sConfigOC = { 0 };
     htim11.Instance = TIM11;
     htim11.Init.Prescaler = 80 - 1;
     htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -551,11 +549,11 @@ static void MX_TIM11_Init(void)
  */
 static void MX_TIM13_Init(void)
 {
-    TIM_OC_InitTypeDef sConfigOC = {0};
+    TIM_OC_InitTypeDef sConfigOC = { 0 };
     htim13.Instance = TIM13;
     htim13.Init.Prescaler = 80 - 1;
     htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim13.Init.Period = 1000 - 1;  // 1 kHz
+    htim13.Init.Period = 1000 - 1; // 1 kHz
     htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
@@ -587,7 +585,7 @@ static void MX_TIM14_Init(void)
     //  htim14.Init.Prescaler = 1600-1;
     htim14.Init.Prescaler = 400 - 1;
     htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim14.Init.Period = 2 - 1;  // 10 kHz
+    htim14.Init.Period = 2 - 1; // 10 kHz
     htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
@@ -624,7 +622,7 @@ static void MX_USART3_UART_Init(void)
  */
 static void MX_GPIO_Init(void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
     /* GPIO Ports Clock Enable */
     __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -638,11 +636,10 @@ static void MX_GPIO_Init(void)
     HAL_GPIO_WritePin(GPIOC, PIN_M2_NSLEEP_Pin | PIN_M2_EN2_Pin | PIN_M2_EN1_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(
-        GPIOE,
-        PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_Pin | PIN_LED_DATA_Pin | PIN_M1_EN2_Pin |
-            PIN_M1_EN1_Pin,
-        GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOE,
+                      PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_Pin | PIN_LED_DATA_Pin |
+                          PIN_M1_EN2_Pin | PIN_M1_EN1_Pin,
+                      GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(PIN_M1_NSLEEP_GPIO_Port, PIN_M1_NSLEEP_Pin, GPIO_PIN_RESET);
@@ -684,7 +681,7 @@ static void MX_GPIO_Init(void)
     /*Configure GPIO pins : PIN_M0_NSLEEP_Pin PIN_M0_EN2_Pin PIN_M0_EN1_Pin
        PIN_LED_Pin PIN_LED_DATA_Pin PIN_M1_EN2_Pin PIN_M1_EN1_Pin */
     GPIO_InitStruct.Pin = PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_Pin | PIN_LED_DATA_Pin |
-        PIN_M1_EN2_Pin | PIN_M1_EN1_Pin;
+                          PIN_M1_EN2_Pin | PIN_M1_EN1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -722,7 +719,7 @@ static void MX_GPIO_Init(void)
  * @param  None
  * @retval None
  */
-int _write(int file, char *ptr, int len)
+int _write(int file, char * ptr, int len)
 {
     static uint8_t rc = USBD_OK;
 
@@ -739,7 +736,7 @@ int _write(int file, char *ptr, int len)
     return len;
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
 {
     // Set PWM pin to high depending on which pwm timer triggered the interrupt
     if (htim->Instance == htim3.Instance)
@@ -768,17 +765,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
  * which timer triggered the interrupt, the corresponding PWM pin is set to low.
  * @retval None
  */
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef * htim)
 {
-    if (htim->Instance == htim3.Instance)  // motor 0
+    if (htim->Instance == htim3.Instance) // motor 0
     {
         HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, RESET);
     }
-    else if (htim->Instance == htim11.Instance)  // motor 1
+    else if (htim->Instance == htim11.Instance) // motor 1
     {
         HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, RESET);
     }
-    else if (htim->Instance == htim13.Instance)  // motor 2
+    else if (htim->Instance == htim13.Instance) // motor 2
     {
         HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, RESET);
     }
@@ -807,7 +804,7 @@ void Error_Handler(void)
  * @param  line: assert_param error line source number
  * @retval None
  */
-void assert_failed(uint8_t *file, uint32_t line)
+void assert_failed(uint8_t * file, uint32_t line)
 {
     /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line

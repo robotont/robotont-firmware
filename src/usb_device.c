@@ -26,7 +26,6 @@
 #include "usbd_core.h"
 #include "usbd_desc.h"
 
-
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */

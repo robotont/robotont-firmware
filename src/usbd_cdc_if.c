@@ -126,9 +126,9 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 static int8_t CDC_Init_FS(void);
 static int8_t CDC_DeInit_FS(void);
-static int8_t CDC_Control_FS(uint8_t cmd, uint8_t *pbuf, uint16_t length);
-static int8_t CDC_Receive_FS(uint8_t *pbuf, uint32_t *Len);
-static int8_t CDC_TransmitCplt_FS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
+static int8_t CDC_Control_FS(uint8_t cmd, uint8_t * pbuf, uint16_t length);
+static int8_t CDC_Receive_FS(uint8_t * pbuf, uint32_t * Len);
+static int8_t CDC_TransmitCplt_FS(uint8_t * pbuf, uint32_t * Len, uint8_t epnum);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
 
@@ -138,8 +138,8 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
  * @}
  */
 
-USBD_CDC_ItfTypeDef USBD_Interface_fops_FS = {
-    CDC_Init_FS, CDC_DeInit_FS, CDC_Control_FS, CDC_Receive_FS, CDC_TransmitCplt_FS};
+USBD_CDC_ItfTypeDef USBD_Interface_fops_FS = { CDC_Init_FS, CDC_DeInit_FS, CDC_Control_FS, CDC_Receive_FS,
+                                               CDC_TransmitCplt_FS };
 
 /* Private functions ---------------------------------------------------------*/
 /**
@@ -174,7 +174,7 @@ static int8_t CDC_DeInit_FS(void)
  * @param  length: Number of data to be sent (in bytes)
  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
  */
-static int8_t CDC_Control_FS(uint8_t cmd, uint8_t *pbuf, uint16_t length)
+static int8_t CDC_Control_FS(uint8_t cmd, uint8_t * pbuf, uint16_t length)
 {
     /* USER CODE BEGIN 5 */
     switch (cmd)
@@ -255,18 +255,18 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t *pbuf, uint16_t length)
  * @param  Len: Number of data received (in bytes)
  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
  */
-static int8_t CDC_Receive_FS(uint8_t *Buf, uint32_t *Len)
+static int8_t CDC_Receive_FS(uint8_t * Buf, uint32_t * Len)
 {
     /* USER CODE BEGIN 6 */
     USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
     USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
-    uint32_t len = (uint32_t)*Len;  // for convenience
+    uint32_t len = (uint32_t)*Len; // for convenience
 
     // walk through the buffer and check for command termination
     for (int i = 0; i < len; i++)
     {
-        if (Buf[i] == '\r' || Buf[i] == '\n')  // Packet complete
+        if (Buf[i] == '\r' || Buf[i] == '\n') // Packet complete
         {
             // complete
             // memset(last_packet, '\0',APP_RX_DATA_SIZE);
@@ -308,11 +308,11 @@ static int8_t CDC_Receive_FS(uint8_t *Buf, uint32_t *Len)
  * @param  Len: Number of data to be sent (in bytes)
  * @retval USBD_OK if all operations are OK else USBD_FAIL or USBD_BUSY
  */
-uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len)
+uint8_t CDC_Transmit_FS(uint8_t * Buf, uint16_t Len)
 {
     uint8_t result = USBD_OK;
     /* USER CODE BEGIN 7 */
-    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef *)hUsbDeviceFS.pClassData;
+    USBD_CDC_HandleTypeDef * hcdc = (USBD_CDC_HandleTypeDef *)hUsbDeviceFS.pClassData;
     if (hcdc->TxState != 0)
     {
         return USBD_BUSY;
@@ -335,7 +335,7 @@ uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len)
  * @param  Len: Number of data received (in bytes)
  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
  */
-static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
+static int8_t CDC_TransmitCplt_FS(uint8_t * Buf, uint32_t * Len, uint8_t epnum)
 {
     uint8_t result = USBD_OK;
     /* USER CODE BEGIN 13 */
