@@ -17,26 +17,29 @@ To work on this code just clone the repo and open it in the PlatformIO IDE (or b
 ## Coding Style and formatting
 
 With a uniform source code layout and style we will speed up the development and simplify understanding of existing code. 
-Some of the rules can be maintained automaticly using tool called `clang-format`. It is separate executable, that can reformat given file according to style configuration. You can link your configuration file to the `clang-format` executable and it will import all rules and reformat file accordingly. </br>
+Some of the rules can be maintained automaticly using tools called `clang-format` and `clang-tidy`. </br>
+    
+  - `clang-format`: Separate executable, that can reformat given file according to style rules. Rules can be configured.
+  - `clang-tidy`: Linter tool, that highliht syntax and style issues (e.g. `snake_case` vs `camelCase`). Rules can be configured.
 
-In `VSCode` you can install extension to in order to link `clang-format` program to the built-in auto-formatting. </br>
- </br>
-**Step-by-step integration with VSCode:**
+**Integration with VSCode** 
 
- 1. Get `clang-format` ([LLVM Snapshot Builds](https://llvm.org/builds/) / [LLVM Debian/Ubuntu packages])(https://apt.llvm.org/)
- 2. Make sure, that you have `clang-format` in your PATH or you know executable location
- 3. Install `Clang-Format`  extension in VSCode
- 4. Copy this to the `.vscode/settings.json` file:
- ```json
- {
-"clang-format.executable": "C:/LLVM/bin/clang-format.exe", // Or 'clang-format' (from PATH)
-"clang-format.style": "file",
-"clang-format.assumeFilename": "${workspaceFolder}/.clang-format", // Should be present already
-}
- ```
- 5. Open desired file in the repository and press `Format Document`.  Dialog window should appear with avaiable formatting options. Choose `clang-format`.
+`clang-tidy` and `clang-format` are both included with the C/C++ extension. But you need additionly configure your envoirenment in order to use them:
 
- *P.S.* In addition, you can manually generate format config file, using tools such [Clang-Format Editor](https://clangpowertools.com/clang-format-editor.html) or [online version](https://zed0.co.uk/clang-format-configurator/)
+ 1. Add thoose paremeters to your `settings.json` file
+    ```json
+    {
+        "C_Cpp.clang_format_style": "file",             // so it will parse file named ".clang-format"
+        "C_Cpp.codeAnalysis.clangTidy.enabled": true,   // so you don't need invoke "Run Code Analysis" command manually
+    }
+   ```
+ 2. Make sure, you have files `.clang-format and` `.clang-tidy` is in your root folder. They should be in repository.
+ 3. Open desired file in the repository and press `Format Document`.  Dialog window should appear with avaiable formatting options. Choose `C/C++ (default)` option
+ 4. *Optional: You can test, if formatting works, by changing `ColumnLimit` or any other option in `.clang-format` file* 
+
+ *Extra reading 1: [VSCode update: Clang-tidy](https://devblogs.microsoft.com/cppblog/visual-studio-code-c-december-2021-update-clang-tidy/)* </br>
+ *Extra reading 2: [VSCode IDE, Code formatting, Clang](https://code.visualstudio.com/docs/cpp/cpp-ide#_code-formatting)* </br>
+ *Extra reading 3: [Manual configuration tool](https://zed0.co.uk/clang-format-configurator/)* </br>
 
 ### CLI
 
