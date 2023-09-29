@@ -55,16 +55,45 @@ With a uniform source code layout and style we will speed up the development and
 1. The code shall adhere to [MISRA-C 2012](https://electrovolt.ir/wp-content/uploads/2022/09/MISRA-C_2012_-Guidelines-for-the-Use-of-the-C-Language-in-Critical-Systems-Motor-Industry-Research-Association-2013-2013.pdf)
 2. Use fixed width integer types defined in `stdint.h` [header](https://en.cppreference.com/w/c/types/integer)
 3. Each `.c` file should be associated with `.h` file
-4. Use following syntax and order for inclusions: `"related_header.h"`, `<c_library.h>`, `"third_party.h"`, `"project_file.h"`
+4. Use following syntax and order for inclusions:
+```cpp
+#include "related_header.h" // 1-st, ""
+#include <c_library.h>      // 2-nd, <>
+#include "third_party.h"    // 3-rd, ""
+#include "project_file.h"`  // 4-th, ""
+```
 
 **Statements and expressions** 
 
 5. Avoid global variables if possible
 6. Initialize variable at the beginning of the scope
 7. Avoid using numbers directly, use `#define` or `const`
-8. Unsigned literals have suffix `u`: `uint32_t some_value = 1u;`. Floating points literals have suffix `f`: `float some_value = 1.0f;`
-9. There should be only one statement and one assignment per line. **Bad:** `uint8_t a, b, c, d;`
-10. All, starting and closing, braces should start on a new line. Braces must be placed always. **Bad:** `if (true) return 0;`
+8. Unsigned literals have suffix `u`, floating points literals have suffix `f`
+```cpp
+uint32_t some_value = 1u;
+float another_value = 2.0f;
+int8_t signed_value = 1;
+```
+10. There should be only one statement and one assignment per line.
+```cpp
+// BAD
+uint8_t a, b, c;
+// GOOD
+uint8_t a;
+uint8_t b;
+uint8_t c;
+```
+11. All, starting and closing, braces should start on a new line. Braces must be placed always
+```cpp
+// BAD
+if (true)
+    return 0;
+// GOOD
+if (true)
+{
+    return 0;
+}
+```
 
 **File format**
 
