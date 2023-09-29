@@ -142,8 +142,16 @@ enum PinState
 };
 ``` 
 21. Name macros and defines in `UPPER_CASE`
-22. Pointer variables should have prefix `ptr_`: `uint32_t *ptr_name;`
-23. If variable represents physical value, unit suffix should present: `#define VOLTAGE_THRESHOLD_MV 12000u` or `uint32_t timeout_ms = 100u;`
+22. Pointer variables should have prefix `ptr_` 
+```cpp
+uint32_t *ptr_name;
+```
+23. If variable represents physical value, unit suffix should present. SI units are exception
+```cpp
+#define VOLTAGE_OFFSET_MV 12000u
+uint32_t timeout_ms = 100u;
+float voltage = 12;
+```
 
 **Examples**
 
