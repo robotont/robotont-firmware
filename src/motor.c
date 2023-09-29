@@ -7,8 +7,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-void MotorInit(motor_t * hm, motor_config_t * cfg, sw_enc_t * enc, volatile uint32_t * effort_output_reg,
-               TIM_HandleTypeDef * htim)
+void MotorInit(motor_t *hm, motor_config_t *cfg, sw_enc_t *enc, volatile uint32_t *effort_output_reg,
+               TIM_HandleTypeDef *htim)
 {
     hm->cfg = cfg;
     hm->enc = enc;
@@ -26,7 +26,7 @@ void MotorInit(motor_t * hm, motor_config_t * cfg, sw_enc_t * enc, volatile uint
     HAL_GPIO_WritePin(cfg->nsleep_port, cfg->nsleep_pin, RESET);
 }
 
-void MotorUpdate(motor_t * hm)
+void MotorUpdate(motor_t *hm)
 {
     double effort_epsilon = 100; // this is a counter value from where the motor exceeds its internal friction, also
                                  // instabilities in PWM generation occured with lower values.
@@ -78,17 +78,17 @@ void MotorUpdate(motor_t * hm)
     hm->enc->counter = 0; // reset counter
 }
 
-void MotorEnable(motor_t * hm)
+void MotorEnable(motor_t *hm)
 {
     HAL_GPIO_WritePin(hm->cfg->nsleep_port, hm->cfg->nsleep_pin, SET);
 }
 
-void MotorDisable(motor_t * hm)
+void MotorDisable(motor_t *hm)
 {
     HAL_GPIO_WritePin(hm->cfg->nsleep_port, hm->cfg->nsleep_pin, RESET);
 }
 
-void MotorDebug(motor_t * hm)
+void MotorDebug(motor_t *hm)
 {
     // printf("Vel: %ld\t", hm->linear_velocity);
     // printf("Effort: %ld\t", hm->effort);
