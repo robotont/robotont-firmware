@@ -27,13 +27,13 @@ Some of the rules can be maintained automaticly using tools called `clang-format
 `clang-tidy` and `clang-format` are both included with the C/C++ extension. But you need additionly configure your envoirenment in order to use them:
 
  1. Add thoose paremeters to your `settings.json` file
-    ```json
+```json
     {
         "C_Cpp.clang_format_style": "file",             // so it will parse file named ".clang-format"
         "C_Cpp.codeAnalysis.clangTidy.enabled": true,   // so you don't need invoke "Run Code Analysis" command manually
     }
-   ```
-   
+```
+
  2. Make sure, you have files `.clang-format and` `.clang-tidy` is in your root folder. They should be in repository.
  3. Open desired file in the repository and press `Format Document`.  Dialog window should appear with avaiable formatting options. Choose `C/C++ (default)` option
  4. *Optional: You can test, if formatting works, by changing `ColumnLimit` or any other option in `.clang-format` file* 
