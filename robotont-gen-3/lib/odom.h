@@ -23,8 +23,8 @@ typedef struct
     float32_t odom_matrix_inv_data[9];       // Data of inverse of odom matrix
 } odom_t;
 
-void OdomInit(odom_t * odom, motor_config_t * hmc0, motor_config_t * hmc1, motor_config_t * hmc2);
-void OdomReset(odom_t * odom);
-void OdomUpdate(odom_t * odom, float vel_1, float vel_2, float vel_3, float dt);
+void OdomInit(odom_t *odom, motor_config_t *hmc0, motor_config_t *hmc1, motor_config_t *hmc2);
+void OdomReset(odom_t *odom);
+void OdomUpdate(odom_t *odom, float vel_1, float vel_2, float vel_3, float dt);
 
 #endif

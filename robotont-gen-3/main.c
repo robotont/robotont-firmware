@@ -66,7 +66,7 @@ static void MX_TIM11_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM14_Init(void);
 
-void motor_test(motor_config_t * mcfg);
+void motor_test(motor_config_t *mcfg);
 
 /**
  * @brief  The application entry point.
@@ -236,7 +236,7 @@ int main(void)
                 float lin_vel_y = 0;
                 float ang_vel_z = 0;
 
-                char * pch;
+                char *pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -269,7 +269,7 @@ int main(void)
             // Command: MS (Motor Speed)
             else if (last_packet[0] == 'M' && last_packet[1] == 'S')
             {
-                char * pch;
+                char *pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -293,7 +293,7 @@ int main(void)
             // Command: EF (Effort control)
             else if (last_packet[0] == 'E' && last_packet[1] == 'F')
             {
-                char * pch;
+                char *pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -719,7 +719,7 @@ static void MX_GPIO_Init(void)
  * @param  None
  * @retval None
  */
-int _write(int file, char * ptr, int len)
+int _write(int file, char *ptr, int len)
 {
     static uint8_t rc = USBD_OK;
 
@@ -736,7 +736,7 @@ int _write(int file, char * ptr, int len)
     return len;
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     // Set PWM pin to high depending on which pwm timer triggered the interrupt
     if (htim->Instance == htim3.Instance)
@@ -765,7 +765,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
  * which timer triggered the interrupt, the corresponding PWM pin is set to low.
  * @retval None
  */
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef * htim)
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == htim3.Instance) // motor 0
     {
@@ -804,7 +804,7 @@ void Error_Handler(void)
  * @param  line: assert_param error line source number
  * @retval None
  */
-void assert_failed(uint8_t * file, uint32_t line)
+void assert_failed(uint8_t *file, uint32_t line)
 {
     /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line

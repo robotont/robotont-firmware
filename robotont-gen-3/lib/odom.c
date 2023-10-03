@@ -1,9 +1,9 @@
 #include "odom.h"
 #include <stdio.h>
 
-void OdomInit(odom_t * ho, motor_config_t * hmc0, motor_config_t * hmc1, motor_config_t * hmc2)
+void OdomInit(odom_t *ho, motor_config_t *hmc0, motor_config_t *hmc1, motor_config_t *hmc2)
 {
-    motor_config_t * motor_configs[3];
+    motor_config_t *motor_configs[3];
     motor_configs[0] = hmc0;
     motor_configs[1] = hmc1;
     motor_configs[2] = hmc2;
@@ -36,7 +36,7 @@ void OdomInit(odom_t * ho, motor_config_t * hmc0, motor_config_t * hmc1, motor_c
     OdomReset(ho);
 }
 
-void OdomReset(odom_t * ho)
+void OdomReset(odom_t *ho)
 {
     arm_scale_f32(ho->wheel_vel_data, 0, ho->wheel_vel_data, 3);
     arm_scale_f32(ho->robot_vel_data, 0, ho->robot_vel_data, 3);
@@ -44,7 +44,7 @@ void OdomReset(odom_t * ho)
     arm_scale_f32(ho->odom_pos_data, 0, ho->odom_pos_data, 3);
 }
 
-void OdomUpdate(odom_t * ho, float vel_1, float vel_2, float vel_3, float dt)
+void OdomUpdate(odom_t *ho, float vel_1, float vel_2, float vel_3, float dt)
 {
     ho->wheel_vel_data[0] = vel_1;
     ho->wheel_vel_data[1] = vel_2;
