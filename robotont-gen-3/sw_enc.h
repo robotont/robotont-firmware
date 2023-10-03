@@ -6,8 +6,8 @@
 
 typedef struct
 {
-    GPIO_TypeDef * a_port;
-    GPIO_TypeDef * b_port;
+    GPIO_TypeDef *a_port;
+    GPIO_TypeDef *b_port;
     uint16_t a_pin;
     uint16_t b_pin;
 
@@ -16,9 +16,9 @@ typedef struct
     uint8_t lut_index;
 } sw_enc_t;
 
-void swEncoderInit(sw_enc_t * henc, GPIO_TypeDef * enca_port, uint16_t enca_pin, GPIO_TypeDef * encb_port,
+void swEncoderInit(sw_enc_t *henc, GPIO_TypeDef *enca_port, uint16_t enca_pin, GPIO_TypeDef *encb_port,
                    uint16_t encb_pin);
-void swEncoderInterrupt(sw_enc_t * henc);
-void swEncoderDebug(sw_enc_t * henc);
+void swEncoderInterrupt(sw_enc_t *henc);
+void swEncoderDebug(sw_enc_t *henc);
 
 #endif

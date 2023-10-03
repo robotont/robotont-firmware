@@ -31,7 +31,7 @@ CheckOptions:
   - { key: readability-identifier-naming.GlobalPointerCase,       value: lower_case }
   - { key: readability-identifier-naming.EnumConstantCase,        value: UPPER_CASE }
   - { key: readability-identifier-naming.TypedefCase,             value: Camel_Snake_Case }
-  - { key: readability-identifier-naming.TypedefSuffix,           value:  }
+  - { key: readability-identifier-naming.TypedefSuffix,           value: Type}
   - { key: readability-identifier-naming.MacroDefinitionCase,     value: UPPER_CASE }
   - { key: readability-function-cognitive-complexity.Threshold,   value: 25 }
   - { key: readability-function-size.NestingThreshold,            value: 5 }

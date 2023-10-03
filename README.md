@@ -158,9 +158,9 @@ typedef struct
     uint32_t pos_y;
 } RobotPositionType;
 ```
-19. Name typedefs in `PascalCase`
+19. Name typedefs in `PascalCase` with suffix `Type`
 ```cpp
-typedef uint32_t RobotSpeed;
+typedef uint32_t RobotSpeedType;
 ```
 20. Name enums in `PascalCase`; elements in `UPPER_CASE`
 ```cpp

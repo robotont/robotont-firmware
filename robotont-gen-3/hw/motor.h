@@ -7,11 +7,11 @@
 
 typedef struct
 {
-    GPIO_TypeDef * nsleep_port;
-    GPIO_TypeDef * en1_port;
-    GPIO_TypeDef * en2_port;
-    GPIO_TypeDef * fault_port;
-    GPIO_TypeDef * ipropi_port;
+    GPIO_TypeDef *nsleep_port;
+    GPIO_TypeDef *en1_port;
+    GPIO_TypeDef *en2_port;
+    GPIO_TypeDef *fault_port;
+    GPIO_TypeDef *ipropi_port;
     uint16_t nsleep_pin;
     uint16_t en1_pin;
     uint16_t en2_pin;
@@ -34,25 +34,25 @@ typedef struct
 
 typedef struct
 {
-    motor_config_t * cfg;
-    sw_enc_t * enc;
+    motor_config_t *cfg;
+    sw_enc_t *enc;
     double linear_velocity;
     double linear_velocity_setpoint;
     double effort;
     double effort_limit;
-    GPIO_TypeDef * pwm_port;
+    GPIO_TypeDef *pwm_port;
     uint16_t pwm_pin;
-    volatile uint32_t * effort_output_reg;
-    TIM_HandleTypeDef * htim;
+    volatile uint32_t *effort_output_reg;
+    TIM_HandleTypeDef *htim;
     uint32_t last_enc_update;
 
 } motor_t;
 
-void MotorInit(motor_t * hm, motor_config_t * cfg, sw_enc_t * enc, volatile uint32_t * effort_output_reg,
-               TIM_HandleTypeDef * htim);
-void MotorUpdate(motor_t * hm);
-void MotorDebug(motor_t * hm);
-void MotorEnable(motor_t * hm);
-void MotorDisable(motor_t * hm);
+void MotorInit(motor_t *hm, motor_config_t *cfg, sw_enc_t *enc, volatile uint32_t *effort_output_reg,
+               TIM_HandleTypeDef *htim);
+void MotorUpdate(motor_t *hm);
+void MotorDebug(motor_t *hm);
+void MotorEnable(motor_t *hm);
+void MotorDisable(motor_t *hm);
 
 #endif
