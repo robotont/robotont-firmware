@@ -30,6 +30,7 @@
 #include "usbd_cdc_if.h"
 
 #define MAIN_LOOP_DT_MS 10
+#define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
 
 CAN_HandleTypeDef hcan1;
 
@@ -209,7 +210,8 @@ int main(void)
     uint32_t duty = 0;    // for debugging purposes
 
     uint32_t last_tick = HAL_GetTick();
-    uint32_t delay_tick = 0;
+    uint32_t last_vel_received_tick = HAL_GetTick();
+  uint32_t delay_tick = 0;
 
     HAL_GPIO_WritePin(hm0.cfg->en2_port, hm0.cfg->en2_pin, RESET);
     HAL_GPIO_WritePin(hm1.cfg->en2_port, hm1.cfg->en2_pin, RESET);
@@ -228,11 +230,12 @@ int main(void)
         // Process data that was received over the USB virtual COM port.
         if (last_packet_length)
         {
-            printf("processing packet (%d): %s\r\n", last_packet_length, (char *)last_packet);
+            // printf("processing packet (%d): %s\r\n", last_packet_length, (char *)last_packet);
             // Command: RS (Robot Speed)
             if (last_packet[0] == 'R' && last_packet[1] == 'S')
             {
-                float lin_vel_x = 0;
+        				last_vel_received_tick = HAL_GetTick();
+        float lin_vel_x = 0;
                 float lin_vel_y = 0;
                 float ang_vel_z = 0;
 
@@ -269,7 +272,8 @@ int main(void)
             // Command: MS (Motor Speed)
             else if (last_packet[0] == 'M' && last_packet[1] == 'S')
             {
-                char *pch;
+        				last_vel_received_tick = HAL_GetTick();
+        char *pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -293,7 +297,8 @@ int main(void)
             // Command: EF (Effort control)
             else if (last_packet[0] == 'E' && last_packet[1] == 'F')
             {
-                char *pch;
+        				last_vel_received_tick = HAL_GetTick();
+        char *pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -336,13 +341,22 @@ int main(void)
             // printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
         }
 
-        PID_Compute(&hPID0);
-        PID_Compute(&hPID1);
-        PID_Compute(&hPID2);
-        MotorUpdate(&hm0);
-        MotorUpdate(&hm1);
-        MotorUpdate(&hm2);
-        OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
+		// If no velocity command has been received within the timeout period, stop all motors
+		if (HAL_GetTick() - last_vel_received_tick > CMD_TIMEOUT_MS)
+		{
+			hm0.linear_velocity_setpoint = 0;
+			hm1.linear_velocity_setpoint = 0;
+			hm2.linear_velocity_setpoint = 0;
+		}
+
+		// Update motors
+		PID_Compute(&hPID0);
+    PID_Compute(&hPID1);
+    PID_Compute(&hPID2);
+    MotorUpdate(&hm0);
+    MotorUpdate(&hm1);
+    MotorUpdate(&hm2);
+		OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
 
         // Send odometry command to the on-board computer
         printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
