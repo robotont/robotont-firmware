@@ -31,6 +31,8 @@
 
 #define MAIN_LOOP_DT_MS 10
 #define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
+#define MAX_LIN_VEL 0.4 // m/s
+#define MAX_ANG_VEL 1.0 // rad/s
 
 CAN_HandleTypeDef hcan1;
 
@@ -243,9 +245,26 @@ int main(void)
           pch = strtok (NULL, ":");
           arg++;
         }
+
         
         float lin_vel_dir = atan2(lin_vel_y, lin_vel_x);
         float lin_vel_mag = sqrt(lin_vel_x * lin_vel_x + lin_vel_y * lin_vel_y);
+
+				// Hard limit linear and angular velocities //TODO: implement min max macros to make this a 2-liner
+				if (lin_vel_mag > MAX_LIN_VEL)
+				{
+					lin_vel_mag = MAX_LIN_VEL;
+				}
+				if (ang_vel_z > MAX_ANG_VEL)
+				{
+					ang_vel_z = MAX_ANG_VEL;
+				}
+				else if (ang_vel_z < -MAX_ANG_VEL)
+				{
+					ang_vel_z = -MAX_ANG_VEL;
+				}
+
+				// Apply velocities to motors
         hm0.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm0.cfg->wheel_pos_phi) + hm0.cfg->wheel_pos_r * ang_vel_z;
         hm1.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm1.cfg->wheel_pos_phi) + hm1.cfg->wheel_pos_r * ang_vel_z;
         hm2.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm2.cfg->wheel_pos_phi) + hm2.cfg->wheel_pos_r * ang_vel_z;
