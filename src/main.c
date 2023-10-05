@@ -30,7 +30,7 @@
 #include "usbd_cdc_if.h"
 
 #define MAIN_LOOP_DT_MS 10
-#define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
+#define CMD_TIMEOUT_MS  1000 // If velocity command is not received within this period all motors are stopped.
 
 CAN_HandleTypeDef hcan1;
 
@@ -75,8 +75,7 @@ void motor_test(motor_config_t *mcfg);
  */
 int main(void)
 {
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick.
-     */
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init();
 
     /* Configure the system clock */
@@ -168,8 +167,7 @@ int main(void)
     // Initialize odometry
     OdomInit(&hodom, &mcfg0, &mcfg1, &mcfg2);
 
-    // Start timers for motor PWM generation (gpios are SET in
-    // periodelapsedCallback and RESET in pulseFinishedCallback)
+    // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
     HAL_TIM_Base_Start_IT(&htim3); // motor 0
     HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_1);
     HAL_TIM_Base_Start_IT(&htim11); // motor 1
@@ -211,17 +209,14 @@ int main(void)
 
     uint32_t last_tick = HAL_GetTick();
     uint32_t last_vel_received_tick = HAL_GetTick();
-  uint32_t delay_tick = 0;
+    uint32_t delay_tick = 0;
 
     HAL_GPIO_WritePin(hm0.cfg->en2_port, hm0.cfg->en2_pin, RESET);
     HAL_GPIO_WritePin(hm1.cfg->en2_port, hm1.cfg->en2_pin, RESET);
     HAL_GPIO_WritePin(hm2.cfg->en2_port, hm2.cfg->en2_pin, RESET);
-    HAL_GPIO_WritePin(hm0.cfg->nsleep_port, hm0.cfg->nsleep_pin,
-                      SET); // Enable driver of motor 0
-    HAL_GPIO_WritePin(hm1.cfg->nsleep_port, hm1.cfg->nsleep_pin,
-                      SET); // Enable driver of motor 1
-    HAL_GPIO_WritePin(hm2.cfg->nsleep_port, hm2.cfg->nsleep_pin,
-                      SET); // Enable driver of motor 2
+    HAL_GPIO_WritePin(hm0.cfg->nsleep_port, hm0.cfg->nsleep_pin, SET); // Enable driver of motor 0
+    HAL_GPIO_WritePin(hm1.cfg->nsleep_port, hm1.cfg->nsleep_pin, SET); // Enable driver of motor 1
+    HAL_GPIO_WritePin(hm2.cfg->nsleep_port, hm2.cfg->nsleep_pin, SET); // Enable driver of motor 2
 
     counter = 1;
     duty = 50;
@@ -230,12 +225,12 @@ int main(void)
         // Process data that was received over the USB virtual COM port.
         if (last_packet_length)
         {
-            // printf("processing packet (%d): %s\r\n", last_packet_length, (char *)last_packet);
+            // printf("processing packet (%d): %s\r\n", last_packet_length, (char *) last_packet);
             // Command: RS (Robot Speed)
             if (last_packet[0] == 'R' && last_packet[1] == 'S')
             {
-        				last_vel_received_tick = HAL_GetTick();
-        float lin_vel_x = 0;
+                last_vel_received_tick = HAL_GetTick();
+                float lin_vel_x = 0;
                 float lin_vel_y = 0;
                 float ang_vel_z = 0;
 
@@ -272,8 +267,8 @@ int main(void)
             // Command: MS (Motor Speed)
             else if (last_packet[0] == 'M' && last_packet[1] == 'S')
             {
-        				last_vel_received_tick = HAL_GetTick();
-        char *pch;
+                last_vel_received_tick = HAL_GetTick();
+                char *pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -297,8 +292,8 @@ int main(void)
             // Command: EF (Effort control)
             else if (last_packet[0] == 'E' && last_packet[1] == 'F')
             {
-        				last_vel_received_tick = HAL_GetTick();
-        char *pch;
+                last_vel_received_tick = HAL_GetTick();
+                char *pch;
                 pch = strtok((char *)last_packet, ":");
                 int arg = 0;
                 while (pch != NULL)
@@ -332,31 +327,29 @@ int main(void)
         if (counter % 100 == 0)
         {
             HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
-            // printf("M0: sp: %f; vel: %f, effort: %f\r\n",
-            // hm0.linear_velocity_setpoint, hm0.linear_velocity, hm0.effort);
-            // printf("M1: sp: %f; vel: %f, effort: %f\r\n",
-            // hm1.linear_velocity_setpoint, hm1.linear_velocity, hm1.effort);
-            // printf("M2: sp: %f; vel: %f, effort: %f\r\n",
-            // hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort);
-            // printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
+            // printf("M0: sp: %f; vel: %f, effort: %f\r\n", hm0.linear_velocity_setpoint, hm0.linear_velocity,
+            // hm0.effort); printf("M1: sp: %f; vel: %f, effort: %f\r\n", hm1.linear_velocity_setpoint,
+            // hm1.linear_velocity, hm1.effort); printf("M2: sp: %f; vel: %f, effort: %f\r\n",
+            // hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort); printf("Main_delay:%ld %ld\r\n",
+            // delay_tick, last_tick);
         }
 
-		// If no velocity command has been received within the timeout period, stop all motors
-		if (HAL_GetTick() - last_vel_received_tick > CMD_TIMEOUT_MS)
-		{
-			hm0.linear_velocity_setpoint = 0;
-			hm1.linear_velocity_setpoint = 0;
-			hm2.linear_velocity_setpoint = 0;
-		}
+        // If no velocity command has been received within the timeout period, stop all motors
+        if (HAL_GetTick() - last_vel_received_tick > CMD_TIMEOUT_MS)
+        {
+            hm0.linear_velocity_setpoint = 0;
+            hm1.linear_velocity_setpoint = 0;
+            hm2.linear_velocity_setpoint = 0;
+        }
 
-		// Update motors
-		PID_Compute(&hPID0);
-    PID_Compute(&hPID1);
-    PID_Compute(&hPID2);
-    MotorUpdate(&hm0);
-    MotorUpdate(&hm1);
-    MotorUpdate(&hm2);
-		OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
+        // Update motors
+        PID_Compute(&hPID0);
+        PID_Compute(&hPID1);
+        PID_Compute(&hPID2);
+        MotorUpdate(&hm0);
+        MotorUpdate(&hm1);
+        MotorUpdate(&hm2);
+        OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
 
         // Send odometry command to the on-board computer
         printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
@@ -658,15 +651,13 @@ static void MX_GPIO_Init(void)
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(PIN_M1_NSLEEP_GPIO_Port, PIN_M1_NSLEEP_Pin, GPIO_PIN_RESET);
 
-    /*Configure GPIO pins : PIN_POWEROFF_Pin PIN_POWEROFF_REQ_Pin PIN_M2_FAULT_Pin
-     * PIN_M0_FAULT_Pin */
+    /*Configure GPIO pins : PIN_POWEROFF_Pin PIN_POWEROFF_REQ_Pin PIN_M2_FAULT_Pin PIN_M0_FAULT_Pin */
     GPIO_InitStruct.Pin = PIN_POWEROFF_Pin | PIN_POWEROFF_REQ_Pin | PIN_M2_FAULT_Pin | PIN_M0_FAULT_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PIN_CHARGE_SENSE_Pin PIN_M2_IPROPI_Pin
-     * PIN_M0_IPROPI_Pin */
+    /*Configure GPIO pins : PIN_CHARGE_SENSE_Pin PIN_M2_IPROPI_Pin PIN_M0_IPROPI_Pin */
     GPIO_InitStruct.Pin = PIN_CHARGE_SENSE_Pin | PIN_M2_IPROPI_Pin | PIN_M0_IPROPI_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -679,8 +670,7 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PIN_M1_ENCA_Pin PIN_M1_ENCB_Pin PIN_M2_ENCA_Pin
-     * PIN_M2_ENCB_Pin */
+    /*Configure GPIO pins : PIN_M1_ENCA_Pin PIN_M1_ENCB_Pin PIN_M2_ENCA_Pin PIN_M2_ENCB_Pin */
     GPIO_InitStruct.Pin = PIN_M1_ENCA_Pin | PIN_M1_ENCB_Pin | PIN_M2_ENCA_Pin | PIN_M2_ENCB_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -692,8 +682,8 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PIN_M0_NSLEEP_Pin PIN_M0_EN2_Pin PIN_M0_EN1_Pin
-       PIN_LED_Pin PIN_LED_DATA_Pin PIN_M1_EN2_Pin PIN_M1_EN1_Pin */
+    /*Configure GPIO pins : PIN_M0_NSLEEP_Pin PIN_M0_EN2_Pin PIN_M0_EN1_Pin PIN_LED_Pin
+                             PIN_LED_DATA_Pin PIN_M1_EN2_Pin PIN_M1_EN1_Pin */
     GPIO_InitStruct.Pin = PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_Pin | PIN_LED_DATA_Pin |
                           PIN_M1_EN2_Pin | PIN_M1_EN1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -701,8 +691,7 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PIN_ROT_ENC_SW_Pin PIN_ROT_ENC_B_Pin PIN_ROT_ENC_A_Pin
-     * PIN_ESTOP_Pin */
+    /*Configure GPIO pins : PIN_ROT_ENC_SW_Pin PIN_ROT_ENC_B_Pin PIN_ROT_ENC_A_Pin PIN_ESTOP_Pin */
     GPIO_InitStruct.Pin = PIN_ROT_ENC_SW_Pin | PIN_ROT_ENC_B_Pin | PIN_ROT_ENC_A_Pin | PIN_ESTOP_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -775,8 +764,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 /**
- * @brief  This function is executed when the PWM pulses finish. Depending on
- * which timer triggered the interrupt, the corresponding PWM pin is set to low.
+ * @brief  This function is executed when the PWM pulses finish. Depending on which timer triggered the interrupt, the
+ * corresponding PWM pin is set to low.
  * @retval None
  */
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
@@ -821,8 +810,7 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
     /* USER CODE BEGIN 6 */
-    /* User can add his own implementation to report the file name and line
-       number,
+    /* User can add his own implementation to report the file name and line number,
        ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
     /* USER CODE END 6 */
 }
