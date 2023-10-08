@@ -10,6 +10,9 @@
     "settings": {
         "C_Cpp.clang_format_style": "file",
         "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+        "files.associations": {
+            "usbd_cdc_if_c": "c"
+        },
     },
     "extensions": {
         "recommendations": [
