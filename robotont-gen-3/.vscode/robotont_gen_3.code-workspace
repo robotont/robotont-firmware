@@ -1,0 +1,25 @@
+{
+    "folders": [
+        {
+            "path": ".."
+        },
+        {
+            "path": "../../stm32cubef4"
+        }
+    ],
+    "settings": {
+        "C_Cpp.clang_format_style": "file",
+        "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    },
+    "extensions": {
+        "recommendations": [
+            // required
+            "ms-vscode.cpptools",
+            "platformio.platformio-ide",
+            // optional
+            "njpwerner.autodocstring",
+            "edwinhuish.better-comments-next",
+            "tal7aouy.icons",
+        ]
+    }
+}
