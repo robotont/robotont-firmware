@@ -1,19 +1,14 @@
 ﻿/*
 ------------------------------------------------------------------------------
 ~ File   : pid.c
-~ Author : Majid
-Derhambakhsh ~
-Version: V1.0.0 ~
-Created: 02/11/2021
-03:43:00 AM ~ Brief
-: ~ Support: E-Mail
-:
-Majid.do16@gmail.com
-(subject : Embedded
-Library Support)
+~ Author : Majid Derhambakhsh
+~ Version: V1.0.0
+~ Created: 02/11/2021 03:43:00 AM
+~ Brief  :
+~ Support:
+          E-Mail : Majid.do16@gmail.com (subject : Embedded Library Support)
 
-          Github :
-https://github.com/Majid-Derhambakhsh
+          Github : https://github.com/Majid-Derhambakhsh
 ------------------------------------------------------------------------------
 ~ Description:
 
