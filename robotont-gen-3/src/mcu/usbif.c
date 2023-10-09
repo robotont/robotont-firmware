@@ -1,6 +1,19 @@
 #include "usbif.h"
 #include "usbd_def.h"
 
+// TODO replace with callback to the upper layer (CMD_HANDLER)
+uint16_t bytes_received = 0;
+uint16_t last_packet_length = 0;
+uint8_t packet_buf[APP_RX_DATA_SIZE];
+uint8_t last_packet[APP_RX_DATA_SIZE];
+// -----------------------------------------------------------
+
+uint8_t usbif_init(void)
+{
+    ReceiveCallbackType rx_callback = (ReceiveCallbackType)usbif_receive;
+    usbd_cdc_setRxCallback(rx_callback);
+}
+
 uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
 {
     static uint8_t rc = USBD_OK;
@@ -17,5 +30,35 @@ uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
 
 uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
 {
-    // TODO callback to upper layer
+    // walk through the buffer and check for command termination
+    for (uint16_t i = 0; i < lenght; i++)
+    {
+        if (ptr_data[i] == '\r' || ptr_data[i] == '\n') // Packet complete
+        {
+            // complete
+            // memset(last_packet, '\0',APP_RX_DATA_SIZE);
+            last_packet_length = bytes_received + i + 1;
+            if (last_packet_length > 3)
+            {
+                memcpy(last_packet, packet_buf, last_packet_length);
+            }
+            else
+            {
+                memset(last_packet, '\0', APP_RX_DATA_SIZE);
+                last_packet_length = 0;
+            }
+
+            // TODO check, if UserRxBufferFS need to be cleared
+            // UserRxBufferFS[0] = '\0';
+            // memset(UserRxBufferFS, '\0', APP_RX_DATA_SIZE);
+            bytes_received = 0;
+            break;
+        }
+        else
+        {
+            packet_buf[bytes_received++] = ptr_data[i];
+            packet_buf[bytes_received] = '\0';
+        }
+    }
+    return 0;
 }

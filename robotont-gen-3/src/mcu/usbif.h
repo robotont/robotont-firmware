@@ -2,18 +2,25 @@
 #define __USBIF_H__
 
 #include <stdint.h>
+#include "usbd_cdc_if.h"
 
-#define USBIF_RX_BUFFER_SIZE 2048u
+#define USBIF_BUFFER_SIZE APP_RX_DATA_SIZE
+
+// TODO replace with callback to the upper layer (CMD_HANDLER)
+extern uint16_t bytes_received;
+extern uint16_t last_packet_length;
+extern uint8_t packet_buf[APP_RX_DATA_SIZE];
+extern uint8_t last_packet[APP_RX_DATA_SIZE];
+// -----------------------------------------------------------
 
 typedef struct UsbifPacketType
 {
-    uint16_t bytes_received;
-    uint16_t last_packet_length;
-    uint8_t packet_buf[USBIF_RX_BUFFER_SIZE];
-    uint8_t last_packet[USBIF_RX_BUFFER_SIZE];
+    uint8_t buffer[USBIF_BUFFER_SIZE];
+    uint16_t lenght;
 } UsbifPacketType;
 
-uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght);
+uint8_t usbif_init(void);
+uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght); // TODO replace arg to PacketType packet
 uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght);
 
 #endif

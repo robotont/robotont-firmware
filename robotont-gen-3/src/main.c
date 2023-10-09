@@ -28,6 +28,7 @@
 #include "sw_enc.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
+#include "usbif.h"
 
 #define MAIN_LOOP_DT_MS 10
 #define CMD_TIMEOUT_MS  1000 // If velocity command is not received within this period all motors are stopped.
