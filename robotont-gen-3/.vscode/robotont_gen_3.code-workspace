@@ -27,6 +27,7 @@
             "ms-vscode.cpptools",
             "platformio.platformio-ide",
             // optional
+            "cschlosser.doxdocgen",
             "edwinhuish.better-comments-next",
             "tal7aouy.icons",
         ]
