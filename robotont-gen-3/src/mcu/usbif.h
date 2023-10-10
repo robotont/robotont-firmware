@@ -19,8 +19,9 @@ typedef struct UsbifPacketType
     uint16_t lenght;
 } UsbifPacketType;
 
-uint8_t usbif_init(void);
+void usbif_init(void);
 uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght); // TODO replace arg to PacketType packet
-uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght);
+uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght); /* Called withing ISR context from lower layer*/
+void usbif_setUpperLayerCallback(ReceiveCallbackType rx_callback);
 
 #endif

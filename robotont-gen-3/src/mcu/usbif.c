@@ -8,10 +8,12 @@ uint8_t packet_buf[APP_RX_DATA_SIZE];
 uint8_t last_packet[APP_RX_DATA_SIZE];
 // -----------------------------------------------------------
 
-uint8_t usbif_init(void)
+ReceiveCallbackType callback_to_the_upper_layer;
+
+void usbif_init(void)
 {
     ReceiveCallbackType rx_callback = (ReceiveCallbackType)usbif_receive;
-    usbd_cdc_setRxCallback(rx_callback);
+    usbd_cdc_setUpperLayerCallback(rx_callback);
 }
 
 uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
@@ -60,5 +62,12 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
             packet_buf[bytes_received] = '\0';
         }
     }
+
+    // TODO // parse arguments in the CMD module, cut off argument and 
+    // TODO // send data to the sub-modules (motor control, led, oled etc)
+    // if (callback_to_the_upper_layer != NULL)
+    // {
+    //     callback_to_the_upper_layer(ptr_data, lenght);
+    // }
     return 0;
 }
