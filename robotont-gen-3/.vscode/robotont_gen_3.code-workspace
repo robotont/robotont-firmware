@@ -12,8 +12,13 @@
         "C_Cpp.codeAnalysis.clangTidy.enabled": true,
         "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [],
         "files.associations": {
+            "pid.h": "c",
+            "motor.h": "c",
+            "sw_enc.h": "c",
             "usbif.h": "c",
-            "usbd_cdc_if.h": "c"
+            "cmd.h": "c",
+            "odom.h": "c",
+            "main.h": "c",
         },
     },
     "extensions": {
@@ -22,7 +27,6 @@
             "ms-vscode.cpptools",
             "platformio.platformio-ide",
             // optional
-            "njpwerner.autodocstring",
             "edwinhuish.better-comments-next",
             "tal7aouy.icons",
         ]
