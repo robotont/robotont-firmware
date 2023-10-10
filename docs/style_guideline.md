@@ -39,11 +39,11 @@ uint8_t c;
 ```cpp
 // BAD
 if (true)
-    return 0;
+    return 0u;
 // GOOD
 if (true)
 {
-    return 0;
+    return 0u;
 }
 ```
 
@@ -94,13 +94,15 @@ if (true)
 16. Name global functions like `filename_functionNameInCamelCase(...)`; name static functions like `functionNameInCamelCase(...)`. Add prefix `is`, if function returns boolean
 ```cpp
 bool robot_isRunning(void);
-uint8_t calc_calculateSum(uint8_t a, uint8_t b);
-void priv_enableInterrupt(void);
+uint8_t math_isEqual(uint8_t a, uint8_t b);
+void enableInterrupt(void);
 ```
-17. Name variable in `snake_case`. Add prefix `is_` to the boolean type
+17. Name variable in `snake_case`. Add prefix `is_` to the boolean type. Add prefix `ptr_` to the pointer type
 ```cpp
 bool is_enabled;
 char uart_buffer[UART_BUFFER_SIZE];
+uint8_t *ptr_second_elem = &uart_buffer[1u];
+
 ```
 18. Name struct elements in `snake_case`
 ```cpp
@@ -114,7 +116,7 @@ typedef struct
 ```cpp
 typedef uint32_t RobotSpeedType;
 ```
-20. Name enums in `PascalCase`; elements in `UPPER_CASE`
+20. Name enums in `PascalCase`; elements in `UPPER_CASE`. For `typedef enum ...` works rule 19.
 ```cpp
 enum PinState
 {
@@ -123,11 +125,10 @@ enum PinState
 };
 ``` 
 21. Name macros and defines in `UPPER_CASE`
-22. Pointer variables should have prefix `ptr_` 
 ```cpp
 uint32_t *ptr_name;
 ```
-23. If variable represents physical value, unit suffix should present. SI units are exception
+22. If variable represents physical value, unit suffix should present. SI units are exception
 ```cpp
 #define VOLTAGE_OFFSET_MV 12000u
 uint32_t timeout_ms = 100u;
