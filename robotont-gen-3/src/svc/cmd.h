@@ -1,3 +1,11 @@
+/**
+ * @file cmd.h
+ * @brief 
+ * 
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2023
+ */
+
 #ifndef __CMD_H__
 #define __CMD_H__
 

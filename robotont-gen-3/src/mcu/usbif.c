@@ -1,3 +1,11 @@
+/**
+ * @file usbif.c
+ * @brief 
+ * 
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2023
+ */
+
 #include "usbif.h"
 #include "usbd_def.h"
 
@@ -10,12 +18,23 @@ uint8_t last_packet[APP_RX_DATA_SIZE];
 
 ReceiveCallbackType callback_to_the_upper_layer;
 
+/**
+ * @brief
+ *
+ */
 void usbif_init(void)
 {
     ReceiveCallbackType rx_callback = (ReceiveCallbackType)usbif_receive;
     usbd_cdc_setUpperLayerCallback(rx_callback);
 }
 
+/**
+ * @brief
+ *
+ * @param ptr_data
+ * @param lenght
+ * @return uint8_t
+ */
 uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
 {
     static uint8_t rc = USBD_OK;
@@ -30,6 +49,15 @@ uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
     return retval;
 }
 
+/**
+ * @brief
+ *
+ * @param ptr_data
+ * @param lenght
+ * @return uint8_t
+ *
+ * @note Called in ISR context from usb_cdc_if module
+ */
 uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
 {
     // walk through the buffer and check for command termination
@@ -63,7 +91,7 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
         }
     }
 
-    // TODO // parse arguments in the CMD module, cut off argument and 
+    // TODO // parse arguments in the CMD module, cut off argument and
     // TODO // send data to the sub-modules (motor control, led, oled etc)
     // if (callback_to_the_upper_layer != NULL)
     // {
