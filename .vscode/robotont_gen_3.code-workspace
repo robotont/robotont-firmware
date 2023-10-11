@@ -1,10 +1,19 @@
 {
     "folders": [
+        // {
+        //     "path": "../src"
+        // },
+        // {
+        //     "path": "../lib"
+        // },
+        // {
+        //     "path": "../docs"
+        // },
+        // {
+        //     "path": "../stm-core"
+        // },
         {
             "path": ".."
-        },
-        {
-            "path": "../../docs"
         }
     ],
     "settings": {
