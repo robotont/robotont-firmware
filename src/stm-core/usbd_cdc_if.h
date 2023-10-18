@@ -51,7 +51,7 @@
 #define APP_RX_DATA_SIZE  2048
 #define APP_TX_DATA_SIZE  2048
 /* USER CODE BEGIN EXPORTED_DEFINES */
-
+typedef void (*ReceiveCallbackType)(void *ptr_data, uint16_t length); /* ISR Callback for upper layer */
 /* USER CODE END EXPORTED_DEFINES */
 
 /**
@@ -93,10 +93,7 @@
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-extern uint16_t bytes_received;
-extern uint16_t last_packet_length;
-extern uint8_t packet_buf[APP_RX_DATA_SIZE];
-extern uint8_t last_packet[APP_RX_DATA_SIZE];
+
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -111,7 +108,7 @@ extern uint8_t last_packet[APP_RX_DATA_SIZE];
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
-
+void usbd_cdc_setUpperLayerCallback(ReceiveCallbackType rx_callback);
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**
