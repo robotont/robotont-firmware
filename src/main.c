@@ -171,6 +171,9 @@ int main(void)
 	// Initialize odometry
 	OdomInit(&hodom, &mcfg0, &mcfg1, &mcfg2);
 
+	// Initialize USB interface
+	usbif_init();
+
   // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
   HAL_TIM_Base_Start_IT(&htim3); // motor 0
   HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_1);
@@ -218,6 +221,7 @@ int main(void)
   HAL_GPIO_WritePin(hm0.cfg->nsleep_port, hm0.cfg->nsleep_pin, SET); // Enable driver of motor 0
   HAL_GPIO_WritePin(hm1.cfg->nsleep_port, hm1.cfg->nsleep_pin, SET); // Enable driver of motor 1
   HAL_GPIO_WritePin(hm2.cfg->nsleep_port, hm2.cfg->nsleep_pin, SET); // Enable driver of motor 2
+
 
   counter = 1;
   duty = 50;
