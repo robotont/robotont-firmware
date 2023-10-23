@@ -5,6 +5,7 @@
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool
  */
+
 #include "usbif.h"
 #include <stdbool.h>
 #include "usbd_def.h"
@@ -12,7 +13,7 @@
 // TODO replace with callback to the upper layer (CMD_HANDLER)
 uint8_t last_packet[APP_RX_DATA_SIZE];
 uint16_t last_packet_length = 0;
-// -----------------------------------------------------------
+// TODO-------------------------------------------------------
 
 ReceiveCallbackType callback_to_the_upper_layer;
 
@@ -36,7 +37,7 @@ void usbif_init(void)
  */
 uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
 {
-    static uint8_t rc = USBD_OK;
+    uint8_t rc = USBD_OK;
     uint8_t retval = lenght;
 
     rc = CDC_Transmit_FS((unsigned char *)ptr_data, lenght);
@@ -68,7 +69,8 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
         rx_buffer[rx_buffer_length++] = ptr_data[i];
         if (ptr_data[i] == '\r' || ptr_data[i] == '\n')
         {
-            memcpy(last_packet, rx_buffer, rx_buffer_length); // TODO replace with callback to the upper layer (CMD_HANDLER)
+            memcpy(last_packet, rx_buffer,
+                   rx_buffer_length); // TODO replace with callback to the upper layer (CMD_HANDLER)
             last_packet_length = rx_buffer_length;
 
             is_message_complete = true;
