@@ -13,6 +13,7 @@
  */
 void cmd_init(void)
 {
+    
 }
 
 /**
@@ -21,7 +22,7 @@ void cmd_init(void)
  * @param ptr_data 
  * @param lenght 
  */
-void cmd_receiveSerialData(uint8_t *ptr_data, uint16_t lenght)
+void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
 {
 }
 
@@ -31,6 +32,6 @@ void cmd_receiveSerialData(uint8_t *ptr_data, uint16_t lenght)
  * @param ptr_data 
  * @param lenght 
  */
-void cmd_transmitSerialData(uint8_t *ptr_data, uint16_t lenght)
+void cmd_transmitData(uint8_t *ptr_data, uint16_t lenght)
 {
 }
