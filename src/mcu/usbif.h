@@ -20,9 +20,7 @@ typedef struct UsbifPacketType
 } UsbifPacketType;
 
 // TODO replace with callback to the upper layer (CMD_HANDLER)
-extern uint16_t bytes_received;
 extern uint16_t last_packet_length;
-extern uint8_t packet_buf[APP_RX_DATA_SIZE];
 extern uint8_t last_packet[APP_RX_DATA_SIZE];
 // -----------------------------------------------------------
 

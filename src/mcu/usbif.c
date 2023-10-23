@@ -6,13 +6,12 @@
  * @copyright Copyright (c) 2023 Tartu Ülikool
  */
 #include "usbif.h"
+#include <stdbool.h>
 #include "usbd_def.h"
 
 // TODO replace with callback to the upper layer (CMD_HANDLER)
-uint16_t bytes_received = 0;
-uint16_t last_packet_length = 0;
-uint8_t packet_buf[APP_RX_DATA_SIZE];
 uint8_t last_packet[APP_RX_DATA_SIZE];
+uint16_t last_packet_length = 0;
 // -----------------------------------------------------------
 
 ReceiveCallbackType callback_to_the_upper_layer;
@@ -60,48 +59,34 @@ uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
  */
 uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
 {
-    // walk through the buffer and check for command termination
-    for (uint16_t i = 0; i < lenght; i++)
-    {
-        if (ptr_data[i] == '\r' || ptr_data[i] == '\n') // Packet complete
-        {
-            // complete
-            // memset(last_packet, '\0',APP_RX_DATA_SIZE);
-            last_packet_length = bytes_received + i + 1;
-            if (last_packet_length > 3)
-            {
-                memcpy(last_packet, packet_buf, last_packet_length);
-            }
-            else
-            {
-                memset(last_packet, '\0', APP_RX_DATA_SIZE);
-                last_packet_length = 0;
-            }
+    static uint8_t rx_buffer[APP_RX_DATA_SIZE];
+    static uint16_t rx_buffer_length = 0u;
+    static bool is_message_complete = false;
 
-            // TODO check, if UserRxBufferFS need to be cleared
-            // UserRxBufferFS[0] = '\0';
-            // memset(UserRxBufferFS, '\0', APP_RX_DATA_SIZE);
-            bytes_received = 0;
-            break;
-        }
-        else
+    for (uint16_t i = 0u; i < lenght; i++)
+    {
+        rx_buffer[rx_buffer_length++] = ptr_data[i];
+        if (ptr_data[i] == '\r' || ptr_data[i] == '\n')
         {
-            packet_buf[bytes_received++] = ptr_data[i];
-            packet_buf[bytes_received] = '\0';
+            memcpy(last_packet, rx_buffer, rx_buffer_length); // TODO replace with callback to the upper layer (CMD_HANDLER)
+            last_packet_length = rx_buffer_length;
+
+            is_message_complete = true;
+            break;
         }
     }
 
-    // TODO // parse arguments in the CMD module, cut off argument and
-    // TODO // send data to the sub-modules (motor control, led, oled etc)
-    // if (callback_to_the_upper_layer != NULL)
-    // {
-    //     callback_to_the_upper_layer(ptr_data, lenght);
-    // }
-    return 0;
+    if (is_message_complete && callback_to_the_upper_layer != NULL)
+    {
+        callback_to_the_upper_layer(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF
+        rx_buffer_length = 0u;
+    }
+
+    return 0u;
 }
 
 /**
- * @brief
+ * @brief // TODO to be called from CMD module.
  *
  * @param rx_callback
  */
