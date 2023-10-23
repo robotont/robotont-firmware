@@ -1,0 +1,26 @@
+{
+    "folders": [
+        {
+            "path": ".."
+        },
+        {
+            "path": "../../docs"
+        }
+    ],
+    "settings": {
+        "C_Cpp.clang_format_style": "file",
+        "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+        "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [],
+    },
+    "extensions": {
+        "recommendations": [
+            // required
+            "ms-vscode.cpptools",
+            "platformio.platformio-ide",
+            // optional
+            "njpwerner.autodocstring",
+            "edwinhuish.better-comments-next",
+            "tal7aouy.icons",
+        ]
+    }
+}
