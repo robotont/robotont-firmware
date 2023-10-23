@@ -1,0 +1,37 @@
+---
+Checks: '-*,readability-identifier-naming,                      \
+            readability-magic-numbers,                          \
+            readability-function-cognitive-complexity,          \
+            readability-duplicate-include,                      \
+            readability-function-size,                          \
+            readability-inconsistent-declaration-parameter-name,\
+            readability-non-const-parameter,                    \
+            readability-redundant-declaration,                  \
+            readability-redundant-control-flow,                 \
+            readability-redundant-preprocessor,                 \
+            readability-uppercase-literal-suffix,               \
+            readability-simplify-boolean-expr'
+CheckOptions:
+  - { key: readability-identifier-naming.FunctionCase,            value: camel_Snake_Back }
+  - { key: readability-identifier-naming.StructCase,              value: lower_case  }
+  - { key: readability-identifier-naming.UnionCase,               value: Camel_Snake_Case }
+  - { key: readability-identifier-naming.VariableCase,            value: lower_case }
+  - { key: readability-identifier-naming.ParameterCase,           value: lower_case }
+  - { key: readability-identifier-naming.StaticConstantCase,      value: lower_case }
+  - { key: readability-identifier-naming.StaticConstantPrefix,    value: priv_ }
+  - { key: readability-identifier-naming.StaticConstantCase,      value: UPPER_CASE }
+  - { key: readability-identifier-naming.StaticConstantPrefix,    value: priv_ }
+  - { key: readability-identifier-naming.LocalPointerCase,        value: lower_case }
+  - { key: readability-identifier-naming.LocalPointerPrefix,      value: ptr_ }
+  - { key: readability-identifier-naming.PointerParameterCase,    value: lower_case }
+  - { key: readability-identifier-naming.PointerParameterPrefix,  value: ptr_ }
+  - { key: readability-identifier-naming.GlobalVariableCase,      value: lower_case }
+  - { key: readability-identifier-naming.GlobalConstantCase,      value: UPPER_CASE }
+  - { key: readability-identifier-naming.GlobalConstantPrefix,    value: }
+  - { key: readability-identifier-naming.GlobalPointerCase,       value: lower_case }
+  - { key: readability-identifier-naming.EnumConstantCase,        value: UPPER_CASE }
+  - { key: readability-identifier-naming.TypedefCase,             value: Camel_Snake_Case }
+  - { key: readability-identifier-naming.TypedefSuffix,           value: Type}
+  - { key: readability-identifier-naming.MacroDefinitionCase,     value: UPPER_CASE }
+  - { key: readability-function-cognitive-complexity.Threshold,   value: 25 }
+  - { key: readability-function-size.NestingThreshold,            value: 5 }
