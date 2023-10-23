@@ -1,7 +1,7 @@
 /**
  * @file usbif.c
- * @brief 
- * 
+ * @brief
+ *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool
  */
@@ -25,6 +25,7 @@ void usbif_init(void)
 {
     ReceiveCallbackType rx_callback = (ReceiveCallbackType)usbif_receive;
     usbd_cdc_setUpperLayerCallback(rx_callback);
+    callback_to_the_upper_layer = NULL;
 }
 
 /**
@@ -97,4 +98,14 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
     //     callback_to_the_upper_layer(ptr_data, lenght);
     // }
     return 0;
+}
+
+/**
+ * @brief
+ *
+ * @param rx_callback
+ */
+void usbif_setUpperLayerCallback(ReceiveCallbackType rx_callback)
+{
+    callback_to_the_upper_layer = rx_callback;
 }
