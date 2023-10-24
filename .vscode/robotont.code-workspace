@@ -10,6 +10,7 @@
         "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [],
         "files.associations": {
             "*.c": "c",
+            "stdbool.h": "c"
         },
     },
     "extensions": {
@@ -18,7 +19,7 @@
             "ms-vscode.cpptools",
             "platformio.platformio-ide",
             // optional
-            "njpwerner.autodocstring",
+            "cschlosser.doxdocgen",
             "edwinhuish.better-comments-next",
             "tal7aouy.icons",
         ]
