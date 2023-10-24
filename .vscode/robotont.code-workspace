@@ -10,7 +10,8 @@
         "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [],
         "files.associations": {
             "*.c": "c",
-            "stdbool.h": "c"
+            "stdbool.h": "c",
+            "stdint.h": "c"
         },
     },
     "extensions": {
