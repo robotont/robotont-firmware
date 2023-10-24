@@ -29,6 +29,7 @@
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include "usbif.h"
+#include "cmd.h"
 
 #define MAIN_LOOP_DT_MS 10
 #define CMD_TIMEOUT_MS  1000 // If velocity command is not received within this period all motors are stopped.
@@ -172,6 +173,8 @@ int main(void)
 
     // Initialize USB interface
     usbif_init();
+    // Initialize CMD command parser
+    cmd_init();
 
     // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
     HAL_TIM_Base_Start_IT(&htim3); // motor 0
