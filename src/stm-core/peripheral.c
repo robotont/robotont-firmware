@@ -26,7 +26,7 @@ static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_USART3_UART_Init(void);
 
-void peripheral_initAll(void)
+void peripheral_init(void)
 {
     MX_TIM3_Init();
     MX_TIM11_Init();
