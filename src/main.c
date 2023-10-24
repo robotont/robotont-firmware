@@ -26,7 +26,6 @@
 #include "odom.h"
 #include "pid.h"
 #include "sw_enc.h"
-#include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include "usbif.h"
 #include "cmd.h"
@@ -91,7 +90,6 @@ int main(void)
     MX_I2C1_Init();
     MX_I2C2_Init();
     MX_USART3_UART_Init();
-    MX_USB_DEVICE_Init();
     MX_TIM3_Init();
     MX_TIM11_Init();
     MX_TIM13_Init();

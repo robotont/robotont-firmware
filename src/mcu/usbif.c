@@ -8,6 +8,7 @@
 
 #include "usbif.h"
 #include <stdbool.h>
+#include "usb_device.h"
 #include "usbd_def.h"
 
 ReceiveCallbackType callback_to_the_upper_layer;
@@ -18,6 +19,7 @@ ReceiveCallbackType callback_to_the_upper_layer;
  */
 void usbif_init(void)
 {
+    MX_USB_DEVICE_Init();
     ReceiveCallbackType rx_callback = (ReceiveCallbackType)usbif_receive;
     usbd_cdc_setUpperLayerCallback(rx_callback);
     callback_to_the_upper_layer = NULL;
