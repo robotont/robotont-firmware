@@ -145,9 +145,6 @@ int main(void)
     // Initialize odometry
     OdomInit(&hodom, &mcfg0, &mcfg1, &mcfg2);
 
-    // Initialize USB interface
-    usbif_init();
-    // Initialize CMD command parser
     cmd_init();
 
     // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
@@ -329,8 +326,8 @@ int main(void)
             // printf("M0: sp: %f; vel: %f, effort: %f\r\n", hm0.linear_velocity_setpoint, hm0.linear_velocity,
             // hm0.effort); printf("M1: sp: %f; vel: %f, effort: %f\r\n", hm1.linear_velocity_setpoint,
             // hm1.linear_velocity, hm1.effort); printf("M2: sp: %f; vel: %f, effort: %f\r\n",
-            // hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort); printf("Main_delay:%ld %ld\r\n",
-            // delay_tick, last_tick);
+            // hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort); 
+            printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
         }
 
         // If no velocity command has been received within the timeout period, stop all motors
@@ -350,9 +347,9 @@ int main(void)
         MotorUpdate(&hm2);
         OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
 
-        // Send odometry command to the on-board computer
-        printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
-               hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
+        // // Send odometry command to the on-board computer
+        // printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
+        //        hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
 
         // Wait until the desired loop time has elapsed
         delay_tick = MAIN_LOOP_DT_MS - (HAL_GetTick() - last_tick);

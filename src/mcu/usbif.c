@@ -11,7 +11,7 @@
 #include "usb_device.h"
 #include "usbd_def.h"
 
-ReceiveCallbackType callback_to_the_upper_layer;
+static ReceiveCallbackType priv_callback;
 
 /**
  * @brief
@@ -19,10 +19,9 @@ ReceiveCallbackType callback_to_the_upper_layer;
  */
 void usbif_init(void)
 {
+    priv_callback = NULL;
     MX_USB_DEVICE_Init();
-    ReceiveCallbackType rx_callback = (ReceiveCallbackType)usbif_receive;
-    usbd_cdc_setUpperLayerCallback(rx_callback);
-    callback_to_the_upper_layer = NULL;
+    usbd_cdc_setUpperLayerCallback((ReceiveCallbackType)usbif_receive);
 }
 
 /**
@@ -64,13 +63,12 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
         if (ptr_data[i] == '\r' || ptr_data[i] == '\n')
         {
             is_message_complete = true;
-            break;
         }
     }
 
-    if (is_message_complete && callback_to_the_upper_layer != NULL)
+    if (is_message_complete && priv_callback != NULL)
     {
-        callback_to_the_upper_layer(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF
+        priv_callback(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF
         rx_buffer_length = 0u;
     }
 
@@ -83,5 +81,5 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
  */
 void usbif_setUpperLayerCallback(ReceiveCallbackType rx_callback)
 {
-    callback_to_the_upper_layer = rx_callback;
+    priv_callback = rx_callback;
 }

@@ -7,6 +7,7 @@
  */
 
 #include "cmd.h"
+#include "usbif.h"
 
 uint8_t last_packet[APP_RX_DATA_SIZE];
 uint16_t last_packet_length = 0;
@@ -16,8 +17,8 @@ uint16_t last_packet_length = 0;
  */
 void cmd_init(void)
 {
-    ReceiveCallbackType rx_callback = (ReceiveCallbackType)cmd_receiveData;
-    usbif_setUpperLayerCallback(rx_callback);
+    usbif_init();
+    usbif_setUpperLayerCallback((ReceiveCallbackType)cmd_receiveData);
 }
 
 /**
@@ -29,6 +30,8 @@ void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
 {
     memcpy(last_packet, ptr_data, lenght); // TODO get rid of global var, use callbacks
     last_packet_length = lenght;
+
+    volatile uint8_t foo;
 
     // Command: RS (Robot Speed)
     // Command: MS (Motor Speed)

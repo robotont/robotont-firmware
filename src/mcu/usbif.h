@@ -14,12 +14,6 @@
 
 #define USBIF_BUFFER_SIZE APP_RX_DATA_SIZE
 
-typedef struct UsbifPacketType
-{
-    uint8_t buffer[USBIF_BUFFER_SIZE];
-    uint16_t lenght;
-} UsbifPacketType;
-
 void usbif_init(void);
 uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght);
 uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght);
