@@ -1,5 +1,5 @@
 /**
- * @file sysclk_init.h
+ * @file system_hal_init.h
  * @brief Contains auto-generated CUBEMX code
  *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
@@ -9,6 +9,7 @@
 #ifndef _SYSCLK_H_
 #define _SYSCLK_H_
 
-void sysclk_init(void);
+void system_hal_init(void);
+void Error_Handler(void);
 
 #endif
