@@ -5,6 +5,9 @@
         },
     ],
     "settings": {
+        "editor.rulers": [
+            120
+        ],
         "C_Cpp.clang_format_style": "file",
         "C_Cpp.codeAnalysis.clangTidy.enabled": true,
         "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [],
