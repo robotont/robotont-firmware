@@ -31,8 +31,6 @@ void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
     memcpy(last_packet, ptr_data, lenght); // TODO get rid of global var, use callbacks
     last_packet_length = lenght;
 
-    volatile uint8_t foo;
-
     // Command: RS (Robot Speed)
     // Command: MS (Motor Speed)
     // Command: EF (Effort control)
