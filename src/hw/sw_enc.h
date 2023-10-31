@@ -14,11 +14,11 @@ typedef struct
     int32_t counter;
     uint8_t direction;
     uint8_t lut_index;
-} sw_enc_t;
+} EncoderType;
 
-void swEncoderInit(sw_enc_t *henc, GPIO_TypeDef* enca_port, uint16_t enca_pin, 
+void swEncoderInit(EncoderType *henc, GPIO_TypeDef* enca_port, uint16_t enca_pin, 
                                    GPIO_TypeDef* encb_port, uint16_t encb_pin);
-void swEncoderInterrupt(sw_enc_t* henc);
-void swEncoderDebug(sw_enc_t* henc);
+void swEncoderInterrupt(EncoderType* henc);
+void swEncoderDebug(EncoderType* henc);
 
 #endif

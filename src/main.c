@@ -16,9 +16,9 @@
 #define MAX_LIN_VEL     0.4  // m/s
 #define MAX_ANG_VEL     1.0  // rad/s
 
-sw_enc_t henc0, henc1, henc2;
-motor_t hm0, hm1, hm2;
-motor_config_t mcfg0, mcfg1, mcfg2;
+EncoderType henc0, henc1, henc2;
+MotorType hm0, hm1, hm2;
+MotorCfgType mcfg0, mcfg1, mcfg2;
 PID_TypeDef hPID0, hPID1, hPID2;
 odom_t hodom;
 
@@ -32,71 +32,10 @@ int main(void)
     swEncoderInit(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
     swEncoderInit(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
 
-    // Motor configurations
-    mcfg0.nsleep_port = PIN_M0_NSLEEP_GPIO_Port;
-    mcfg0.en1_port = PIN_M0_EN1_GPIO_Port;
-    mcfg0.en2_port = PIN_M0_EN2_GPIO_Port;
-    mcfg0.fault_port = PIN_M0_FAULT_GPIO_Port;
-    mcfg0.ipropi_port = PIN_M0_IPROPI_GPIO_Port;
-    mcfg0.nsleep_pin = PIN_M0_NSLEEP_Pin;
-    mcfg0.en1_pin = PIN_M0_EN1_Pin;
-    mcfg0.en2_pin = PIN_M0_EN2_Pin;
-    mcfg0.fault_pin = PIN_M0_FAULT_Pin;
-    mcfg0.ipropi_pin = PIN_M0_IPROPI_Pin;
-    mcfg0.pid_k_p = 0.5;
-    mcfg0.pid_tau_i = 0;
-    mcfg0.pid_tau_d = 0;
-    mcfg0.pid_dt = 0.01;
-    mcfg0.enc_cpr = 64;
-    mcfg0.gear_ratio = 18.75;
-    mcfg0.wheel_radius = 0.035;
-    mcfg0.wheel_pos_r = 0.145;
-    mcfg0.wheel_pos_phi = M_PI / 3.0f;
-
-    mcfg1.nsleep_port = PIN_M1_NSLEEP_GPIO_Port;
-    mcfg1.en1_port = PIN_M1_EN1_GPIO_Port;
-    mcfg1.en2_port = PIN_M1_EN2_GPIO_Port;
-    mcfg1.fault_port = PIN_M1_FAULT_GPIO_Port;
-    mcfg1.ipropi_port = PIN_M1_IPROPI_GPIO_Port;
-    mcfg1.nsleep_pin = PIN_M1_NSLEEP_Pin;
-    mcfg1.en1_pin = PIN_M1_EN1_Pin;
-    mcfg1.en2_pin = PIN_M1_EN2_Pin;
-    mcfg1.fault_pin = PIN_M1_FAULT_Pin;
-    mcfg1.ipropi_pin = PIN_M1_IPROPI_Pin;
-    mcfg1.pid_k_p = 0.5;
-    mcfg1.pid_tau_i = 0;
-    mcfg1.pid_tau_d = 0;
-    mcfg1.pid_dt = 0.01;
-    mcfg1.enc_cpr = 64;
-    mcfg1.gear_ratio = 18.75;
-    mcfg1.wheel_radius = 0.035;
-    mcfg1.wheel_pos_r = 0.145;
-    mcfg1.wheel_pos_phi = M_PI;
-
-    mcfg2.nsleep_port = PIN_M2_NSLEEP_GPIO_Port;
-    mcfg2.en1_port = PIN_M2_EN1_GPIO_Port;
-    mcfg2.en2_port = PIN_M2_EN2_GPIO_Port;
-    mcfg2.fault_port = PIN_M2_FAULT_GPIO_Port;
-    mcfg2.ipropi_port = PIN_M2_IPROPI_GPIO_Port;
-    mcfg2.nsleep_pin = PIN_M2_NSLEEP_Pin;
-    mcfg2.en1_pin = PIN_M2_EN1_Pin;
-    mcfg2.en2_pin = PIN_M2_EN2_Pin;
-    mcfg2.fault_pin = PIN_M2_FAULT_Pin;
-    mcfg2.ipropi_pin = PIN_M2_IPROPI_Pin;
-    mcfg2.pid_k_p = 0.5;
-    mcfg2.pid_tau_i = 0;
-    mcfg2.pid_tau_d = 0;
-    mcfg2.pid_dt = 0.01;
-    mcfg2.enc_cpr = 64;
-    mcfg2.gear_ratio = 18.75;
-    mcfg2.wheel_radius = 0.035;
-    mcfg2.wheel_pos_r = 0.145;
-    mcfg2.wheel_pos_phi = 5.0f / 3.0f * M_PI;
-
-    // Initialize motors
-    MotorInit(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
-    MotorInit(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
-    MotorInit(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
+    motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
+    motor_init(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
+    motor_init(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
+    motor_init(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
 
     // Initialize odometry
     OdomInit(&hodom, &mcfg0, &mcfg1, &mcfg2);
@@ -147,12 +86,12 @@ int main(void)
     uint32_t last_vel_received_tick = HAL_GetTick();
     uint32_t delay_tick = 0;
 
-    HAL_GPIO_WritePin(hm0.cfg->en2_port, hm0.cfg->en2_pin, RESET);
-    HAL_GPIO_WritePin(hm1.cfg->en2_port, hm1.cfg->en2_pin, RESET);
-    HAL_GPIO_WritePin(hm2.cfg->en2_port, hm2.cfg->en2_pin, RESET);
-    HAL_GPIO_WritePin(hm0.cfg->nsleep_port, hm0.cfg->nsleep_pin, SET); // Enable driver of motor 0
-    HAL_GPIO_WritePin(hm1.cfg->nsleep_port, hm1.cfg->nsleep_pin, SET); // Enable driver of motor 1
-    HAL_GPIO_WritePin(hm2.cfg->nsleep_port, hm2.cfg->nsleep_pin, SET); // Enable driver of motor 2
+    HAL_GPIO_WritePin(hm0.ptr_motor_config->en2_port, hm0.ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(hm1.ptr_motor_config->en2_port, hm1.ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(hm2.ptr_motor_config->en2_port, hm2.ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(hm0.ptr_motor_config->nsleep_port, hm0.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor0
+    HAL_GPIO_WritePin(hm1.ptr_motor_config->nsleep_port, hm1.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor1
+    HAL_GPIO_WritePin(hm2.ptr_motor_config->nsleep_port, hm2.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor2
 
     counter = 1;
     duty = 50;
@@ -210,11 +149,11 @@ int main(void)
 
                 // Apply velocities to motors
                 hm0.linear_velocity_setpoint =
-                    lin_vel_mag * sin(lin_vel_dir - hm0.cfg->wheel_pos_phi) + hm0.cfg->wheel_pos_r * ang_vel_z;
+                    lin_vel_mag * sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) + hm0.ptr_motor_config->wheel_pos_r * ang_vel_z;
                 hm1.linear_velocity_setpoint =
-                    lin_vel_mag * sin(lin_vel_dir - hm1.cfg->wheel_pos_phi) + hm1.cfg->wheel_pos_r * ang_vel_z;
+                    lin_vel_mag * sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) + hm1.ptr_motor_config->wheel_pos_r * ang_vel_z;
                 hm2.linear_velocity_setpoint =
-                    lin_vel_mag * sin(lin_vel_dir - hm2.cfg->wheel_pos_phi) + hm2.cfg->wheel_pos_r * ang_vel_z;
+                    lin_vel_mag * sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) + hm2.ptr_motor_config->wheel_pos_r * ang_vel_z;
             }
             // Command: MS (Motor Speed)
             else if (last_packet[0] == 'M' && last_packet[1] == 'S')
@@ -298,9 +237,9 @@ int main(void)
         PID_Compute(&hPID0);
         PID_Compute(&hPID1);
         PID_Compute(&hPID2);
-        MotorUpdate(&hm0);
-        MotorUpdate(&hm1);
-        MotorUpdate(&hm2);
+        motor_update(&hm0);
+        motor_update(&hm1);
+        motor_update(&hm2);
         OdomUpdate(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
 
         // // Send odometry command to the on-board computer

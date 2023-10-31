@@ -49,7 +49,7 @@ const int32_t counter_lut[32] = {
         0, // 11 to 11
 };
 
-void swEncoderInit(sw_enc_t *henc, GPIO_TypeDef* a_port, uint16_t a_pin, 
+void swEncoderInit(EncoderType *henc, GPIO_TypeDef* a_port, uint16_t a_pin, 
                                    GPIO_TypeDef* b_port, uint16_t b_pin)
 {
     henc->a_port = a_port;
@@ -62,7 +62,7 @@ void swEncoderInit(sw_enc_t *henc, GPIO_TypeDef* a_port, uint16_t a_pin,
     henc->lut_index = 0;
 }
 
-void swEncoderInterrupt(sw_enc_t *henc)
+void swEncoderInterrupt(EncoderType *henc)
 {
     henc->lut_index |= HAL_GPIO_ReadPin(henc->a_port, henc->a_pin)<<1 | HAL_GPIO_ReadPin(henc->b_port, henc->b_pin);
     henc->counter += counter_lut[henc->lut_index];
@@ -77,7 +77,7 @@ void swEncoderInterrupt(sw_enc_t *henc)
     
 }
 
-void swEncoderDebug(sw_enc_t* henc)
+void swEncoderDebug(EncoderType* henc)
 {
     printf("ENCA: %d\t", HAL_GPIO_ReadPin(henc->a_port, henc->a_pin));
     printf("ENCB: %d\t", HAL_GPIO_ReadPin(henc->b_port, henc->b_pin));
