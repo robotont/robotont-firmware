@@ -26,7 +26,8 @@
             "pid.h": "c",
             "math.h": "c",
             "stm32f4xx_it.h": "c",
-            "peripheral.h": "c"
+            "peripheral.h": "c",
+            "stm32f4xx_hal.h": "c"
         },
     },
     "extensions": {
@@ -35,8 +36,7 @@
             "ms-vscode.cpptools",
             "platformio.platformio-ide",
             // optional
-            "cschlosser.doxdocgen",
-            "edwinhuish.better-comments-next",
+            "aaron-bond.better-comments",
             "tal7aouy.icons",
         ]
     }
