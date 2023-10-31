@@ -75,7 +75,7 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
 FixNamespaceComments: true
-IncludeBlocks:   Merge
+IncludeBlocks: Regroup
 IncludeCategories:
   - Regex:           '^</.*\.h>'
     Priority:        3

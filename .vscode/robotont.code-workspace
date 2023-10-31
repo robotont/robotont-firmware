@@ -14,7 +14,19 @@
         "files.associations": {
             "*.c": "c",
             "stdbool.h": "c",
-            "stdint.h": "c"
+            "stdint.h": "c",
+            "cmd.h": "c",
+            "usbif.h": "c",
+            "usbd_cdc_if.h": "c",
+            "usbd_cdc.h": "c",
+            "usbd_ioreq.h": "c",
+            "usbd_core.h": "c",
+            "usbd_def.h": "c",
+            "usbd_conf.h": "c",
+            "pid.h": "c",
+            "math.h": "c",
+            "stm32f4xx_it.h": "c",
+            "peripheral.h": "c"
         },
     },
     "extensions": {
