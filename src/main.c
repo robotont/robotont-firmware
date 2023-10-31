@@ -22,53 +22,29 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "cmd.h"
 #include "motor.h"
 #include "odom.h"
+#include "peripheral.h"
 #include "pid.h"
 #include "sw_enc.h"
-#include "usbd_cdc_if.h"
-#include "sysclk.h"
-#include "peripheral.h"
+#include "system_hal.h"
 #include "usbif.h"
-#include "cmd.h"
 
 #define MAIN_LOOP_DT_MS 10
 #define CMD_TIMEOUT_MS  1000 // If velocity command is not received within this period all motors are stopped.
 #define MAX_LIN_VEL     0.4  // m/s
 #define MAX_ANG_VEL     1.0  // rad/s
 
-// Create encoders
 sw_enc_t henc0, henc1, henc2;
-
-// Create motors and their configuration datastructures
 motor_t hm0, hm1, hm2;
 motor_config_t mcfg0, mcfg1, mcfg2;
 PID_TypeDef hPID0, hPID1, hPID2;
-
-// Create Odometry datastructure
 odom_t hodom;
 
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-static void MX_GPIO_Init(void);
-
-void motor_test(motor_config_t *mcfg);
-
-/**
- * @brief  The application entry point.
- * @retval int
- */
 int main(void)
 {
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-    HAL_Init();
-
-    /* Configure the system clock */
-    sysclk_init();
-
-    /* Initialize all configured peripherals */
-    MX_GPIO_Init();
+    system_hal_init();
     peripheral_init();
 
     // Initialize software encoders
@@ -326,7 +302,7 @@ int main(void)
             // printf("M0: sp: %f; vel: %f, effort: %f\r\n", hm0.linear_velocity_setpoint, hm0.linear_velocity,
             // hm0.effort); printf("M1: sp: %f; vel: %f, effort: %f\r\n", hm1.linear_velocity_setpoint,
             // hm1.linear_velocity, hm1.effort); printf("M2: sp: %f; vel: %f, effort: %f\r\n",
-            // hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort); 
+            // hm2.linear_velocity_setpoint, hm2.linear_velocity, hm2.effort);
             printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
         }
 
@@ -362,103 +338,6 @@ int main(void)
         counter++;
     } // end of main while loop
 } // end of main
-
-
-
-/**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init(void)
-{
-    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-
-    /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOE_CLK_ENABLE();
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOH_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
-
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOC, PIN_M2_NSLEEP_Pin | PIN_M2_EN2_Pin | PIN_M2_EN1_Pin, GPIO_PIN_RESET);
-
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOE,
-                      PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_Pin | PIN_LED_DATA_Pin |
-                          PIN_M1_EN2_Pin | PIN_M1_EN1_Pin,
-                      GPIO_PIN_RESET);
-
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(PIN_M1_NSLEEP_GPIO_Port, PIN_M1_NSLEEP_Pin, GPIO_PIN_RESET);
-
-    /*Configure GPIO pins : PIN_POWEROFF_Pin PIN_POWEROFF_REQ_Pin PIN_M2_FAULT_Pin PIN_M0_FAULT_Pin */
-    GPIO_InitStruct.Pin = PIN_POWEROFF_Pin | PIN_POWEROFF_REQ_Pin | PIN_M2_FAULT_Pin | PIN_M0_FAULT_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : PIN_CHARGE_SENSE_Pin PIN_M2_IPROPI_Pin PIN_M0_IPROPI_Pin */
-    GPIO_InitStruct.Pin = PIN_CHARGE_SENSE_Pin | PIN_M2_IPROPI_Pin | PIN_M0_IPROPI_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : PIN_M2_NSLEEP_Pin PIN_M2_EN2_Pin PIN_M2_EN1_Pin */
-    GPIO_InitStruct.Pin = PIN_M2_NSLEEP_Pin | PIN_M2_EN2_Pin | PIN_M2_EN1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : PIN_M1_ENCA_Pin PIN_M1_ENCB_Pin PIN_M2_ENCA_Pin PIN_M2_ENCB_Pin */
-    GPIO_InitStruct.Pin = PIN_M1_ENCA_Pin | PIN_M1_ENCB_Pin | PIN_M2_ENCA_Pin | PIN_M2_ENCB_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : PIN_M0_ENCA_Pin PIN_M0_ENCB_Pin */
-    GPIO_InitStruct.Pin = PIN_M0_ENCA_Pin | PIN_M0_ENCB_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : PIN_M0_NSLEEP_Pin PIN_M0_EN2_Pin PIN_M0_EN1_Pin PIN_LED_Pin
-                             PIN_LED_DATA_Pin PIN_M1_EN2_Pin PIN_M1_EN1_Pin */
-    GPIO_InitStruct.Pin = PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_Pin | PIN_LED_DATA_Pin |
-                          PIN_M1_EN2_Pin | PIN_M1_EN1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : PIN_ROT_ENC_SW_Pin PIN_ROT_ENC_B_Pin PIN_ROT_ENC_A_Pin PIN_ESTOP_Pin */
-    GPIO_InitStruct.Pin = PIN_ROT_ENC_SW_Pin | PIN_ROT_ENC_B_Pin | PIN_ROT_ENC_A_Pin | PIN_ESTOP_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : PIN_M1_IPROPI_Pin */
-    GPIO_InitStruct.Pin = PIN_M1_IPROPI_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(PIN_M1_IPROPI_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : PIN_M1_FAULT_Pin */
-    GPIO_InitStruct.Pin = PIN_M1_FAULT_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(PIN_M1_FAULT_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : PIN_M1_NSLEEP_Pin */
-    GPIO_InitStruct.Pin = PIN_M1_NSLEEP_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(PIN_M1_NSLEEP_GPIO_Port, &GPIO_InitStruct);
-}
 
 /**
  * @brief  Retargets the C library printf function to the VIRTUAL COM PORT.
@@ -526,35 +405,3 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
         HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, RESET);
     }
 }
-
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void)
-{
-    /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
-    __disable_irq();
-    while (1)
-    {
-    }
-    /* USER CODE END Error_Handler_Debug */
-}
-
-#ifdef USE_FULL_ASSERT
-/**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-    /* USER CODE BEGIN 6 */
-    /* User can add his own implementation to report the file name and line number,
-       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-    /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
