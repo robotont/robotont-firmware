@@ -19,6 +19,9 @@
 EncoderType henc0, henc1, henc2;
 MotorType hm0, hm1, hm2;
 MotorCfgType mcfg0, mcfg1, mcfg2;
+EncoderType henc0, henc1, henc2;
+MotorType hm0, hm1, hm2;
+MotorCfgType mcfg0, mcfg1, mcfg2;
 PID_TypeDef hPID0, hPID1, hPID2;
 OdomType hodom;
 
@@ -32,6 +35,10 @@ int main(void)
     sw_enc_init(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
     sw_enc_init(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
 
+    motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
+    motor_init(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
+    motor_init(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
+    motor_init(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
     motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
     motor_init(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
     motor_init(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
@@ -85,6 +92,12 @@ int main(void)
     uint32_t last_vel_received_tick = HAL_GetTick();
     uint32_t delay_tick = 0;
 
+    HAL_GPIO_WritePin(hm0.ptr_motor_config->en2_port, hm0.ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(hm1.ptr_motor_config->en2_port, hm1.ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(hm2.ptr_motor_config->en2_port, hm2.ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(hm0.ptr_motor_config->nsleep_port, hm0.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor0
+    HAL_GPIO_WritePin(hm1.ptr_motor_config->nsleep_port, hm1.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor1
+    HAL_GPIO_WritePin(hm2.ptr_motor_config->nsleep_port, hm2.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor2
     HAL_GPIO_WritePin(hm0.ptr_motor_config->en2_port, hm0.ptr_motor_config->en2_pin, RESET);
     HAL_GPIO_WritePin(hm1.ptr_motor_config->en2_port, hm1.ptr_motor_config->en2_pin, RESET);
     HAL_GPIO_WritePin(hm2.ptr_motor_config->en2_port, hm2.ptr_motor_config->en2_pin, RESET);
@@ -149,9 +162,12 @@ int main(void)
                 // Apply velocities to motors
                 hm0.linear_velocity_setpoint =
                     lin_vel_mag * sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) + hm0.ptr_motor_config->wheel_pos_r * ang_vel_z;
+                    lin_vel_mag * sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) + hm0.ptr_motor_config->wheel_pos_r * ang_vel_z;
                 hm1.linear_velocity_setpoint =
                     lin_vel_mag * sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) + hm1.ptr_motor_config->wheel_pos_r * ang_vel_z;
+                    lin_vel_mag * sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) + hm1.ptr_motor_config->wheel_pos_r * ang_vel_z;
                 hm2.linear_velocity_setpoint =
+                    lin_vel_mag * sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) + hm2.ptr_motor_config->wheel_pos_r * ang_vel_z;
                     lin_vel_mag * sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) + hm2.ptr_motor_config->wheel_pos_r * ang_vel_z;
             }
             // Command: MS (Motor Speed)
