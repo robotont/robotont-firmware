@@ -29,6 +29,7 @@
 #include <stdbool.h>
 #include "pid.h"
 #include "usbif.h"
+#include "ARGB.h"
 
 #define MAIN_LOOP_DT_MS 10
 #define CMD_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped.
@@ -39,11 +40,13 @@ CAN_HandleTypeDef hcan1;
 
 I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
+TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim11;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 // Create encoders
 sw_enc_t henc0, henc1, henc2;
@@ -61,10 +64,12 @@ odom_t hodom;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_TIM13_Init(void);
@@ -87,11 +92,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_CAN1_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
   MX_USART3_UART_Init();
   MX_USB_DEVICE_Init();
+  MX_TIM1_Init();
   MX_TIM3_Init();
   MX_TIM11_Init();
   MX_TIM13_Init();
@@ -223,10 +230,66 @@ int main(void)
   HAL_GPIO_WritePin(hm2.cfg->nsleep_port, hm2.cfg->nsleep_pin, SET); // Enable driver of motor 2
 
 
+  ARGB_Init();  // Initialization
+
+  ARGB_Clear(); // Clear stirp
+  while (ARGB_Show() != ARGB_OK);
+
+  uint8_t led_val = 0;
+  uint8_t led_val_increasing = 1;
+  uint8_t led_i = 0;
+  uint8_t led_mode = 0;
+
   counter = 1;
   duty = 50;
   while (1)
   {
+    //LED modes
+    if (HAL_GPIO_ReadPin(PIN_POWEROFF_REQ_GPIO_Port, PIN_POWEROFF_REQ_Pin)) //STOP button pressed
+    {
+      ARGB_FillRGB(255, 0, 0); //All leds red
+    }
+    else
+    {
+      switch (led_mode)
+      {
+      case 0:
+        if (counter % 2 == 0) //LED spin green
+        {
+          ARGB_Clear();
+          ARGB_SetRGB(led_i, 255, 0, 0);
+          ARGB_Show();
+          led_i++;
+          if (led_i >= 60) led_i = 0;
+        }
+        break;
+      case 1:
+        if (counter % 2 == 0) //Leds pulse on/off
+        {
+          ARGB_FillRGB(0, led_val, 0);
+          ARGB_Show();
+          if(led_val_increasing) {
+            led_val+= 5; 
+            if (led_val >= 255) led_val_increasing = 0;
+          } else {
+            led_val-= 5; 
+            if (led_val <= 0) led_val_increasing = 1;
+          }
+        }
+        break;
+      case 2:
+        if (counter % 10 == 0)//Change colours
+        {
+          ARGB_FillHSV(led_val, 255, 255);
+          ARGB_Show();
+          if (led_val < 255) led_val += 1;
+          else led_val = 0;
+        }
+      default:
+        break;
+      }
+    }
+
     // Process data that was received over the USB virtual COM port.
     if (last_packet_length)
     {
@@ -380,16 +443,14 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 72;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 3;
+  RCC_OscInitStruct.PLL.PLLN = 96;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV6;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -399,12 +460,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -480,6 +541,80 @@ static void MX_I2C2_Init(void)
 }
 
 /**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 89;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+  HAL_TIM_MspPostInit(&htim1);
+
+}
+
+/**
   * @brief TIM3 Initialization Function (for motors PWM generation)
   * @param None
   * @retval None
@@ -526,7 +661,7 @@ static void MX_TIM11_Init(void)
   htim11.Instance = TIM11;
   htim11.Init.Prescaler = 80-1;
   htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim11.Init.Period = 1000-1;
+  htim11.Init.Period = 2*1000-1;
   htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
@@ -597,6 +732,22 @@ static void MX_TIM14_Init(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
+
 }
 
 /**
