@@ -30,21 +30,13 @@ int main(void)
     system_hal_init();
     peripheral_init();
 
-    // Initialize software encoders
     sw_enc_init(&henc0, PIN_M0_ENCA_GPIO_Port, PIN_M0_ENCA_Pin, PIN_M0_ENCB_GPIO_Port, PIN_M0_ENCB_Pin);
     sw_enc_init(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
     sw_enc_init(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
-
     motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
     motor_init(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
     motor_init(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
     motor_init(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
-    motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
-    motor_init(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
-    motor_init(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
-    motor_init(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
-
-    // Initialize odometry
     odom_init(&hodom, &mcfg0, &mcfg1, &mcfg2);
     cmd_init();
 
@@ -59,11 +51,8 @@ int main(void)
     // Start timer for reading encoders
     HAL_TIM_Base_Start_IT(&htim14);
     // HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_2);
-    // HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_3);
+    // HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_3);f
 
-    /* Infinite loop */
-    /* USER CODE BEGIN WHILE */
-    // uint8_t Text[] = "Hello from Robotont\r\n";
     HAL_Delay(1000);
     uint32_t pid_k = 600;
     uint32_t pid_i = 15000;
@@ -160,15 +149,18 @@ int main(void)
                 }
 
                 // Apply velocities to motors
-                hm0.linear_velocity_setpoint =
-                    lin_vel_mag * sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) + hm0.ptr_motor_config->wheel_pos_r * ang_vel_z;
-                    lin_vel_mag * sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) + hm0.ptr_motor_config->wheel_pos_r * ang_vel_z;
-                hm1.linear_velocity_setpoint =
-                    lin_vel_mag * sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) + hm1.ptr_motor_config->wheel_pos_r * ang_vel_z;
-                    lin_vel_mag * sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) + hm1.ptr_motor_config->wheel_pos_r * ang_vel_z;
-                hm2.linear_velocity_setpoint =
-                    lin_vel_mag * sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) + hm2.ptr_motor_config->wheel_pos_r * ang_vel_z;
-                    lin_vel_mag * sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) + hm2.ptr_motor_config->wheel_pos_r * ang_vel_z;
+                hm0.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) +
+                                               hm0.ptr_motor_config->wheel_pos_r * ang_vel_z;
+                lin_vel_mag *sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) +
+                    hm0.ptr_motor_config->wheel_pos_r *ang_vel_z;
+                hm1.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) +
+                                               hm1.ptr_motor_config->wheel_pos_r * ang_vel_z;
+                lin_vel_mag *sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) +
+                    hm1.ptr_motor_config->wheel_pos_r *ang_vel_z;
+                hm2.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) +
+                                               hm2.ptr_motor_config->wheel_pos_r * ang_vel_z;
+                lin_vel_mag *sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) +
+                    hm2.ptr_motor_config->wheel_pos_r *ang_vel_z;
             }
             // Command: MS (Motor Speed)
             else if (last_packet[0] == 'M' && last_packet[1] == 'S')
