@@ -13,9 +13,8 @@
 #include "usbif.h"
 
 #define MAIN_LOOP_DT_MS 10
-#define CMD_TIMEOUT_MS  1000 // If velocity command is not received within this period all motors are stopped.
-#define MAX_LIN_VEL     0.4  // m/s
-#define MAX_ANG_VEL     1.0  // rad/s
+#define MAX_LIN_VEL     0.4 // m/s
+#define MAX_ANG_VEL     1.0 // rad/s
 
 EncoderType henc0, henc1, henc2;
 MotorType hm0, hm1, hm2;
@@ -35,7 +34,7 @@ int main(void)
     sw_enc_init(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
     sw_enc_init(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
 
-    // TODO move config stuff in movement init
+    // TODO [code quality] move config stuff in movement init
     motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
     motor_init(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
     motor_init(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
@@ -104,6 +103,7 @@ int main(void)
     duty = 50;
     while (1)
     {
+#if 0
         // Process data that was received over the USB virtual COM port.
         if (last_packet_length)
         {
@@ -157,16 +157,10 @@ int main(void)
                 // Apply velocities to motors
                 hm0.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) +
                                                hm0.ptr_motor_config->wheel_pos_r * ang_vel_z;
-                lin_vel_mag *sin(lin_vel_dir - hm0.ptr_motor_config->wheel_pos_phi) +
-                    hm0.ptr_motor_config->wheel_pos_r *ang_vel_z;
                 hm1.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) +
                                                hm1.ptr_motor_config->wheel_pos_r * ang_vel_z;
-                lin_vel_mag *sin(lin_vel_dir - hm1.ptr_motor_config->wheel_pos_phi) +
-                    hm1.ptr_motor_config->wheel_pos_r *ang_vel_z;
                 hm2.linear_velocity_setpoint = lin_vel_mag * sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) +
                                                hm2.ptr_motor_config->wheel_pos_r * ang_vel_z;
-                lin_vel_mag *sin(lin_vel_dir - hm2.ptr_motor_config->wheel_pos_phi) +
-                    hm2.ptr_motor_config->wheel_pos_r *ang_vel_z;
             }
             // Command: MS (Motor Speed)
             else if (last_packet[0] == 'M' && last_packet[1] == 'S')
@@ -195,6 +189,11 @@ int main(void)
             }
         }
 
+#endif
+
+        // TODO [TEST] new movement control interface
+        movement_update();
+
         // Print out some debugging information at 10 lower rate.
         if (counter % 100 == 0)
         {
@@ -206,6 +205,7 @@ int main(void)
             printf("Main_delay:%ld %ld\r\n", delay_tick, last_tick);
         }
 
+#if 0
         // If no velocity command has been received within the timeout period, stop all motors
         if (HAL_GetTick() - last_vel_received_tick > CMD_TIMEOUT_MS)
         {
@@ -213,6 +213,7 @@ int main(void)
             hm1.linear_velocity_setpoint = 0;
             hm2.linear_velocity_setpoint = 0;
         }
+#endif
 
         // Update motors
         PID_Compute(&hPID0);

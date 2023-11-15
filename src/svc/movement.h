@@ -20,6 +20,6 @@ void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght);
 void movement_handleCommandsEF(uint8_t *ptr_data, uint16_t lenght);
 void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght);
 
-void movement_update(uint32_t update_time_ms);
+void movement_update();
 
 #endif
