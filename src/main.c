@@ -4,6 +4,7 @@
 
 #include "cmd.h"
 #include "motor.h"
+#include "movement.h"
 #include "odom.h"
 #include "peripheral.h"
 #include "pid.h"
@@ -33,12 +34,17 @@ int main(void)
     sw_enc_init(&henc0, PIN_M0_ENCA_GPIO_Port, PIN_M0_ENCA_Pin, PIN_M0_ENCB_GPIO_Port, PIN_M0_ENCB_Pin);
     sw_enc_init(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
     sw_enc_init(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
+
+    // TODO move config stuff in movement init
     motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
     motor_init(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
     motor_init(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
     motor_init(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
-    odom_init(&hodom, &mcfg0, &mcfg1, &mcfg2);
+
+    // Service layer
     cmd_init();
+    movement_init(&hm0, &hm1, &hm2);
+    odom_init(&hodom, &mcfg0, &mcfg1, &mcfg2);
 
     // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
     HAL_TIM_Base_Start_IT(&htim3); // motor 0
@@ -131,8 +137,8 @@ int main(void)
                     arg++;
                 }
 
-                float lin_vel_dir = atan2(lin_vel_y, lin_vel_x);
-                float lin_vel_mag = sqrt(lin_vel_x * lin_vel_x + lin_vel_y * lin_vel_y);
+                volatile float lin_vel_dir = atan2(lin_vel_y, lin_vel_x);
+                volatile float lin_vel_mag = sqrt(lin_vel_x * lin_vel_x + lin_vel_y * lin_vel_y);
 
                 // Hard limit linear and angular velocities //TODO: implement min max macros to make this a 2-liner
                 if (lin_vel_mag > MAX_LIN_VEL)
@@ -187,38 +193,6 @@ int main(void)
                     arg++;
                 }
             }
-            // Command: EF (Effort control)
-            else if (last_packet[0] == 'E' && last_packet[1] == 'F')
-            {
-                last_vel_received_tick = HAL_GetTick();
-                char *pch;
-                pch = strtok((char *)last_packet, ":");
-                int arg = 0;
-                while (pch != NULL)
-                {
-                    if (arg == 1)
-                    {
-                        hm0.effort = atof(pch);
-                    }
-                    else if (arg == 2)
-                    {
-                        hm1.effort = atof(pch);
-                    }
-                    else if (arg == 3)
-                    {
-                        hm2.effort = atof(pch);
-                    }
-                    pch = strtok(NULL, ":");
-                    arg++;
-                }
-            }
-            // Command: OR (Odom Reset)
-            else if (last_packet[0] == 'O' && last_packet[1] == 'R')
-            {
-                odom_reset(&hodom);
-            }
-            last_packet[0] = '\0'; // indicate that packet has been processed
-            last_packet_length = 0;
         }
 
         // Print out some debugging information at 10 lower rate.
