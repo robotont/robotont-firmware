@@ -41,25 +41,23 @@ void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
     last_packet_length = lenght;
 
     cmd_argument = (ptr_data[0] << 8U) | ptr_data[1];
-    ptr_data += 3U; // 2 bytes of argument and 1 byte of separator ":". //! P.S. This is MISRA violation tho
-    lenght -= 3U;
 
     switch (cmd_argument)
     {
         case ARG_ROBOT_SPEED:
-            movement_handleCommandsRS(ptr_data, lenght);
+            movement_handleCommandsRS(&ptr_data[3], lenght - 3U);
             break;
 
         case ARG_MOTOR_SPEED:
-            movement_handleCommandsMS(ptr_data, lenght);
+            movement_handleCommandsMS(&ptr_data[3], lenght - 3U);
             break;
 
         case ARG_ODOM_RESET:
-            movement_handleCommandsOR(ptr_data, lenght);
+            movement_handleCommandsOR(&ptr_data[3], lenght - 3U);
             break;
 
         case ARG_EFFORT_CONTROL:
-            movement_handleCommandsEF(ptr_data, lenght);
+            movement_handleCommandsEF(&ptr_data[3], lenght - 3U);
             break;
 
         default:
