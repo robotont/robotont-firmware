@@ -7,14 +7,20 @@
  */
 
 #include "cmd.h"
-#include "usbif.h"
+
 #include "movement.h"
+#include "usbif.h"
+
+#define ARG_ROBOT_SPEED    0x5253 // "RS"
+#define ARG_MOTOR_SPEED    0x4D53 // "MS"
+#define ARG_ODOM_RESET     0x4F52 // "OR"
+#define ARG_EFFORT_CONTROL 0x4546 // "EF"
 
 uint8_t last_packet[APP_RX_DATA_SIZE];
 uint16_t last_packet_length = 0;
 
 /**
- * @brief
+ * @brief Inits usbif
  */
 void cmd_init(void)
 {
@@ -29,25 +35,37 @@ void cmd_init(void)
  */
 void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
 {
+    uint16_t cmd_argument;
+
     memcpy(last_packet, ptr_data, lenght); // TODO get rid of global var, use callbacks
     last_packet_length = lenght;
 
-    
-    // Command: RS (Robot Speed)
-    // Command: MS (Motor Speed)
-    // Command: EF (Effort control)
-    // Command: OR (Odom Reset)
+    cmd_argument = (ptr_data[0] << 8U) | ptr_data[1];
+    ptr_data += 3U; // 2 bytes of argument and 1 byte of separator ":". //! P.S. This is MISRA violation tho
+    lenght -= 3U;
 
-    // Print out some debugging information at 10 lower rate.
+    switch (cmd_argument)
+    {
+        case ARG_ROBOT_SPEED:
+            movement_handleCommandsRS(ptr_data, lenght);
+            break;
 
-    // If no velocity command has been received within the timeout period, stop all motors
+        case ARG_MOTOR_SPEED:
+            movement_handleCommandsMS(ptr_data, lenght);
+            break;
 
-    // Update motors (PID)
+        case ARG_ODOM_RESET:
+            movement_handleCommandsOR(ptr_data, lenght);
+            break;
 
-    // Send odometry command to the on-board computer
+        case ARG_EFFORT_CONTROL:
+            movement_handleCommandsEF(ptr_data, lenght);
+            break;
 
-    // Wait until the desired loop time has elapsed
-
+        default:
+            // TODO: notify user about bad argument?
+            break;
+    }
 }
 
 /**
@@ -57,4 +75,5 @@ void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
  */
 void cmd_transmitData(uint8_t *ptr_data, uint16_t lenght)
 {
+    #pragma "not implemented"
 }

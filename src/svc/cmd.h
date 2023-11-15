@@ -12,12 +12,6 @@
 #include <stdint.h>
 #include "usbif.h"
 
-#define CMD_ARG_ROBOT_SPEED     "RS"
-#define CMD_ARG_MOTOR_SPEED     "MS"
-#define CMD_ARG_ODOM_RESET      "OR"
-#define CMD_ARG_ODOM_FEEDBACK   "ODOM"
-#define CMD_ARG_DEBUG           "DEBUG"
-
 // TODO think about proper handling
 // typedef enum {
 //     CMD_RX_SERIAL_DATA,
