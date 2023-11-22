@@ -88,6 +88,7 @@ int main(void)
     uint32_t last_vel_received_tick = HAL_GetTick();
     uint32_t delay_tick = 0;
 
+#if 0
     HAL_GPIO_WritePin(hm0.ptr_motor_config->en2_port, hm0.ptr_motor_config->en2_pin, RESET);
     HAL_GPIO_WritePin(hm1.ptr_motor_config->en2_port, hm1.ptr_motor_config->en2_pin, RESET);
     HAL_GPIO_WritePin(hm2.ptr_motor_config->en2_port, hm2.ptr_motor_config->en2_pin, RESET);
@@ -100,6 +101,7 @@ int main(void)
     HAL_GPIO_WritePin(hm0.ptr_motor_config->nsleep_port, hm0.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor0
     HAL_GPIO_WritePin(hm1.ptr_motor_config->nsleep_port, hm1.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor1
     HAL_GPIO_WritePin(hm2.ptr_motor_config->nsleep_port, hm2.ptr_motor_config->nsleep_pin, SET); // Enable drv of motor2
+#endif
 
     counter = 1;
     duty = 50;
@@ -222,11 +224,11 @@ int main(void)
         PID_Compute(&hPID0);
         PID_Compute(&hPID1);
         PID_Compute(&hPID2);
-#endif
+
         motor_update(&hm0);
         motor_update(&hm1);
         motor_update(&hm2);
-#if 0
+
         odom_update(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
 
         // Send odometry command to the on-board computer

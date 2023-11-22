@@ -69,7 +69,8 @@ MotorCfgType mcfg0, mcfg1, mcfg2; // TODO move to the local scope?
 
 static void initPID(void);
 
-void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2, EncoderType *ptr_enc0, EncoderType *ptr_enc1, EncoderType *ptr_enc2)
+void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2, EncoderType *ptr_enc0,
+                   EncoderType *ptr_enc1, EncoderType *ptr_enc2)
 {
     ptr_motor0 = ptr_m0;
     ptr_motor1 = ptr_m1;
@@ -82,6 +83,20 @@ void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2, Enco
     odom_init(&hodom, &mcfg0, &mcfg1, &mcfg2);
 
     initPID();
+
+    // TODO [code quality] move to the motor, as separate function (e.g. initPins)
+    HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->en2_port, ptr_motor0->ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->en2_port, ptr_motor1->ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->en2_port, ptr_motor2->ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->nsleep_port, ptr_motor0->ptr_motor_config->nsleep_pin, SET); // Enable drv of motor0
+    HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->nsleep_port, ptr_motor1->ptr_motor_config->nsleep_pin, SET); // Enable drv of motor1
+    HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->nsleep_port, ptr_motor2->ptr_motor_config->nsleep_pin, SET); // Enable drv of motor2
+    HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->en2_port, ptr_motor0->ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->en2_port, ptr_motor1->ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->en2_port, ptr_motor2->ptr_motor_config->en2_pin, RESET);
+    HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->nsleep_port, ptr_motor0->ptr_motor_config->nsleep_pin, SET); // Enable drv of motor0
+    HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->nsleep_port, ptr_motor1->ptr_motor_config->nsleep_pin, SET); // Enable drv of motor1
+    HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->nsleep_port, ptr_motor2->ptr_motor_config->nsleep_pin, SET); // Enable drv of motor2
 }
 
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
@@ -139,15 +154,15 @@ void movement_handleCommandsEF(uint8_t *ptr_data, uint16_t lenght)
     //     {
     //         if (arg == 1)
     //         {
-    //             hm0.effort = atof(pch);
+    //             ptr_motor0->effort = atof(pch);
     //         }
     //         else if (arg == 2)
     //         {
-    //             hm1.effort = atof(pch);
+    //             ptr_motor1->effort = atof(pch);
     //         }
     //         else if (arg == 3)
     //         {
-    //             hm2.effort = atof(pch);
+    //             ptr_motor2->effort = atof(pch);
     //         }
     //         pch = strtok(NULL, ":");
     //         arg++;
@@ -184,6 +199,10 @@ void movement_update()
     PID_Compute(&hPID0);
     PID_Compute(&hPID1);
     PID_Compute(&hPID2);
+
+    motor_update(ptr_motor0);
+    motor_update(ptr_motor1);
+    motor_update(ptr_motor2);
 
     odom_update(&hodom, ptr_motor0->linear_velocity, ptr_motor1->linear_velocity, ptr_motor2->linear_velocity,
                 MAIN_LOOP_DT_MS / 1000.0f);
