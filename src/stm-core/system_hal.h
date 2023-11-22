@@ -9,7 +9,7 @@
 #ifndef _SYSCLK_H_
 #define _SYSCLK_H_
 
-#define USER_FULL_ASSERT
+#define USE_FULL_ASSERT
 
 void system_hal_init(void);
 void Error_Handler(void);
