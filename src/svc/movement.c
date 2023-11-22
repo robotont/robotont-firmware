@@ -30,9 +30,9 @@
 
 // TODO [code quality] move those defines to the motor module?^^^
 #define MOTOR_WHEEL_R     0.145f
-#define MOTOR_0_WHEEL_PHI (M_PI / 3.0f)        // NOLINT (notofier M_PI not defined) - defined in math.h module
-#define MOTOR_1_WHEEL_PHI M_PI                 // NOLINT
-#define MOTOR_2_WHEEL_PHI (5.0f / 3.0f * M_PI) // NOLINT
+#define MOTOR_0_WHEEL_PHI (M_PI / 3.0f)
+#define MOTOR_1_WHEEL_PHI M_PI
+#define MOTOR_2_WHEEL_PHI (5.0f / 3.0f * M_PI)
 
 /* Speed that goes as an input to the PID controller of the each motor */
 typedef struct
@@ -63,16 +63,23 @@ static MotorType *ptr_motor0;
 static MotorType *ptr_motor1;
 static MotorType *ptr_motor2;
 static PID_TypeDef hPID0, hPID1, hPID2;
-static MotorCfgType mcfg0, mcfg1, mcfg2; // TODO [remove]
-// static OdomType hodom;
+
+OdomType hodom;
+MotorCfgType mcfg0, mcfg1, mcfg2; // TODO move to the local scope?
 
 static void initPID(void);
 
-void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2)
+void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2, EncoderType *ptr_enc0, EncoderType *ptr_enc1, EncoderType *ptr_enc2)
 {
     ptr_motor0 = ptr_m0;
     ptr_motor1 = ptr_m1;
     ptr_motor2 = ptr_m2;
+
+    motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
+    motor_init(ptr_motor0, &mcfg0, ptr_enc0, &(TIM3->CCR1), &htim3);
+    motor_init(ptr_motor1, &mcfg1, ptr_enc1, &(TIM11->CCR1), &htim11);
+    motor_init(ptr_motor2, &mcfg2, ptr_enc2, &(TIM13->CCR1), &htim13);
+    odom_init(&hodom, &mcfg0, &mcfg1, &mcfg2);
 
     initPID();
 }
@@ -177,6 +184,12 @@ void movement_update()
     PID_Compute(&hPID0);
     PID_Compute(&hPID1);
     PID_Compute(&hPID2);
+
+    odom_update(&hodom, ptr_motor0->linear_velocity, ptr_motor1->linear_velocity, ptr_motor2->linear_velocity,
+                MAIN_LOOP_DT_MS / 1000.0f);
+
+    printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
+           hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
 }
 
 static void initPID(void)

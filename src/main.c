@@ -17,12 +17,9 @@
 #define MAX_ANG_VEL     1.0 // rad/s
 
 MotorType hm0, hm1, hm2;
-MotorCfgType mcfg0, mcfg1, mcfg2;
 EncoderType henc0, henc1, henc2;
-MotorType hm0, hm1, hm2;
-MotorCfgType mcfg0, mcfg1, mcfg2;
-PID_TypeDef hPID0, hPID1, hPID2;
-OdomType hodom;
+// MotorCfgType mcfg0, mcfg1, mcfg2;
+// PID_TypeDef hPID0, hPID1, hPID2;
 
 int main(void)
 {
@@ -33,16 +30,20 @@ int main(void)
     sw_enc_init(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
     sw_enc_init(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
 
+#if 0
     // TODO [code quality] move config stuff in movement init
     motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
     motor_init(&hm0, &mcfg0, &henc0, &(TIM3->CCR1), &htim3);
     motor_init(&hm1, &mcfg1, &henc1, &(TIM11->CCR1), &htim11);
     motor_init(&hm2, &mcfg2, &henc2, &(TIM13->CCR1), &htim13);
-
+#endif
     // Service layer
     cmd_init();
-    movement_init(&hm0, &hm1, &hm2);
+    movement_init(&hm0, &hm1, &hm2, &henc0, &henc1, &henc2);
+
+#if 0
     odom_init(&hodom, &mcfg0, &mcfg1, &mcfg2);
+#endif
 
     // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
     HAL_TIM_Base_Start_IT(&htim3); // motor 0
@@ -225,12 +226,13 @@ int main(void)
         motor_update(&hm0);
         motor_update(&hm1);
         motor_update(&hm2);
+#if 0
         odom_update(&hodom, hm0.linear_velocity, hm1.linear_velocity, hm2.linear_velocity, MAIN_LOOP_DT_MS / 1000.0f);
 
-        // // Send odometry command to the on-board computer
-        // printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
-        //        hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
-
+        // Send odometry command to the on-board computer
+        printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
+               hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
+#endif
         // Wait until the desired loop time has elapsed
         delay_tick = MAIN_LOOP_DT_MS - (HAL_GetTick() - last_tick);
         if (delay_tick > MAIN_LOOP_DT_MS) // check for overflow
