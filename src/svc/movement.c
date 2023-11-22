@@ -207,8 +207,8 @@ void movement_update()
     odom_update(&hodom, ptr_motor0->linear_velocity, ptr_motor1->linear_velocity, ptr_motor2->linear_velocity,
                 MAIN_LOOP_DT_MS / 1000.0f);
 
-    printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
-           hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
+    // printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
+    //        hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
 }
 
 static void initPID(void)
