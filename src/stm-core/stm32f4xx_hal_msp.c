@@ -1,3 +1,4 @@
+// clang-format off
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -19,7 +20,8 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include "peripheral.h"
+#include "system_hal.h"
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */

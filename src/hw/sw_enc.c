@@ -49,37 +49,37 @@ const int32_t counter_lut[32] = {
         0, // 11 to 11
 };
 
-void swEncoderInit(sw_enc_t *henc, GPIO_TypeDef* a_port, uint16_t a_pin, 
+void sw_enc_init(EncoderType *ptr_enc, GPIO_TypeDef* a_port, uint16_t a_pin, 
                                    GPIO_TypeDef* b_port, uint16_t b_pin)
 {
-    henc->a_port = a_port;
-    henc->a_pin = a_pin;
-    henc->b_port = b_port;
-    henc->b_pin = b_pin;
+    ptr_enc->a_port = a_port;
+    ptr_enc->a_pin = a_pin;
+    ptr_enc->b_port = b_port;
+    ptr_enc->b_pin = b_pin;
 
-    henc->counter = 0;
-    henc->direction = 0;
-    henc->lut_index = 0;
+    ptr_enc->counter = 0;
+    ptr_enc->direction = 0;
+    ptr_enc->lut_index = 0;
 }
 
-void swEncoderInterrupt(sw_enc_t *henc)
+void sw_enc_interrupt(EncoderType *ptr_enc)
 {
-    henc->lut_index |= HAL_GPIO_ReadPin(henc->a_port, henc->a_pin)<<1 | HAL_GPIO_ReadPin(henc->b_port, henc->b_pin);
-    henc->counter += counter_lut[henc->lut_index];
+    ptr_enc->lut_index |= HAL_GPIO_ReadPin(ptr_enc->a_port, ptr_enc->a_pin)<<1 | HAL_GPIO_ReadPin(ptr_enc->b_port, ptr_enc->b_pin);
+    ptr_enc->counter += counter_lut[ptr_enc->lut_index];
 
-    if (counter_lut[henc->lut_index] != 0){
-        henc->direction = (counter_lut[henc->lut_index] > 0) ? 1 : 0;
+    if (counter_lut[ptr_enc->lut_index] != 0){
+        ptr_enc->direction = (counter_lut[ptr_enc->lut_index] > 0) ? 1 : 0;
     }
 
     //Prepare for next iteration by shifting current state
     //bits to old state bits and also the direction bit
-    henc->lut_index = (((henc->lut_index) << 2) & 0b1100) | ((henc->direction)<<4);
+    ptr_enc->lut_index = (((ptr_enc->lut_index) << 2) & 0b1100) | ((ptr_enc->direction)<<4);
     
 }
 
-void swEncoderDebug(sw_enc_t* henc)
+void sw_enc_debug(EncoderType* ptr_enc)
 {
-    printf("ENCA: %d\t", HAL_GPIO_ReadPin(henc->a_port, henc->a_pin));
-    printf("ENCB: %d\t", HAL_GPIO_ReadPin(henc->b_port, henc->b_pin));
-    printf("CNT: %ld\r\n", henc->counter);
+    printf("ENCA: %d\t", HAL_GPIO_ReadPin(ptr_enc->a_port, ptr_enc->a_pin));
+    printf("ENCB: %d\t", HAL_GPIO_ReadPin(ptr_enc->b_port, ptr_enc->b_pin));
+    printf("CNT: %ld\r\n", ptr_enc->counter);
 }

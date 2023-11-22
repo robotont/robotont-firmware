@@ -1,38 +1,17 @@
-/* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
+ * @file peripheral.h
+ * @brief Contains auto-generated CUBEMX code.
+ *
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
+#ifndef _PERIPHERAL_H_
+#define _PERIPHERAL_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
-/* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
-
-/* Private defines -----------------------------------------------------------*/
+// clang-format off
 #define PIN_POWEROFF_Pin GPIO_PIN_2
 #define PIN_POWEROFF_GPIO_Port GPIOE
 #define PIN_POWEROFF_REQ_Pin GPIO_PIN_3
@@ -93,9 +72,17 @@ void Error_Handler(void);
 #define PIN_M1_EN2_GPIO_Port GPIOE
 #define PIN_M1_EN1_Pin GPIO_PIN_1
 #define PIN_M1_EN1_GPIO_Port GPIOE
+// clang-format on
 
-#ifdef __cplusplus
-}
+extern CAN_HandleTypeDef hcan1;
+extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
+extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim11;
+extern TIM_HandleTypeDef htim13;
+extern TIM_HandleTypeDef htim14;
+extern UART_HandleTypeDef huart3;
+
+void peripheral_init(void);
+
 #endif
-
-#endif /* __MAIN_H */

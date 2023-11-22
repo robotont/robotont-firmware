@@ -1,3 +1,4 @@
+// clang-format off
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -25,6 +26,7 @@
 #include "usbd_core.h"
 
 #include "usbd_cdc.h"
+#include "system_hal.h"
 
 /* USER CODE BEGIN Includes */
 
