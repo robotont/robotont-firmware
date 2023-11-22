@@ -16,7 +16,6 @@
 #define MAX_LIN_VEL     0.4 // m/s
 #define MAX_ANG_VEL     1.0 // rad/s
 
-EncoderType henc0, henc1, henc2;
 MotorType hm0, hm1, hm2;
 MotorCfgType mcfg0, mcfg1, mcfg2;
 EncoderType henc0, henc1, henc2;
@@ -59,6 +58,7 @@ int main(void)
     // HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_3);f
 
     HAL_Delay(1000);
+#if 0
     uint32_t pid_k = 600;
     uint32_t pid_i = 15000;
     uint32_t pid_d = 0;
@@ -78,6 +78,7 @@ int main(void)
     PID_SetMode(&hPID2, _PID_MODE_AUTOMATIC);
     PID_SetOutputLimits(&hPID2, -1000, 1000);
     PID_SetSampleTime(&hPID2, MAIN_LOOP_DT_MS);
+#endif
 
     uint32_t counter = 0; // for debugging purposes
     uint32_t duty = 0;    // for debugging purposes
@@ -215,10 +216,12 @@ int main(void)
         }
 #endif
 
-        // Update motors
+// Update motors
+#if 0
         PID_Compute(&hPID0);
         PID_Compute(&hPID1);
         PID_Compute(&hPID2);
+#endif
         motor_update(&hm0);
         motor_update(&hm1);
         motor_update(&hm2);

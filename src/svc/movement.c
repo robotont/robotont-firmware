@@ -14,6 +14,13 @@
 #include <string.h>
 
 #include "macros.h"
+#include "odom.h"
+#include "peripheral.h"
+#include "pid.h"
+#include "sw_enc.h"
+
+// TODO [code quality, critical ] multiple deifnitions
+#define MAIN_LOOP_DT_MS 10
 
 // TODO [code quality] Move this define?
 #define PACKET_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped
@@ -51,24 +58,28 @@ static volatile MotorSpeedType priv_motor_speed = { 0.0f, 0.0f, 0.0f }; // TODO 
 // TODO [code quality] for timeout logic, use state states? Updates states separately?
 static uint32_t priv_receive_time_ms;
 
+// TODO [code quality] get rid of pointers, pass data directly as an argument?
 static MotorType *ptr_motor0;
 static MotorType *ptr_motor1;
 static MotorType *ptr_motor2;
+static PID_TypeDef hPID0, hPID1, hPID2;
+static MotorCfgType mcfg0, mcfg1, mcfg2; // TODO [remove]
+// static OdomType hodom;
+
+static void initPID(void);
 
 void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2)
 {
-    // TODO [implementation] move motor init here
-
-    ptr_motor0 = ptr_m1;
+    ptr_motor0 = ptr_m0;
     ptr_motor1 = ptr_m1;
     ptr_motor2 = ptr_m2;
+
+    initPID();
 }
 
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
 {
-    // TODO [implementation] update received tick
-
-    // TODO [implementation] error handler, if input is wrong (e.g. "MS:35\r\n")
+    // TODO [implementation] error handler, if input is wrong (e.g. "MS:35,abcd\r\n")
 
     char *token = strtok((char *)ptr_data, ":");
     priv_velocity.x = atof(token);
@@ -95,9 +106,8 @@ void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
 
 void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght)
 {
-    // TODO [implementation] update received tick
-
     // TODO [implementation] error handler, if input is wrong (e.g. "MS:35\r\n")
+
     char *token = strtok((char *)ptr_data, ":");
     priv_motor_speed.motor0 = atof(token);
     token = strtok(NULL, ":");
@@ -164,5 +174,30 @@ void movement_update()
     ptr_motor1->linear_velocity_setpoint = priv_motor_speed.motor1;
     ptr_motor2->linear_velocity_setpoint = priv_motor_speed.motor2;
 
-    // TODO [implementation] move motor_update methods here
+    PID_Compute(&hPID0);
+    PID_Compute(&hPID1);
+    PID_Compute(&hPID2);
+}
+
+static void initPID(void)
+{
+    uint32_t pid_k = 600;
+    uint32_t pid_i = 15000;
+    uint32_t pid_d = 0;
+    PID(&hPID0, &(ptr_motor0->linear_velocity), &(ptr_motor0->effort), &(ptr_motor0->linear_velocity_setpoint), pid_k,
+        pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
+    PID(&hPID1, &(ptr_motor1->linear_velocity), &(ptr_motor1->effort), &(ptr_motor1->linear_velocity_setpoint), pid_k,
+        pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
+    PID(&hPID2, &(ptr_motor2->linear_velocity), &(ptr_motor2->effort), &(ptr_motor2->linear_velocity_setpoint), pid_k,
+        pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
+
+    PID_SetMode(&hPID0, _PID_MODE_AUTOMATIC);
+    PID_SetOutputLimits(&hPID0, -1000, 1000);
+    PID_SetSampleTime(&hPID0, MAIN_LOOP_DT_MS);
+    PID_SetMode(&hPID1, _PID_MODE_AUTOMATIC);
+    PID_SetOutputLimits(&hPID1, -1000, 1000);
+    PID_SetSampleTime(&hPID1, MAIN_LOOP_DT_MS);
+    PID_SetMode(&hPID2, _PID_MODE_AUTOMATIC);
+    PID_SetOutputLimits(&hPID2, -1000, 1000);
+    PID_SetSampleTime(&hPID2, MAIN_LOOP_DT_MS);
 }

@@ -62,6 +62,7 @@ void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderTyp
                TIM_HandleTypeDef *htim)
 {
 
+    // TODO encoder init
 
     ptr_motor->ptr_motor_config = ptr_motor_config;
     ptr_motor->ptr_sw_enc = ptr_sw_enc;
