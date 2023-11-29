@@ -18,9 +18,6 @@ typedef struct
     uint16_t en2_pin;
     uint16_t fault_pin;
     uint16_t ipropi_pin;
-    uint16_t enc_cpr;    // encoder counts per revolution
-    float wheel_pos_r;   // [Polar coordinates] distance from center
-    float wheel_pos_phi; // [Polar coordinates] angle relative to x-axis (forward)
 } MotorCfgType;
 
 typedef struct
