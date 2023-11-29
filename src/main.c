@@ -1,3 +1,5 @@
+#include "main.h"
+
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,9 +14,8 @@
 #include "system_hal.h"
 #include "usbif.h"
 
-#define MAIN_LOOP_DT_MS 10
-#define MAX_LIN_VEL     0.4 // m/s
-#define MAX_ANG_VEL     1.0 // rad/s
+#define MAX_LIN_VEL 0.4 // m/s
+#define MAX_ANG_VEL 1.0 // rad/s
 
 MotorType hm0, hm1, hm2;
 EncoderType henc0, henc1, henc2;
@@ -60,6 +61,9 @@ int main(void)
         current_tick = HAL_GetTick();
         if (current_tick > last_tick + MAIN_LOOP_DT_MS)
         {
+            last_tick = current_tick;
+            counter++;
+
             /* Service layer modules update */
             movement_update();
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
@@ -70,9 +74,6 @@ int main(void)
                 HAL_GPIO_TogglePin(PIN_LED_GPIO_Port, PIN_LED_Pin);
                 printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
             }
-
-            last_tick = current_tick;
-            counter++;
         }
     }
 }
