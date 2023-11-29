@@ -6,6 +6,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "gpioif.h"
 #include "motor_cfg.h"
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
@@ -49,6 +50,8 @@ void motor_setConfig(MotorCfgType *ptr_motor1_config, MotorCfgType *ptr_motor2_c
 void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderType *ptr_sw_enc,
                 volatile uint32_t *effort_output_reg, TIM_HandleTypeDef *htim)
 {
+    gpioif_init();
+
     // TODO encoder init
 
     ptr_motor->ptr_motor_config = ptr_motor_config;
@@ -63,8 +66,13 @@ void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderTyp
     ptr_motor->last_enc_update = 0;
     ptr_motor->htim = htim;
 
+    // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
+    HAL_TIM_Base_Start_IT(htim);
+    HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_1);
     // Disable chip
     HAL_GPIO_WritePin(ptr_motor_config->nsleep_port, ptr_motor_config->nsleep_pin, RESET);
+
+    motor_update(ptr_motor);
 }
 
 void motor_update(MotorType *ptr_motor)
@@ -112,8 +120,7 @@ void motor_update(MotorType *ptr_motor)
     if (ptr_motor->last_enc_update)
     {
         float dt_sec = (HAL_GetTick() - ptr_motor->last_enc_update) / 1000.0f;
-        float pulse_to_speed_ratio =
-            1.0f / ENCODER_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_RADIUS;
+        float pulse_to_speed_ratio = 1.0f / ENCODER_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_RADIUS;
         ptr_motor->linear_velocity = ptr_motor->ptr_sw_enc->counter * pulse_to_speed_ratio;
     }
     ptr_motor->last_enc_update = HAL_GetTick();

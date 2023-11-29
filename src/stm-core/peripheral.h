@@ -85,6 +85,7 @@ extern TIM_HandleTypeDef htim13;
 extern TIM_HandleTypeDef htim14;
 extern UART_HandleTypeDef huart3;
 
+void MX_GPIO_Init(void);
 void peripheral_init(void);
 
 #endif
