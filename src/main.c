@@ -100,6 +100,8 @@ int _write(int file, char *ptr, int len)
     return len;
 }
 
+// TODO interrupts handlers
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     // Set PWM pin to high depending on which pwm timer triggered the interrupt

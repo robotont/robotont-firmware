@@ -11,6 +11,8 @@
 
 #include "stm32f4xx_hal.h"
 
+// TODO readme
+
 // clang-format off
 #define PIN_POWEROFF_Pin GPIO_PIN_2
 #define PIN_POWEROFF_GPIO_Port GPIOE

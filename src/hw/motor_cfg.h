@@ -12,6 +12,6 @@
 #define MOTOR_MAX_LIN_VEL  0.4f // m/s
 #define MOTOR_MAX_ANG_VEL  1.0f // rad/s
 
-#define ENCODER_CPR        64
+#define ENCODER_CPR        64 // TODO move to enc
 
 #endif
