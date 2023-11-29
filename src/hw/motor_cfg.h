@@ -1,8 +1,6 @@
 #ifndef MOTOR_CFG_H
 #define MOTOR_CFG_H
 
-// TODO [quality] proper naming
-
 #define MOTOR_0_WHEEL_PHI  (M_PI / 3.0f)
 #define MOTOR_1_WHEEL_PHI  M_PI
 #define MOTOR_2_WHEEL_PHI  (5.0f / 3.0f * M_PI)
@@ -14,6 +12,6 @@
 #define MOTOR_MAX_LIN_VEL  0.4f // m/s
 #define MOTOR_MAX_ANG_VEL  1.0f // rad/s
 
-#define ENCODER_CPR        64f // TODO [encoder stuff]
+#define ENCODER_CPR        64
 
 #endif
