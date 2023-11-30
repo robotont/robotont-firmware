@@ -2,56 +2,49 @@
 #define __MOTOR_H__
 
 #include <stdint.h>
+
 #include "stm32f4xx_hal.h"
 #include "sw_enc.h"
 
 typedef struct
 {
-    GPIO_TypeDef* nsleep_port;
-    GPIO_TypeDef* en1_port;
-    GPIO_TypeDef* en2_port;
-    GPIO_TypeDef* fault_port;
-    GPIO_TypeDef* ipropi_port;
+    GPIO_TypeDef *nsleep_port;
+    GPIO_TypeDef *en1_port;
+    GPIO_TypeDef *en2_port;
+    GPIO_TypeDef *fault_port;
+    GPIO_TypeDef *ipropi_port;
     uint16_t nsleep_pin;
     uint16_t en1_pin;
     uint16_t en2_pin;
     uint16_t fault_pin;
     uint16_t ipropi_pin;
-    //Default PID parameters
-    float pid_k_p;
-    float pid_tau_i;
-    float pid_tau_d;
-    float pid_dt;
-
-    uint16_t enc_cpr; // encoder counts per revolution
-    float gear_ratio; // gearbox reduction ratio
-    float wheel_radius; // wheel outer radius
-
-    // wheel position in polar coordinates
-    float wheel_pos_r; // distance from center
-    float wheel_pos_phi; // angle relative to x-axis (forward)
-} motor_config_t;
+    uint16_t enc_cpr;    // encoder counts per revolution
+    float wheel_pos_r;   // [Polar coordinates] distance from center
+    float wheel_pos_phi; // [Polar coordinates] angle relative to x-axis (forward)
+} MotorCfgType;
 
 typedef struct
 {
-    motor_config_t* cfg;
-    sw_enc_t* enc;
+    MotorCfgType *ptr_motor_config;
+    EncoderType *ptr_sw_enc;
     double linear_velocity;
     double linear_velocity_setpoint;
     double effort;
     double effort_limit;
-    GPIO_TypeDef* pwm_port;
+    GPIO_TypeDef *pwm_port;
     uint16_t pwm_pin;
-    volatile uint32_t* effort_output_reg;
-    TIM_HandleTypeDef* htim;
+    volatile uint32_t *effort_output_reg;
+    TIM_HandleTypeDef *htim;
     uint32_t last_enc_update;
 
-} motor_t;
+} MotorType; 
 
-void MotorInit(motor_t *hm, motor_config_t* cfg, sw_enc_t* enc, volatile uint32_t* effort_output_reg, TIM_HandleTypeDef* htim);
-void MotorUpdate(motor_t* hm);
-void MotorDebug(motor_t* hm);
-void MotorEnable(motor_t* hm);
-void MotorDisable(motor_t* hm);
+void motor_setConfig(MotorCfgType *ptr_motor1_config, MotorCfgType *ptr_motor2_config, MotorCfgType *ptr_motor3_config);
+void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderType *ptr_sw_enc,
+                volatile uint32_t *effort_output_reg, TIM_HandleTypeDef *htim);
+void motor_update(MotorType *ptr_motor);
+void motor_debug(MotorType *ptr_motor);
+void motor_enable(MotorType *ptr_motor);
+void motor_disable(MotorType *ptr_motor);
 
 #endif

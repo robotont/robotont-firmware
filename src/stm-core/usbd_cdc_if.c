@@ -1,3 +1,4 @@
+// clang-format off
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -94,7 +95,7 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-ReceiveCallbackType callback_to_the_upper_layer = NULL;
+static ReceiveCallbackType priv_callback;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -265,9 +266,9 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
   int8_t retval = USBD_FAIL;
-  if (callback_to_the_upper_layer != NULL)
+  if (priv_callback != NULL)
   {
-      callback_to_the_upper_layer(Buf, *Len);
+      priv_callback(Buf, *Len);
       retval = USBD_OK;
   }
 
@@ -325,8 +326,9 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
 /* Not private, but cubemx didn't generated place called "extern function implmentation" */
-void usbd_cdc_setUpperLayerCallback(ReceiveCallbackType rx_callback) {
-    callback_to_the_upper_layer = rx_callback;
+void usbd_cdc_setUpperLayerCallback(ReceiveCallbackType callback)
+{
+    priv_callback = callback;
 }
 
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */

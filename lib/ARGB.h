@@ -15,8 +15,12 @@
 #ifndef ARGB_H_
 #define ARGB_H_
 
-#include "libs.h"
-
+#include "peripheral.h"   ///< Main project file
+#include <stdlib.h>  ///< Standard library
+#include <stdint.h>  ///< Std types
+#include <stdbool.h> ///< _Bool to bool
+#include <string.h>  ///< Lib for memcpy, strlen, etc
+#include <stdio.h>   ///< Lib for sprintf, printf, etc
 /**
  * @addtogroup ARGB_Driver
  * @brief Addressable RGB LED Driver
@@ -61,15 +65,15 @@ typedef enum ARGB_STATE {
 void ARGB_Init(void);   // Initialization
 void ARGB_Clear(void);  // Clear strip
 
-void ARGB_SetBrightness(u8_t br); // Set global brightness
+void ARGB_SetBrightness(uint8_t br); // Set global brightness
 
-void ARGB_SetRGB(u16_t i, u8_t r, u8_t g, u8_t b);  // Set single LED by RGB
-void ARGB_SetHSV(u16_t i, u8_t hue, u8_t sat, u8_t val); // Set single LED by HSV
-void ARGB_SetWhite(u16_t i, u8_t w); // Set white component in LED (RGBW)
+void ARGB_SetRGB(uint16_t i, uint8_t r, uint8_t g, uint8_t b);  // Set single LED by RGB
+void ARGB_SetHSV(uint16_t i, uint8_t hue, uint8_t sat, uint8_t val); // Set single LED by HSV
+void ARGB_SetWhite(uint16_t i, uint8_t w); // Set white component in LED (RGBW)
 
-void ARGB_FillRGB(u8_t r, u8_t g, u8_t b); // Fill all strip with RGB color
-void ARGB_FillHSV(u8_t hue, u8_t sat, u8_t val); // Fill all strip with HSV color
-void ARGB_FillWhite(u8_t w); // Fill all strip's white component (RGBW)
+void ARGB_FillRGB(uint8_t r, uint8_t g, uint8_t b); // Fill all strip with RGB color
+void ARGB_FillHSV(uint8_t hue, uint8_t sat, uint8_t val); // Fill all strip with HSV color
+void ARGB_FillWhite(uint8_t w); // Fill all strip's white component (RGBW)
 
 ARGB_STATE ARGB_Ready(void); // Get DMA Ready state
 ARGB_STATE ARGB_Show(void); // Push data to the strip

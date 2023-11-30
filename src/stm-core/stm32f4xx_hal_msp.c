@@ -1,3 +1,4 @@
+// clang-format off
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -19,11 +20,11 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include "peripheral.h"
+#include "system_hal.h"
 /* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
 extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
+/* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
@@ -56,9 +57,8 @@ extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 /* USER CODE END ExternalFunctions */
 
 /* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+/* USER CODE END 0 */
 /**
   * Initializes the Global MSP.
   */

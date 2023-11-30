@@ -40,9 +40,6 @@
 /* ------------------------------------------------------------------ */
 
 #elif defined(USE_HAL_DRIVER)  /* Check driver */
-
-	#include "main.h"
-
 	/* --------------- Check Mainstream series --------------- */
 
 	#ifdef STM32F0
