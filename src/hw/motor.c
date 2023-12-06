@@ -11,42 +11,6 @@
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
 
-void motor_setConfig(MotorCfgType *ptr_motor1_config, MotorCfgType *ptr_motor2_config, MotorCfgType *ptr_motor3_config)
-{
-    // TODO refactor
-    ptr_motor1_config->nsleep_port = PIN_M0_NSLEEP_GPIO_Port;
-    ptr_motor1_config->en1_port = PIN_M0_EN1_GPIO_Port;
-    ptr_motor1_config->en2_port = PIN_M0_EN2_GPIO_Port;
-    ptr_motor1_config->fault_port = PIN_M0_FAULT_GPIO_Port;
-    ptr_motor1_config->ipropi_port = PIN_M0_IPROPI_GPIO_Port;
-    ptr_motor1_config->nsleep_pin = PIN_M0_NSLEEP_Pin;
-    ptr_motor1_config->en1_pin = PIN_M0_EN1_Pin;
-    ptr_motor1_config->en2_pin = PIN_M0_EN2_Pin;
-    ptr_motor1_config->fault_pin = PIN_M0_FAULT_Pin;
-    ptr_motor1_config->ipropi_pin = PIN_M0_IPROPI_Pin;
-
-    ptr_motor2_config->nsleep_port = PIN_M1_NSLEEP_GPIO_Port;
-    ptr_motor2_config->en1_port = PIN_M1_EN1_GPIO_Port;
-    ptr_motor2_config->en2_port = PIN_M1_EN2_GPIO_Port;
-    ptr_motor2_config->fault_port = PIN_M1_FAULT_GPIO_Port;
-    ptr_motor2_config->ipropi_port = PIN_M1_IPROPI_GPIO_Port;
-    ptr_motor2_config->nsleep_pin = PIN_M1_NSLEEP_Pin;
-    ptr_motor2_config->en1_pin = PIN_M1_EN1_Pin;
-    ptr_motor2_config->en2_pin = PIN_M1_EN2_Pin;
-    ptr_motor2_config->fault_pin = PIN_M1_FAULT_Pin;
-
-    ptr_motor3_config->nsleep_port = PIN_M2_NSLEEP_GPIO_Port;
-    ptr_motor3_config->en1_port = PIN_M2_EN1_GPIO_Port;
-    ptr_motor3_config->en2_port = PIN_M2_EN2_GPIO_Port;
-    ptr_motor3_config->fault_port = PIN_M2_FAULT_GPIO_Port;
-    ptr_motor3_config->ipropi_port = PIN_M2_IPROPI_GPIO_Port;
-    ptr_motor3_config->nsleep_pin = PIN_M2_NSLEEP_Pin;
-    ptr_motor3_config->en1_pin = PIN_M2_EN1_Pin;
-    ptr_motor3_config->en2_pin = PIN_M2_EN2_Pin;
-    ptr_motor3_config->fault_pin = PIN_M2_FAULT_Pin;
-    ptr_motor3_config->ipropi_pin = PIN_M2_IPROPI_Pin;
-}
-
 void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderType *ptr_sw_enc,
                 volatile uint32_t *effort_output_reg, TIM_HandleTypeDef *htim)
 {
@@ -69,9 +33,9 @@ void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderTyp
     // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
     HAL_TIM_Base_Start_IT(htim);
     HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_1);
-    // Disable chip
-    HAL_GPIO_WritePin(ptr_motor_config->nsleep_port, ptr_motor_config->nsleep_pin, RESET);
 
+    // Disable chip
+    motor_disable(ptr_motor);
     motor_update(ptr_motor);
 }
 

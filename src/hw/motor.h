@@ -5,6 +5,7 @@
 
 #include "stm32f4xx_hal.h"
 #include "sw_enc.h"
+#include "gpioif.h"
 
 typedef struct
 {
@@ -36,7 +37,6 @@ typedef struct
 
 } MotorType; 
 
-void motor_setConfig(MotorCfgType *ptr_motor1_config, MotorCfgType *ptr_motor2_config, MotorCfgType *ptr_motor3_config);
 void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderType *ptr_sw_enc,
                 volatile uint32_t *effort_output_reg, TIM_HandleTypeDef *htim);
 void motor_update(MotorType *ptr_motor);

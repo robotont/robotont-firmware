@@ -66,7 +66,7 @@ void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2, Enco
     ptr_motor1 = ptr_m1;
     ptr_motor2 = ptr_m2;
 
-    motor_setConfig(&mcfg0, &mcfg1, &mcfg2);
+    motor_cfg_setConfig(&mcfg0, &mcfg1, &mcfg2);
     motor_init(ptr_motor0, &mcfg0, ptr_enc0, &(TIM3->CCR1), &htim3);
     motor_init(ptr_motor1, &mcfg1, ptr_enc1, &(TIM11->CCR1), &htim11);
     motor_init(ptr_motor2, &mcfg2, ptr_enc2, &(TIM13->CCR1), &htim13);
