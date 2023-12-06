@@ -54,7 +54,7 @@ int main(void)
     while (true)
     {
         current_tick = HAL_GetTick();
-        if (current_tick > last_tick + MAIN_LOOP_DT_MS)
+        if (current_tick >= last_tick + MAIN_LOOP_DT_MS)
         {
             last_tick = current_tick;
             counter++;
