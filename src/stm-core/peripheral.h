@@ -11,6 +11,8 @@
 
 #include "stm32f4xx_hal.h"
 
+// TODO readme
+
 // clang-format off
 #define PIN_POWEROFF_Pin GPIO_PIN_2
 #define PIN_POWEROFF_GPIO_Port GPIOE
@@ -83,6 +85,7 @@ extern TIM_HandleTypeDef htim13;
 extern TIM_HandleTypeDef htim14;
 extern UART_HandleTypeDef huart3;
 
+void MX_GPIO_Init(void);
 void peripheral_init(void);
 
 #endif

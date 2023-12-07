@@ -19,7 +19,7 @@ With a uniform source code layout and style we will speed up the development and
 
 5. Avoid global variables if possible
 6. Initialize variable at the beginning of the scope
-7. Avoid using numbers directly, use `#define` or `const`
+7. Avoid using numbers directly, use `#define` if possible
 8. Unsigned literals have suffix `u`, floating points literals have suffix `f`
 ```cpp
 uint32_t some_value = 1u;
@@ -87,7 +87,18 @@ if (true)
  * Static function definitions
  * */
 ```
-15. Keep filenames short, lowercase and avoid using dashes and underscores. **Good:** `usbdrv.c` or `usb.c`, **Bad:** `USB_driver.c`
+15. Keep filenames short, lowercase and avoid using dashes (and underscores, if possible). 
+```cpp
+// GOOD
+usbdrv.c
+usb.c
+// OK
+sw_enc.c
+// BAD
+USB_driver.c
+my-lib.c
+someModule.c
+```
 
 **Style**
 

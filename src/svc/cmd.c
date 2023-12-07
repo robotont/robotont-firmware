@@ -16,9 +16,6 @@
 #define ARG_ODOM_RESET     0x4F52 // "OR"
 #define ARG_EFFORT_CONTROL 0x4546 // "EF"
 
-uint8_t last_packet[APP_RX_DATA_SIZE];
-uint16_t last_packet_length = 0;
-
 /**
  * @brief Inits usbif
  */
@@ -35,13 +32,7 @@ void cmd_init(void)
  */
 void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
 {
-    uint16_t cmd_argument;
-
-    memcpy(last_packet, ptr_data, lenght); // TODO get rid of global var, use callbacks
-    last_packet_length = lenght;
-
-    cmd_argument = (ptr_data[0] << 8U) | ptr_data[1];
-
+    uint16_t cmd_argument  = (ptr_data[0] << 8U) | ptr_data[1];
     switch (cmd_argument)
     {
         case ARG_ROBOT_SPEED:
