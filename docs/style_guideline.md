@@ -1,10 +1,13 @@
 ### Formatting guideline
 
-With a uniform source code layout and style we will speed up the development and simplify understanding of existing code. Most of the rules already maintained by the `clang-tidy` and `clang-format`, but general rules are:
+With a uniform source code layout and style we will speed up the development and simplify understanding of existing code. Most of the rules already maintained by the `clang-tidy` and `clang-format`.<br>
+
+> [!NOTE]  
+> Rules should apply only for project related files. No need to apply given rules on third party library files (i.e. Cube HAL, stm32xxx, C library etc.)
 
 **Generic:**
 
-1. The code shall adhere to [MISRA-C 2012](https://electrovolt.ir/wp-content/uploads/2022/09/MISRA-C_2012_-Guidelines-for-the-Use-of-the-C-Language-in-Critical-Systems-Motor-Industry-Research-Association-2013-2013.pdf)
+1. ~~The code shall adhere to MISRA-C 2012~~ Rule deprecated for several reasons: 1) Document is not freely avaiable 2) Static analyzer tools, that control this, also not free (PC-Lint)
 2. Use fixed width integer types defined in `stdint.h` [header](https://en.cppreference.com/w/c/types/integer)
 3. Each `.c` file should be associated with `.h` file
 4. Use following syntax and order for inclusions:
