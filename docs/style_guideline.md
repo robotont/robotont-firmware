@@ -145,7 +145,7 @@ uint32_t *ptr_name;
 ```cpp
 #define VOLTAGE_OFFSET_MV 12000u
 uint32_t timeout_ms = 100u;
-int8 voltage = 12;
+int8_t voltage = 12;
 float time_minutes = 32.3f // time_min would be bad examle, since "min" could be confused with minimum
 ```
 
