@@ -18,9 +18,6 @@
 #define ARG_LED_CONTROL    0x4C44 // "LD"
 #define ARG_LED_MODE       0x4C4D // "LM"
 
-uint8_t last_packet[APP_RX_DATA_SIZE];
-uint16_t last_packet_length = 0;
-
 /**
  * @brief Inits usbif
  */
@@ -37,12 +34,7 @@ void cmd_init(void)
  */
 void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
 {
-    uint16_t cmd_argument;
-
-    memcpy(last_packet, ptr_data, lenght); // TODO get rid of global var, use callbacks
-    last_packet_length = lenght;
-
-    cmd_argument = (ptr_data[0] << 8U) | ptr_data[1];
+    uint16_t cmd_argument  = (ptr_data[0] << 8U) | ptr_data[1];
     switch (cmd_argument)
     {
         case ARG_ROBOT_SPEED:
@@ -60,10 +52,11 @@ void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
         case ARG_EFFORT_CONTROL:
             movement_handleCommandsEF(&ptr_data[3], lenght - 3U);
             break;
-            
+        
         case ARG_LED_CONTROL:
             led_handleCommandsLD(&ptr_data[3], lenght - 3U);
             break;
+        
         case ARG_LED_MODE:
             led_handleCommandsLM(&ptr_data[3], lenght - 3U);
             break;

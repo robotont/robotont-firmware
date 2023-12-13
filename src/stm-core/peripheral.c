@@ -20,7 +20,6 @@ TIM_HandleTypeDef htim14;
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
-static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
@@ -34,7 +33,6 @@ static void MX_USART3_UART_Init(void);
 
 void peripheral_init(void)
 {
-    MX_GPIO_Init();
     MX_DMA_Init();
     MX_TIM1_Init();
     MX_TIM3_Init();
@@ -54,7 +52,7 @@ void peripheral_init(void)
  * @param None
  * @retval None
  */
-static void MX_GPIO_Init(void)
+void MX_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
@@ -266,7 +264,7 @@ static void MX_TIM11_Init(void)
     htim11.Instance = TIM11;
     htim11.Init.Prescaler = 80 - 1;
     htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim11.Init.Period = 1000 - 1;
+    htim11.Init.Period = 2*1000 - 1;
     htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
