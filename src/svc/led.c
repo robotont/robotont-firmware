@@ -15,7 +15,8 @@
 uint8_t led_val = 0;
 uint8_t led_val_increasing = 1;
 uint8_t led_i = 0;
-uint8_t led_mode = LED_MODE_WHEEL_COLORS;
+uint8_t led_mode = LED_MODE_PULSE;
+uint8_t led_mode_color[3] = {0, 255, 0};
 uint32_t counter = 0;
 
 void led_init()
@@ -41,8 +42,14 @@ void led_handleCommandsLD(uint8_t *ptr_data, uint16_t lenght)
 void led_handleCommandsLM(uint8_t *ptr_data, uint16_t lenght)
 {
     ARGB_Clear();
-    char *token = strtok((char *)ptr_data, "\r\n");
+    char *token = strtok((char *)ptr_data, ":");
     led_mode = atof(token);
+    token = strtok(NULL, ":");
+    led_mode_color[0] = atof(token);
+    token = strtok(NULL, ":");
+    led_mode_color[1] = atof(token);
+    token = strtok(NULL, "\r\n");
+    led_mode_color[2] = atof(token);
 }
 
 void led_update()
@@ -60,7 +67,7 @@ void led_update()
         if (counter % 2 == 0) //LED spin green
         {
           ARGB_Clear();
-          ARGB_SetRGB(led_i, 255, 0, 0);
+          ARGB_SetRGB(led_i, led_mode_color[0], led_mode_color[1], led_mode_color[2]);
           ARGB_Show();
           led_i++;
           if (led_i >= 60) led_i = 0;
@@ -69,7 +76,7 @@ void led_update()
       case LED_MODE_PULSE:
         if (counter % 2 == 0) //Leds pulse on/off
         {
-          ARGB_FillRGB(0, led_val, 0);
+          ARGB_FillRGB(led_mode_color[0]/led_val, led_mode_color[1]/led_val, led_mode_color[2]/led_val);
           ARGB_Show();
           if(led_val_increasing) {
             led_val+= 5; 
