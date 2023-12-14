@@ -15,7 +15,7 @@
 uint8_t led_val = 0;
 uint8_t led_val_increasing = 1;
 uint8_t led_i = 0;
-uint8_t led_mode = LED_MODE_PULSE;
+uint8_t led_mode = LED_MODE_COLORS;
 uint8_t led_mode_color[3] = {0, 255, 0};
 uint32_t counter = 0;
 
