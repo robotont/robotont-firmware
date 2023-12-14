@@ -61,10 +61,20 @@ int main(void)
 
             /* Service layer modules update */
             movement_update();
+
+            // example, of how to modules should communicate with each others: via getters and setters
+            // status = battery_monitor_getStatus();
+            // if (status == STATUS_12V_OVERVOLTAGE)
+            // {
+            //     led_blinkRed();
+            //     movement_stop();
+            // }
+
+
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
 
             /* Debug info */
-            if (counter % 100 == 0)
+            if (counter % 100u == 0)
             {
                 gpioif_togglePin(&led_green);
                 printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
@@ -75,24 +85,20 @@ int main(void)
 
 /**
  * @brief  Retargets the C library printf function to the VIRTUAL COM PORT.
- * @param  None
- * @retval None
  */
-int _write(int file, char *ptr, int len)
+int _write(int file, char *ptr_data, int len)
 {
-    static uint8_t rc = USBD_OK;
+    uint8_t result = len;
+    static uint8_t transmit_status = USBD_OK;
 
-    // loop commented out for a non-blocking behavior
-    // do {
-    rc = CDC_Transmit_FS((unsigned char *)ptr, len);
-    //} while (USBD_BUSY == rc);
-    if (USBD_FAIL == rc)
+    transmit_status = CDC_Transmit_FS((uint8_t *)ptr_data, len);
+    if (transmit_status == USBD_FAIL)
     {
-        /// NOTE: Should never reach here.
-        /// TODO: Handle this error.
-        return 0;
+        Error_Handler();
+        result = 0U;
     }
-    return len;
+
+    return result;
 }
 
 // TODO interrupts handlers

@@ -17,20 +17,22 @@
 #define ARG_EFFORT_CONTROL 0x4546 // "EF"
 
 /**
- * @brief Inits usbif
+ * @brief Inits usbif and sets usbif callback to `cmd_handleUsbData`
  */
 void cmd_init(void)
 {
     usbif_init();
-    usbif_setUpperLayerCallback((ReceiveCallbackType)cmd_receiveData);
+    usbif_setUpperLayerCallback((ReceiveCallbackType)cmd_handleUsbData);
 }
 
 /**
- * @brief
- * @param ptr_data
- * @param lenght
+ * @brief USB RX interrupt handler.
+ * Takes raw string, cuts off 1st argument and CR+LF, sends data to the corresponding module
+ * @note Called within ISR context from lower layer (usbcdc -> usbif -> cmd)
+ * @param ptr_data Raw string in the format `ARG:VALUE_1:...:VALUE_N/r/n`
+ * @param lenght Lenght of the whole string (including CR + LF)
  */
-void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
+void cmd_handleUsbData(uint8_t *ptr_data, uint16_t lenght)
 {
     uint16_t cmd_argument  = (ptr_data[0] << 8U) | ptr_data[1];
     switch (cmd_argument)
@@ -64,5 +66,5 @@ void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght)
  */
 void cmd_transmitData(uint8_t *ptr_data, uint16_t lenght)
 {
-    #pragma "not implemented"
+    usbif_transmit(ptr_data, lenght);
 }

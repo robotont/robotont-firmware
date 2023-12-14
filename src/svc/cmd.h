@@ -22,7 +22,7 @@ extern uint16_t last_packet_length;
 extern uint8_t last_packet[USBIF_BUFFER_SIZE];
 
 void cmd_init(void);
-void cmd_receiveData(uint8_t *ptr_data, uint16_t lenght); /* Called within ISR context from lower layer */
+void cmd_handleUsbData(uint8_t *ptr_data, uint16_t lenght);
 void cmd_transmitData(uint8_t *ptr_data, uint16_t lenght);
 
 #endif
