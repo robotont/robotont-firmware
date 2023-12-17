@@ -4,7 +4,7 @@
 
 void gpioif_init(void)
 {
-    MX_GPIO_Init();
+    //MX_GPIO_Init(); // Is there a reason why MX_GPIO_Init() needs to be run 3 times?
     // TODO [implementation]
     // since a lot of modules use GPIO, MX_GPIO init called in main.c inside peripheral module
     // init inside each module in the future

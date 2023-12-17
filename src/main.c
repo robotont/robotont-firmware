@@ -37,7 +37,6 @@ int main(void)
     cmd_init();
     movement_init(&hm0, &hm1, &hm2, &henc0, &henc1, &henc2);
     led_init();
-
     HAL_Delay(1000); // TODO investigate, is this required?
 
     uint32_t counter = 0; // for debugging purposes

@@ -10,6 +10,7 @@
 
 #include "movement.h"
 #include "usbif.h"
+#include "led.h"
 
 #define ARG_ROBOT_SPEED    0x5253 // "RS"
 #define ARG_MOTOR_SPEED    0x4D53 // "MS"

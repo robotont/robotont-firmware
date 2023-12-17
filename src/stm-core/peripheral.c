@@ -20,6 +20,7 @@ TIM_HandleTypeDef htim14;
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
+void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
@@ -33,6 +34,7 @@ static void MX_USART3_UART_Init(void);
 
 void peripheral_init(void)
 {
+    MX_GPIO_Init();
     MX_DMA_Init();
     MX_TIM1_Init();
     MX_TIM3_Init();
