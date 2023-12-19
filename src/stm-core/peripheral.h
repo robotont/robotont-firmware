@@ -52,8 +52,10 @@
 #define PIN_M0_EN2_GPIO_Port GPIOE
 #define PIN_M0_EN1_Pin GPIO_PIN_11
 #define PIN_M0_EN1_GPIO_Port GPIOE
-#define PIN_LED_Pin GPIO_PIN_13
-#define PIN_LED_GPIO_Port GPIOE
+#define PIN_LED_G_Pin GPIO_PIN_13
+#define PIN_LED_G_GPIO_Port GPIOE
+#define PIN_LED_R_Pin GPIO_PIN_12
+#define PIN_LED_R_GPIO_Port GPIOE
 #define PIN_LED_DATA_Pin GPIO_PIN_14
 #define PIN_LED_DATA_GPIO_Port GPIOE
 #define PIN_ROT_ENC_SW_Pin GPIO_PIN_13

@@ -63,8 +63,8 @@ void MX_GPIO_Init(void)
 
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(GPIOE,
-                      PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_Pin | PIN_LED_DATA_Pin |
-                          PIN_M1_EN2_Pin | PIN_M1_EN1_Pin,
+                      PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_G_Pin | PIN_LED_R_Pin | 
+													PIN_LED_DATA_Pin | PIN_M1_EN2_Pin | PIN_M1_EN1_Pin,
                       GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
@@ -103,7 +103,7 @@ void MX_GPIO_Init(void)
 
     /*Configure GPIO pins : PIN_M0_NSLEEP_Pin PIN_M0_EN2_Pin PIN_M0_EN1_Pin PIN_LED_Pin
                              PIN_LED_DATA_Pin PIN_M1_EN2_Pin PIN_M1_EN1_Pin */
-    GPIO_InitStruct.Pin = PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_Pin | PIN_LED_DATA_Pin |
+    GPIO_InitStruct.Pin = PIN_M0_NSLEEP_Pin | PIN_M0_EN2_Pin | PIN_M0_EN1_Pin | PIN_LED_G_Pin | PIN_LED_R_Pin | PIN_LED_DATA_Pin |
                           PIN_M1_EN2_Pin | PIN_M1_EN1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;

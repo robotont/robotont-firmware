@@ -48,8 +48,13 @@ int main(void)
     duty = 50;
 
     GpioPinType led_green;
-    led_green.pin_number = PIN_LED_Pin;
-    led_green.ptr_port = PIN_LED_GPIO_Port;
+    led_green.pin_number = PIN_LED_G_Pin;
+    led_green.ptr_port = PIN_LED_G_GPIO_Port;
+
+    GpioPinType led_red;
+    led_red.pin_number = PIN_LED_R_Pin;
+    led_red.ptr_port = PIN_LED_R_GPIO_Port;
+		gpioif_togglePin(&led_green);
 
     while (true)
     {
@@ -67,6 +72,7 @@ int main(void)
             if (counter % 100 == 0)
             {
                 gpioif_togglePin(&led_green);
+                gpioif_togglePin(&led_red);
                 printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
             }
         }
