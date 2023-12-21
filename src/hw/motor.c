@@ -6,7 +6,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include "gpioif.h"
+#include "ioif.h"
 #include "motor_cfg.h"
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
@@ -14,7 +14,7 @@
 void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderType *ptr_sw_enc,
                 volatile uint32_t *effort_output_reg, TIM_HandleTypeDef *htim)
 {
-    gpioif_init();
+    ioif_init();
 
     // TODO encoder init
 

@@ -1,8 +1,8 @@
-#include "gpioif.h"
+#include "ioif.h"
 
 #include "peripheral.h"
 
-void gpioif_init(void)
+void ioif_init(void)
 {
     MX_GPIO_Init();
     // TODO [implementation]
@@ -10,17 +10,17 @@ void gpioif_init(void)
     // init inside each module in the future
 }
 
-void gpioif_writePin(GpioPinType *ptr_pin, bool is_active)
+void ioif_writePin(GpioPinType *ptr_pin, bool is_active)
 {
     HAL_GPIO_WritePin(ptr_pin->ptr_port, ptr_pin->pin_number, is_active);
 }
 
-bool gpioif_isActive(GpioPinType *ptr_pin)
+bool ioif_isActive(GpioPinType *ptr_pin)
 {
     return (bool)HAL_GPIO_ReadPin(ptr_pin->ptr_port, ptr_pin->pin_number);
 }
 
-void gpioif_togglePin(GpioPinType *ptr_pin)
+void ioif_togglePin(GpioPinType *ptr_pin)
 {
     HAL_GPIO_TogglePin(ptr_pin->ptr_port, ptr_pin->pin_number);
 }

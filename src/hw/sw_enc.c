@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #include "stm32f4xx_hal.h"
-#include "gpioif.h"
+#include "ioif.h"
 
 const int32_t counter_lut[32] = {
     // Direction = 1
@@ -55,7 +55,7 @@ const int32_t counter_lut[32] = {
 
 void sw_enc_init(EncoderType *ptr_enc, GPIO_TypeDef *a_port, uint16_t a_pin, GPIO_TypeDef *b_port, uint16_t b_pin)
 {
-    gpioif_init();
+    ioif_init();
     
     ptr_enc->a_port = a_port;
     ptr_enc->a_pin = a_pin;

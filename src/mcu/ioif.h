@@ -12,9 +12,9 @@ typedef struct
     uint16_t pin_number;
 } GpioPinType;
 
-void gpioif_init(void);
-void gpioif_writePin(GpioPinType *ptr_pin, bool is_active);
-bool gpioif_isActive(GpioPinType *ptr_pin);
-void gpioif_togglePin(GpioPinType *ptr_pin);
+void ioif_init(void);
+void ioif_writePin(GpioPinType *ptr_pin, bool is_active);
+bool ioif_isActive(GpioPinType *ptr_pin);
+void ioif_togglePin(GpioPinType *ptr_pin);
 
 #endif

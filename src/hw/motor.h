@@ -5,7 +5,7 @@
 
 #include "stm32f4xx_hal.h"
 #include "sw_enc.h"
-#include "gpioif.h"
+#include "ioif.h"
 
 typedef struct
 {

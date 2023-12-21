@@ -13,7 +13,7 @@
 #include "sw_enc.h"
 #include "system_hal.h"
 #include "usbif.h"
-#include "gpioif.h"
+#include "ioif.h"
 
 #define MAX_LIN_VEL 0.4 // m/s
 #define MAX_ANG_VEL 1.0 // rad/s
@@ -76,7 +76,7 @@ int main(void)
             /* Debug info */
             if (counter % 100u == 0)
             {
-                gpioif_togglePin(&led_green);
+                ioif_togglePin(&led_green);
                 printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
             }
         }
