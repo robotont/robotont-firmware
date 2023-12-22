@@ -70,14 +70,14 @@ void MX_GPIO_Init(void)
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(PIN_M1_NSLEEP_GPIO_Port, PIN_M1_NSLEEP_Pin, GPIO_PIN_RESET);
 
-    /*Configure GPIO pins : PIN_POWEROFF_Pin PIN_POWEROFF_REQ_Pin PIN_M2_FAULT_Pin PIN_M0_FAULT_Pin */
-    GPIO_InitStruct.Pin = PIN_POWEROFF_Pin | PIN_POWEROFF_REQ_Pin | PIN_M2_FAULT_Pin | PIN_M0_FAULT_Pin;
+    /*Configure GPIO pins : PIN_M2_FAULT_Pin PIN_M0_FAULT_Pin */
+    GPIO_InitStruct.Pin =  PIN_M2_FAULT_Pin | PIN_M0_FAULT_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PIN_CHARGE_SENSE_Pin PIN_M2_IPROPI_Pin PIN_M0_IPROPI_Pin */
-    GPIO_InitStruct.Pin = PIN_CHARGE_SENSE_Pin | PIN_M2_IPROPI_Pin | PIN_M0_IPROPI_Pin;
+    /*Configure GPIO pins : PIN_M2_IPROPI_Pin PIN_M0_IPROPI_Pin */
+    GPIO_InitStruct.Pin = PIN_M2_IPROPI_Pin | PIN_M0_IPROPI_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);

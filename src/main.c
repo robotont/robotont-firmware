@@ -47,14 +47,14 @@ int main(void)
     counter = 1;
     duty = 50;
 
-    GpioPinType led_green;
+    IoPinType led_green;
     led_green.pin_number = PIN_LED_G_Pin;
     led_green.ptr_port = PIN_LED_G_GPIO_Port;
 
-    GpioPinType led_red;
+    IoPinType led_red;
     led_red.pin_number = PIN_LED_R_Pin;
     led_red.ptr_port = PIN_LED_R_GPIO_Port;
-		gpioif_togglePin(&led_green);
+	ioif_togglePin(&led_green);
 
     while (true)
     {
