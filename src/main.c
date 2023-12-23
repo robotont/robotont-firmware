@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "cmd.h"
+#include "ioif.h"
 #include "motor.h"
 #include "movement.h"
 #include "odom.h"
@@ -13,7 +14,6 @@
 #include "sw_enc.h"
 #include "system_hal.h"
 #include "usbif.h"
-#include "ioif.h"
 
 #define MAX_LIN_VEL 0.4 // m/s
 #define MAX_ANG_VEL 1.0 // rad/s
@@ -25,16 +25,13 @@ int main(void)
 {
     system_hal_init();
     peripheral_init();
-
-    sw_enc_init(&henc0, PIN_M0_ENCA_GPIO_Port, PIN_M0_ENCA_Pin, PIN_M0_ENCB_GPIO_Port, PIN_M0_ENCB_Pin);
-    sw_enc_init(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
-    sw_enc_init(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
-    // Start timer for reading encoders
-    HAL_TIM_Base_Start_IT(&htim14);
-
+    ioif_init(); // TODO move to appropriate place
     // Service layer
     cmd_init();
-    movement_init(&hm0, &hm1, &hm2, &henc0, &henc1, &henc2);
+    // movement_init(&hm0, &hm1, &hm2, &henc0, &henc1, &henc2);
+    HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
+    HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
+    HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
     HAL_Delay(1000); // TODO investigate, is this required?
 
@@ -54,7 +51,7 @@ int main(void)
     IoPinType led_red;
     led_red.pin_number = PIN_LED_R_Pin;
     led_red.ptr_port = PIN_LED_R_GPIO_Port;
-	ioif_togglePin(&led_green);
+    ioif_togglePin(&led_green);
 
     while (true)
     {
@@ -65,7 +62,7 @@ int main(void)
             counter++;
 
             /* Service layer modules update */
-            movement_update();
+            // movement_update();
 
             // example, of how to modules should communicate with each others: via getters and setters
             // status = battery_monitor_getStatus();
@@ -75,7 +72,6 @@ int main(void)
             //     movement_stop();
             // }
 
-
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
 
             /* Debug info */
@@ -83,8 +79,11 @@ int main(void)
             {
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
-                printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
+                // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
             }
+
+            printf("%05d %05d %05d\r\n", (int16_t)__HAL_TIM_GET_COUNTER(&htim2), (int16_t)__HAL_TIM_GET_COUNTER(&htim3),
+                   (int16_t)__HAL_TIM_GET_COUNTER(&htim4));
         }
     }
 }
