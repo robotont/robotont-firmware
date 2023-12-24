@@ -8,20 +8,20 @@
 #include "sw_enc.h"
 #include "ioif.h"
 
-// TODO remove
-typedef struct
-{
-    GPIO_TypeDef *nsleep_port;
-    GPIO_TypeDef *en1_port;
-    GPIO_TypeDef *en2_port;
-    GPIO_TypeDef *fault_port;
-    GPIO_TypeDef *ipropi_port;
-    uint16_t nsleep_pin;
-    uint16_t en1_pin;
-    uint16_t en2_pin;
-    uint16_t fault_pin;
-    uint16_t ipropi_pin;
-} MotorCfgType;
+// // TODO remove
+// typedef struct
+// {
+//     GPIO_TypeDef *nsleep_port;
+//     GPIO_TypeDef *en1_port;
+//     GPIO_TypeDef *en2_port;
+//     GPIO_TypeDef *fault_port;
+//     GPIO_TypeDef *ipropi_port;
+//     uint16_t nsleep_pin;
+//     uint16_t en1_pin;
+//     uint16_t en2_pin;
+//     uint16_t fault_pin;
+//     uint16_t ipropi_pin;
+// } MotorCfgType;
 
 typedef struct
 {
@@ -38,7 +38,7 @@ typedef struct
 {
     MotorPinoutType *pinout;
 
-    MotorCfgType *ptr_motor_config;
+    // MotorCfgType *ptr_motor_config;
 
     
     double linear_velocity;
@@ -56,7 +56,7 @@ typedef struct
 
 } MotorHandleType;
 
-void motor_init(MotorHandleType *ptr_motor, MotorCfgType *pinout, MotorPinoutType *ptr_pinout, TIM_HandleTypeDef *pwm_timer);
+void motor_init(MotorHandleType *ptr_motor, MotorPinoutType *ptr_pinout, TIM_HandleTypeDef *pwm_timer);
 void motor_update(MotorHandleType *ptr_motor);
 void motor_debug(MotorHandleType *ptr_motor);
 void motor_enable(MotorHandleType *ptr_motor);

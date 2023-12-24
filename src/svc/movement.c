@@ -64,15 +64,13 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     ptr_motor1 = m1_handler;
     ptr_motor2 = m2_handler;
 
-    MotorCfgType mcfg0, mcfg1, mcfg2;
     MotorPinoutType m0_pinout, m1_pinout, m2_pinout;
 
-    motor_cfg_setConfig(&mcfg0, &mcfg1, &mcfg2);
     motor_configurePinout(&m0_pinout, &m1_pinout, &m2_pinout);
 
-    motor_init(ptr_motor0, &mcfg0, &m0_pinout, &htim11);
-    motor_init(ptr_motor1, &mcfg1, &m1_pinout, &htim13);
-    motor_init(ptr_motor2, &mcfg2, &m2_pinout, &htim14);
+    motor_init(ptr_motor0, &m0_pinout, &htim11);
+    motor_init(ptr_motor1, &m1_pinout, &htim13);
+    motor_init(ptr_motor2, &m2_pinout, &htim14);
     odom_init(&hodom);
 
     initPID();

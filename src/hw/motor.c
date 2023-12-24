@@ -11,20 +11,20 @@
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
 
-void motor_init(MotorHandleType *ptr_motor, MotorCfgType *pinout, MotorPinoutType *ptr_pinout, TIM_HandleTypeDef *pwm_timer)
+void motor_init(MotorHandleType *ptr_motor, MotorPinoutType *ptr_pinout, TIM_HandleTypeDef *pwm_timer)
 {
     ioif_init();
 
     ptr_motor->pinout = ptr_pinout; // TODO test
     ptr_motor->pwm_pin_t = ptr_pinout->en1_pin;
 
-    ptr_motor->ptr_motor_config = pinout;
+    // ptr_motor->ptr_motor_config = pinout;
     ptr_motor->effort = 0;
     ptr_motor->effort_limit = 300;
     ptr_motor->linear_velocity = 0;
     ptr_motor->linear_velocity_setpoint = 0;
-    ptr_motor->pwm_port = pinout->en1_port;
-    ptr_motor->pwm_pin = pinout->en1_pin;
+    // ptr_motor->pwm_port = pinout->en1_port;
+    // ptr_motor->pwm_pin = pinout->en1_pin;
     ptr_motor->effort_output_reg = pwm_timer->Instance->CCR1; // TODO remove direct register write
     ptr_motor->last_enc_update = 0;
     ptr_motor->htim = pwm_timer;
@@ -46,26 +46,28 @@ void motor_update(MotorHandleType *ptr_motor)
     if (ptr_motor->effort > effort_epsilon)
     {
         // Forward
-        ptr_motor->pwm_port = ptr_motor->ptr_motor_config->en1_port;
-        ptr_motor->pwm_pin = ptr_motor->ptr_motor_config->en1_pin;
+        // ptr_motor->pwm_port = ptr_motor->ptr_motor_config->en1_port;
+        // ptr_motor->pwm_pin = ptr_motor->ptr_motor_config->en1_pin;
 
         ptr_motor->pwm_pin_t = ptr_motor->pinout->en1_pin; // TODO
 
         *(ptr_motor->effort_output_reg) = abs(ptr_motor->effort);
-        HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->en2_port, ptr_motor->ptr_motor_config->en2_pin, RESET);
+        ioif_writePin(&ptr_motor->pinout->en2_pin, false);
+        // HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->en2_port, ptr_motor->ptr_motor_config->en2_pin, RESET);
         // motor_enable(ptr_motor);
         HAL_TIM_PWM_Start_IT(ptr_motor->htim, TIM_CHANNEL_1);
     }
     else if (ptr_motor->effort < -effort_epsilon)
     {
         // Reverse
-        ptr_motor->pwm_port = ptr_motor->ptr_motor_config->en2_port;
-        ptr_motor->pwm_pin = ptr_motor->ptr_motor_config->en2_pin;
+        // ptr_motor->pwm_port = ptr_motor->ptr_motor_config->en2_port;
+        // ptr_motor->pwm_pin = ptr_motor->ptr_motor_config->en2_pin;
 
         ptr_motor->pwm_pin_t = ptr_motor->pinout->en2_pin; // TODO
 
         *(ptr_motor->effort_output_reg) = abs(ptr_motor->effort);
-        HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->en1_port, ptr_motor->ptr_motor_config->en1_pin, RESET);
+        // HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->en1_port, ptr_motor->ptr_motor_config->en1_pin, RESET);
+        ioif_writePin(&ptr_motor->pinout->en1_pin, false);
         // motor_enable(ptr_motor);
         HAL_TIM_PWM_Start_IT(ptr_motor->htim, TIM_CHANNEL_1);
     }
@@ -88,7 +90,7 @@ void motor_update(MotorHandleType *ptr_motor)
     // Calculate the relation between an encoder pulse and
     // linear speed on the wheel where it contacts the ground
     // CCW is positive when looking from the motor towards the wheel
-    #if 0
+    #if 0 // TODO continue this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (ptr_motor->last_enc_update)
     {
         float dt_sec = (HAL_GetTick() - ptr_motor->last_enc_update) / 1000.0f;
@@ -102,12 +104,14 @@ void motor_update(MotorHandleType *ptr_motor)
 
 void motor_enable(MotorHandleType *ptr_motor)
 {
-    HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->nsleep_port, ptr_motor->ptr_motor_config->nsleep_pin, SET);
+    ioif_writePin(&ptr_motor->pinout->nsleep_pin, true);
+    // HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->nsleep_port, ptr_motor->ptr_motor_config->nsleep_pin, SET);
 }
 
 void motor_disable(MotorHandleType *ptr_motor)
 {
-    HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->nsleep_port, ptr_motor->ptr_motor_config->nsleep_pin, RESET);
+    ioif_writePin(&ptr_motor->pinout->nsleep_pin, false);
+    // HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->nsleep_port, ptr_motor->ptr_motor_config->nsleep_pin, RESET);
 }
 
 void motor_debug(MotorHandleType *ptr_motor)
