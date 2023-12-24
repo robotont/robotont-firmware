@@ -78,13 +78,20 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     initPID();
 
     // TODO [code quality] move to the motor, as separate function (e.g. initPins)
-    HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->en2_port, ptr_motor0->ptr_motor_config->en2_pin, RESET);
-    HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->en2_port, ptr_motor1->ptr_motor_config->en2_pin, RESET);
-    HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->en2_port, ptr_motor2->ptr_motor_config->en2_pin, RESET);
+
+    ioif_writePin(&ptr_motor0->pinout->en2_pin, false);
+    ioif_writePin(&ptr_motor1->pinout->en2_pin, false);
+    ioif_writePin(&ptr_motor2->pinout->en2_pin, false);
+    // HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->en2_port, ptr_motor0->ptr_motor_config->en2_pin, RESET);
+    // HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->en2_port, ptr_motor1->ptr_motor_config->en2_pin, RESET);
+    // HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->en2_port, ptr_motor2->ptr_motor_config->en2_pin, RESET);
     // Enable drv of motorX
-    HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->nsleep_port, ptr_motor0->ptr_motor_config->nsleep_pin, SET);
-    HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->nsleep_port, ptr_motor1->ptr_motor_config->nsleep_pin, SET);
-    HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->nsleep_port, ptr_motor2->ptr_motor_config->nsleep_pin, SET);
+    ioif_writePin(&ptr_motor0->pinout->nsleep_pin, true);
+    ioif_writePin(&ptr_motor1->pinout->nsleep_pin, true);
+    ioif_writePin(&ptr_motor2->pinout->nsleep_pin, true);
+    // HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->nsleep_port, ptr_motor0->ptr_motor_config->nsleep_pin, SET);
+    // HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->nsleep_port, ptr_motor1->ptr_motor_config->nsleep_pin, SET);
+    // HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->nsleep_port, ptr_motor2->ptr_motor_config->nsleep_pin, SET);
 }
 
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)

@@ -47,6 +47,9 @@ typedef struct
     double effort_limit;
     GPIO_TypeDef *pwm_port;
     uint16_t pwm_pin;
+
+    IoPinType pwm_pin_t;
+
     volatile uint32_t *effort_output_reg;
     TIM_HandleTypeDef *htim;
     uint32_t last_enc_update;

@@ -16,6 +16,7 @@ void motor_init(MotorHandleType *ptr_motor, MotorCfgType *pinout, MotorPinoutTyp
     ioif_init();
 
     ptr_motor->pinout = ptr_pinout; // TODO test
+    ptr_motor->pwm_pin_t = ptr_pinout->en1_pin;
 
     ptr_motor->ptr_motor_config = pinout;
     ptr_motor->effort = 0;
@@ -47,6 +48,9 @@ void motor_update(MotorHandleType *ptr_motor)
         // Forward
         ptr_motor->pwm_port = ptr_motor->ptr_motor_config->en1_port;
         ptr_motor->pwm_pin = ptr_motor->ptr_motor_config->en1_pin;
+
+        ptr_motor->pwm_pin_t = ptr_motor->pinout->en1_pin; // TODO
+
         *(ptr_motor->effort_output_reg) = abs(ptr_motor->effort);
         HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->en2_port, ptr_motor->ptr_motor_config->en2_pin, RESET);
         // motor_enable(ptr_motor);
@@ -57,6 +61,9 @@ void motor_update(MotorHandleType *ptr_motor)
         // Reverse
         ptr_motor->pwm_port = ptr_motor->ptr_motor_config->en2_port;
         ptr_motor->pwm_pin = ptr_motor->ptr_motor_config->en2_pin;
+
+        ptr_motor->pwm_pin_t = ptr_motor->pinout->en2_pin; // TODO
+
         *(ptr_motor->effort_output_reg) = abs(ptr_motor->effort);
         HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->en1_port, ptr_motor->ptr_motor_config->en1_pin, RESET);
         // motor_enable(ptr_motor);
@@ -69,7 +76,9 @@ void motor_update(MotorHandleType *ptr_motor)
         // //Disable driver
         *(ptr_motor->effort_output_reg) = effort_epsilon;
         HAL_TIM_PWM_Stop_IT(ptr_motor->htim, TIM_CHANNEL_1);
-        HAL_GPIO_WritePin(ptr_motor->pwm_port, ptr_motor->pwm_pin, RESET);
+
+        // HAL_GPIO_WritePin(ptr_motor->pwm_port, ptr_motor->pwm_pin, RESET);
+        ioif_writePin(&ptr_motor->pwm_pin_t, false); // TODO
 
         // motor_disable(ptr_motor);
     }
