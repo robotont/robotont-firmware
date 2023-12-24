@@ -28,7 +28,8 @@
             "stm32f4xx_it.h": "c",
             "peripheral.h": "c",
             "stm32f4xx_hal.h": "c",
-            "stdlib.h": "c"
+            "stdlib.h": "c",
+            "motor.h": "c"
         },
     },
     "extensions": {

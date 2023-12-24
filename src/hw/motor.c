@@ -11,15 +11,14 @@
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
 
-void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderType *ptr_sw_enc,
-                volatile uint32_t *effort_output_reg, TIM_HandleTypeDef *htim)
+void motor_init(MotorHandleType *ptr_motor, MotorCfgType *ptr_motor_config, volatile uint32_t *effort_output_reg,
+                TIM_HandleTypeDef *htim)
 {
     ioif_init();
 
     // TODO encoder init
 
     ptr_motor->ptr_motor_config = ptr_motor_config;
-    ptr_motor->ptr_sw_enc = ptr_sw_enc;
     ptr_motor->effort = 0;
     ptr_motor->effort_limit = 300;
     ptr_motor->linear_velocity = 0;
@@ -39,7 +38,7 @@ void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderTyp
     motor_update(ptr_motor);
 }
 
-void motor_update(MotorType *ptr_motor)
+void motor_update(MotorHandleType *ptr_motor)
 {
     double effort_epsilon = 100; // this is a counter value from where the motor exceeds its internal friction, also
                                  // instabilities in PWM generation occured with lower values.
@@ -81,6 +80,7 @@ void motor_update(MotorType *ptr_motor)
     // Calculate the relation between an encoder pulse and
     // linear speed on the wheel where it contacts the ground
     // CCW is positive when looking from the motor towards the wheel
+    #if 0
     if (ptr_motor->last_enc_update)
     {
         float dt_sec = (HAL_GetTick() - ptr_motor->last_enc_update) / 1000.0f;
@@ -89,19 +89,20 @@ void motor_update(MotorType *ptr_motor)
     }
     ptr_motor->last_enc_update = HAL_GetTick();
     ptr_motor->ptr_sw_enc->counter = 0; // reset counter
+    #endif
 }
 
-void motor_enable(MotorType *ptr_motor)
+void motor_enable(MotorHandleType *ptr_motor)
 {
     HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->nsleep_port, ptr_motor->ptr_motor_config->nsleep_pin, SET);
 }
 
-void motor_disable(MotorType *ptr_motor)
+void motor_disable(MotorHandleType *ptr_motor)
 {
     HAL_GPIO_WritePin(ptr_motor->ptr_motor_config->nsleep_port, ptr_motor->ptr_motor_config->nsleep_pin, RESET);
 }
 
-void motor_debug(MotorType *ptr_motor)
+void motor_debug(MotorHandleType *ptr_motor)
 {
     // printf("Vel: %ld\t", ptr_motor->linear_velocity);
     // printf("Effort: %ld\t", ptr_motor->effort);

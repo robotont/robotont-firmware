@@ -18,7 +18,7 @@
 #define MAX_LIN_VEL 0.4 // m/s
 #define MAX_ANG_VEL 1.0 // rad/s
 
-MotorType hm0, hm1, hm2;
+MotorHandleType hm0, hm1, hm2;
 
 int main(void)
 {
@@ -27,7 +27,9 @@ int main(void)
     ioif_init(); // TODO move to appropriate place
     // Service layer
     cmd_init();
-    movement_init(&hm0, &hm1, &hm2, NULL, NULL, NULL);
+
+    movement_init(&hm0, &hm1, &hm2);
+
     HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
@@ -39,9 +41,9 @@ int main(void)
     HAL_TIM_Base_Start_IT(&htim14);
     HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
 
-    TIM11->CCR1 = 150;
+    TIM11->CCR1 = 100;
     TIM13->CCR1 = 100;
-    TIM14->CCR1 = 200;
+    TIM14->CCR1 = 100;
 
     HAL_Delay(1000); // TODO investigate, is this required?
 

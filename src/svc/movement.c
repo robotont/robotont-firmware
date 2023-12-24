@@ -49,9 +49,9 @@ static volatile MotorSpeedType motor_speed = { 0.0f, 0.0f, 0.0f }; // TODO [debu
 static uint32_t priv_receive_time_ms;
 
 // TODO [code quality] get rid of pointers, pass data directly as an argument?
-static MotorType *ptr_motor0;
-static MotorType *ptr_motor1;
-static MotorType *ptr_motor2;
+static MotorHandleType *ptr_motor0;
+static MotorHandleType *ptr_motor1;
+static MotorHandleType *ptr_motor2;
 static PID_TypeDef hPID0, hPID1, hPID2;
 
 OdomType hodom;
@@ -59,17 +59,16 @@ MotorCfgType mcfg0, mcfg1, mcfg2; // TODO move to the local scope?
 
 static void initPID(void);
 
-void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2, EncoderType *ptr_enc0,
-                   EncoderType *ptr_enc1, EncoderType *ptr_enc2)
+void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler)
 {
-    ptr_motor0 = ptr_m0;
-    ptr_motor1 = ptr_m1;
-    ptr_motor2 = ptr_m2;
+    ptr_motor0 = m0_handler;
+    ptr_motor1 = m1_handler;
+    ptr_motor2 = m2_handler;
 
     motor_cfg_setConfig(&mcfg0, &mcfg1, &mcfg2);
-    motor_init(ptr_motor0, &mcfg0, ptr_enc0, &(TIM11->CCR1), &htim11);
-    motor_init(ptr_motor1, &mcfg1, ptr_enc1, &(TIM13->CCR1), &htim13);
-    motor_init(ptr_motor2, &mcfg2, ptr_enc2, &(TIM14->CCR1), &htim14);
+    motor_init(ptr_motor0, &mcfg0, &(TIM11->CCR1), &htim11);
+    motor_init(ptr_motor1, &mcfg1, &(TIM13->CCR1), &htim13);
+    motor_init(ptr_motor2, &mcfg2, &(TIM14->CCR1), &htim14);
     odom_init(&hodom, &mcfg0, &mcfg1, &mcfg2);
 
     initPID();

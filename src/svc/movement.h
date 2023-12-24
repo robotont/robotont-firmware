@@ -14,8 +14,7 @@
 #include "motor.h"
 #include "sw_enc.h"
 
-void movement_init(MotorType *ptr_m0, MotorType *ptr_m1, MotorType *ptr_m2, EncoderType *ptr_enc0,
-                   EncoderType *ptr_enc1, EncoderType *ptr_enc2);
+void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler);
 
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght);
 void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght);
