@@ -69,7 +69,7 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     motor_init(ptr_motor0, &mcfg0, &(TIM11->CCR1), &htim11);
     motor_init(ptr_motor1, &mcfg1, &(TIM13->CCR1), &htim13);
     motor_init(ptr_motor2, &mcfg2, &(TIM14->CCR1), &htim14);
-    odom_init(&hodom, &mcfg0, &mcfg1, &mcfg2);
+    odom_init(&hodom);
 
     initPID();
 
