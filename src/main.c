@@ -32,6 +32,17 @@ int main(void)
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
+    HAL_TIM_Base_Start_IT(&htim11);
+    HAL_TIM_PWM_Start_IT(&htim11, TIM_CHANNEL_1);
+    HAL_TIM_Base_Start_IT(&htim13);
+    HAL_TIM_PWM_Start_IT(&htim13, TIM_CHANNEL_1);
+    HAL_TIM_Base_Start_IT(&htim14);
+    HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
+
+    TIM11->CCR1 = 150;
+    TIM13->CCR1 = 100;
+    TIM14->CCR1 = 200;
+
     HAL_Delay(1000); // TODO investigate, is this required?
 
     uint32_t counter = 0; // for debugging purposes
