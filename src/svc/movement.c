@@ -49,7 +49,6 @@ static MotorSpeedType motor_speed = { 0.0f, 0.0f, 0.0f };
 // TODO [code quality] for timeout logic, use state states? Updates states separately?
 static uint32_t priv_receive_time_ms;
 
-// TODO [code quality] get rid of pointers, pass data directly as an argument?
 static MotorHandleType *ptr_motor0;
 static MotorHandleType *ptr_motor1;
 static MotorHandleType *ptr_motor2;
@@ -61,24 +60,20 @@ static void initPID(void);
 
 void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler)
 {
-    ioif_init();
-    // timerif_init();
-
     ptr_motor0 = m0_handler;
     ptr_motor1 = m1_handler;
     ptr_motor2 = m2_handler;
+    MotorPinoutType m0_pinout;
+    MotorPinoutType m1_pinout;
+    MotorPinoutType m2_pinout;
 
-    MotorPinoutType m0_pinout, m1_pinout, m2_pinout;
-
+    ioif_init();
     motor_configurePinout(&m0_pinout, &m1_pinout, &m2_pinout);
-
     motor_init(ptr_motor0, &m0_pinout, TIMER_PWM_M0);
     motor_init(ptr_motor1, &m1_pinout, TIMER_PWM_M1);
     motor_init(ptr_motor2, &m2_pinout, TIMER_PWM_M2);
     odom_init(&hodom);
-
     initPID();
-
     timerif_init();
 }
 
