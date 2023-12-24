@@ -282,7 +282,7 @@ static void MX_TIM11_Init(void)
 }
 
 /**
- * @brief TIM13 Initialization Function (for calling PID_Compute)
+ * @brief TIM13 Initialization Function
  * @param None
  * @retval None
  */
@@ -292,7 +292,7 @@ static void MX_TIM13_Init(void)
     htim13.Instance = TIM13;
     htim13.Init.Prescaler = 80 - 1;
     htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim13.Init.Period = 1000 - 1; // 1 kHz
+    htim13.Init.Period = 1000 - 1;
     htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
@@ -314,20 +314,32 @@ static void MX_TIM13_Init(void)
 }
 
 /**
- * @brief TIM14 Initialization Function (used for encoders)
+ * @brief TIM14 Initialization Function
  * @param None
  * @retval None
  */
 static void MX_TIM14_Init(void)
 {
+    TIM_OC_InitTypeDef sConfigOC = { 0 };
     htim14.Instance = TIM14;
-    //  htim14.Init.Prescaler = 1600-1;
-    htim14.Init.Prescaler = 400 - 1;
+    htim14.Init.Prescaler = 80 - 1;
     htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim14.Init.Period = 2 - 1; // 10 kHz
+    htim14.Init.Period = 1000 - 1;
     htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    if (HAL_TIM_PWM_Init(&htim14) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sConfigOC.OCMode = TIM_OCMODE_PWM1;
+    sConfigOC.Pulse = 0;
+    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+    sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
+    if (HAL_TIM_PWM_ConfigChannel(&htim14, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
     {
         Error_Handler();
     }

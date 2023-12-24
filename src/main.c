@@ -19,7 +19,6 @@
 #define MAX_ANG_VEL 1.0 // rad/s
 
 MotorType hm0, hm1, hm2;
-EncoderType henc0, henc1, henc2;
 
 int main(void)
 {
@@ -28,7 +27,7 @@ int main(void)
     ioif_init(); // TODO move to appropriate place
     // Service layer
     cmd_init();
-    // movement_init(&hm0, &hm1, &hm2, &henc0, &henc1, &henc2);
+    movement_init(&hm0, &hm1, &hm2, NULL, NULL, NULL);
     HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
@@ -111,7 +110,7 @@ int _write(int file, char *ptr_data, int len)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     // Set PWM pin to high depending on which pwm timer triggered the interrupt
-    if (htim->Instance == htim3.Instance)
+    if (htim->Instance == htim14.Instance)
     {
         HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, SET);
     }
@@ -123,13 +122,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
         HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, SET);
     }
-    // Check if the timer for the encoder interrupt triggered
-    else if (htim->Instance == htim14.Instance)
-    {
-        sw_enc_interrupt(&henc0);
-        sw_enc_interrupt(&henc1);
-        sw_enc_interrupt(&henc2);
-    }
 }
 
 /**
@@ -139,7 +131,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
  */
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == htim3.Instance) // motor 0
+    if (htim->Instance == htim14.Instance) // motor 0
     {
         HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, RESET);
     }
