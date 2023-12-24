@@ -13,7 +13,6 @@
 
 void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_HandleTypeDef *pwm_timer)
 {
-    ioif_init();
 
     motor_handler->pinout = pinout;
     motor_handler->pwm_pin = pinout->en1_pin;
@@ -25,15 +24,12 @@ void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_Han
 
     motor_handler->pwm_timer = pwm_timer;
     motor_handler->effort_output_reg = pwm_timer->Instance->CCR1; // TODO remove direct register write
-   
 
-    // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
-    HAL_TIM_Base_Start_IT(pwm_timer);
-    HAL_TIM_PWM_Start_IT(pwm_timer, TIM_CHANNEL_1);
-
-    // Disable chip
     motor_disable(motor_handler);
     motor_update(motor_handler);
+
+    ioif_writePin(&motor_handler->pinout->en2_pin, false);
+    motor_enable(motor_handler);
 }
 
 void motor_update(MotorHandleType *ptr_motor)

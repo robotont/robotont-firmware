@@ -61,8 +61,9 @@ static void initPID(void);
 
 void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler)
 {
-    timerif_init();
-    
+    ioif_init();
+    // timerif_init();
+
     ptr_motor0 = m0_handler;
     ptr_motor1 = m1_handler;
     ptr_motor2 = m2_handler;
@@ -71,28 +72,14 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
 
     motor_configurePinout(&m0_pinout, &m1_pinout, &m2_pinout);
 
-    motor_init(ptr_motor0, &m0_pinout, &htim11);
-    motor_init(ptr_motor1, &m1_pinout, &htim13);
-    motor_init(ptr_motor2, &m2_pinout, &htim14);
+    motor_init(ptr_motor0, &m0_pinout, TIMER_PWM_M0);
+    motor_init(ptr_motor1, &m1_pinout, TIMER_PWM_M1);
+    motor_init(ptr_motor2, &m2_pinout, TIMER_PWM_M2);
     odom_init(&hodom);
 
     initPID();
 
-    // TODO [code quality] move to the motor, as separate function (e.g. initPins)
-
-    ioif_writePin(&ptr_motor0->pinout->en2_pin, false);
-    ioif_writePin(&ptr_motor1->pinout->en2_pin, false);
-    ioif_writePin(&ptr_motor2->pinout->en2_pin, false);
-    // HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->en2_port, ptr_motor0->ptr_motor_config->en2_pin, RESET);
-    // HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->en2_port, ptr_motor1->ptr_motor_config->en2_pin, RESET);
-    // HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->en2_port, ptr_motor2->ptr_motor_config->en2_pin, RESET);
-    // Enable drv of motorX
-    ioif_writePin(&ptr_motor0->pinout->nsleep_pin, true);
-    ioif_writePin(&ptr_motor1->pinout->nsleep_pin, true);
-    ioif_writePin(&ptr_motor2->pinout->nsleep_pin, true);
-    // HAL_GPIO_WritePin(ptr_motor0->ptr_motor_config->nsleep_port, ptr_motor0->ptr_motor_config->nsleep_pin, SET);
-    // HAL_GPIO_WritePin(ptr_motor1->ptr_motor_config->nsleep_port, ptr_motor1->ptr_motor_config->nsleep_pin, SET);
-    // HAL_GPIO_WritePin(ptr_motor2->ptr_motor_config->nsleep_port, ptr_motor2->ptr_motor_config->nsleep_pin, SET);
+    timerif_init();
 }
 
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)

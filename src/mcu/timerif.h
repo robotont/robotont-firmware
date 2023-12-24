@@ -14,10 +14,10 @@
 
 void timerif_init();
 
-void timerif_setEffort(TIM_HandleTypeDef *timer_handler);
+void timerif_setEffort(TIM_HandleTypeDef *timer_handler, int16_t effort);
 void timerif_enablePwmInterrupts(TIM_HandleTypeDef *timer_handler);
 void timerif_disablePwmInterrupts(TIM_HandleTypeDef *timer_handler);
 
-void timerif_getCounter(TIM_HandleTypeDef *timer_handler);
+int16_t timerif_getCounter(TIM_HandleTypeDef *timer_handler);
 
 #endif

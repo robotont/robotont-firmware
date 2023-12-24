@@ -13,6 +13,7 @@
 #include "pid.h"
 #include "sw_enc.h"
 #include "system_hal.h"
+#include "timerif.h"
 #include "usbif.h"
 
 #define MAX_LIN_VEL 0.4 // m/s
@@ -24,26 +25,13 @@ int main(void)
 {
     system_hal_init();
     peripheral_init();
-    ioif_init(); // TODO move to appropriate place
-    // Service layer
-    cmd_init();
 
+    cmd_init();
     movement_init(&hm0, &hm1, &hm2);
 
-    HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
-    HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
-    HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
-
-    HAL_TIM_Base_Start_IT(&htim11);
-    HAL_TIM_PWM_Start_IT(&htim11, TIM_CHANNEL_1);
-    HAL_TIM_Base_Start_IT(&htim13);
-    HAL_TIM_PWM_Start_IT(&htim13, TIM_CHANNEL_1);
-    HAL_TIM_Base_Start_IT(&htim14);
-    HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
-
-    TIM11->CCR1 = 100;
-    TIM13->CCR1 = 100;
-    TIM14->CCR1 = 100;
+    timerif_setEffort(TIMER_PWM_M0, 100);
+    timerif_setEffort(TIMER_PWM_M1, 100);
+    timerif_setEffort(TIMER_PWM_M2, 100);
 
     HAL_Delay(1000); // TODO investigate, is this required?
 
@@ -94,8 +82,8 @@ int main(void)
                 // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
             }
 
-            printf("%05d %05d %05d\r\n", (int16_t)__HAL_TIM_GET_COUNTER(&htim2), (int16_t)__HAL_TIM_GET_COUNTER(&htim3),
-                   (int16_t)__HAL_TIM_GET_COUNTER(&htim4));
+            printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
+                   timerif_getCounter(TIMER_ENC_M2));
         }
     }
 }
