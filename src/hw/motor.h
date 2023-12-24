@@ -53,8 +53,7 @@ typedef struct
 
 } MotorHandleType;
 
-void motor_init(MotorHandleType *ptr_motor, MotorCfgType *ptr_motor_config, volatile uint32_t *effort_output_reg,
-                TIM_HandleTypeDef *htim);
+void motor_init(MotorHandleType *ptr_motor, MotorCfgType *ptr_motor_config, TIM_HandleTypeDef *pwm_timer);
 void motor_update(MotorHandleType *ptr_motor);
 void motor_debug(MotorHandleType *ptr_motor);
 void motor_enable(MotorHandleType *ptr_motor);

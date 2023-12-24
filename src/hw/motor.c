@@ -11,12 +11,9 @@
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
 
-void motor_init(MotorHandleType *ptr_motor, MotorCfgType *ptr_motor_config, volatile uint32_t *effort_output_reg,
-                TIM_HandleTypeDef *htim)
+void motor_init(MotorHandleType *ptr_motor, MotorCfgType *ptr_motor_config, TIM_HandleTypeDef *pwm_timer)
 {
     ioif_init();
-
-    // TODO encoder init
 
     ptr_motor->ptr_motor_config = ptr_motor_config;
     ptr_motor->effort = 0;
@@ -25,13 +22,13 @@ void motor_init(MotorHandleType *ptr_motor, MotorCfgType *ptr_motor_config, vola
     ptr_motor->linear_velocity_setpoint = 0;
     ptr_motor->pwm_port = ptr_motor_config->en1_port;
     ptr_motor->pwm_pin = ptr_motor_config->en1_pin;
-    ptr_motor->effort_output_reg = effort_output_reg;
+    ptr_motor->effort_output_reg = pwm_timer->Instance->CCR1; // TODO remove direct register write
     ptr_motor->last_enc_update = 0;
-    ptr_motor->htim = htim;
+    ptr_motor->htim = pwm_timer;
 
     // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
-    HAL_TIM_Base_Start_IT(htim);
-    HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_1);
+    HAL_TIM_Base_Start_IT(pwm_timer);
+    HAL_TIM_PWM_Start_IT(pwm_timer, TIM_CHANNEL_1);
 
     // Disable chip
     motor_disable(ptr_motor);
