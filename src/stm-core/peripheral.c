@@ -20,12 +20,6 @@ TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 UART_HandleTypeDef huart3;
 
-static void MX_TIM2_Init(void);
-static void MX_TIM3_Init(void);
-static void MX_TIM4_Init(void);
-static void MX_TIM11_Init(void);
-static void MX_TIM13_Init(void);
-static void MX_TIM14_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
@@ -33,12 +27,6 @@ static void MX_USART3_UART_Init(void);
 
 void peripheral_init(void)
 {
-    MX_TIM2_Init();
-    MX_TIM3_Init();
-    MX_TIM4_Init();
-    MX_TIM11_Init();
-    MX_TIM13_Init();
-    MX_TIM14_Init();
     MX_CAN1_Init();
     MX_I2C1_Init();
     MX_I2C2_Init();
@@ -145,7 +133,7 @@ void MX_GPIO_Init(void)
   * @param None
   * @retval None
   */
-static void MX_TIM2_Init(void)
+void MX_TIM2_Init(void)
 {
     TIM_Encoder_InitTypeDef sConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
@@ -182,7 +170,7 @@ static void MX_TIM2_Init(void)
   * @param None
   * @retval None
   */
-static void MX_TIM3_Init(void)
+void MX_TIM3_Init(void)
 {
     TIM_Encoder_InitTypeDef sConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
@@ -218,7 +206,7 @@ static void MX_TIM3_Init(void)
   * @param None
   * @retval None
   */
-static void MX_TIM4_Init(void)
+void MX_TIM4_Init(void)
 {
     TIM_Encoder_InitTypeDef sConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
@@ -254,7 +242,7 @@ static void MX_TIM4_Init(void)
  * @param None
  * @retval None
  */
-static void MX_TIM11_Init(void)
+void MX_TIM11_Init(void)
 {
     TIM_OC_InitTypeDef sConfigOC = { 0 };
     htim11.Instance = TIM11;
@@ -286,7 +274,7 @@ static void MX_TIM11_Init(void)
  * @param None
  * @retval None
  */
-static void MX_TIM13_Init(void)
+void MX_TIM13_Init(void)
 {
     TIM_OC_InitTypeDef sConfigOC = { 0 };
     htim13.Instance = TIM13;
@@ -318,7 +306,7 @@ static void MX_TIM13_Init(void)
  * @param None
  * @retval None
  */
-static void MX_TIM14_Init(void)
+void MX_TIM14_Init(void)
 {
     TIM_OC_InitTypeDef sConfigOC = { 0 };
     htim14.Instance = TIM14;

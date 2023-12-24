@@ -18,12 +18,14 @@ void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_Han
     motor_handler->pinout = pinout;
     motor_handler->pwm_pin = pinout->en1_pin;
 
-    motor_handler->effort = 0;
-    motor_handler->linear_velocity = 0;
-    motor_handler->linear_velocity_setpoint = 0;
+    motor_handler->data->effort = 0;
+    motor_handler->data->linear_velocity = 0;
+    motor_handler->data->linear_velocity_setpoint = 0;
+    motor_handler->data->last_enc_update = 0;
+
+    motor_handler->pwm_timer = pwm_timer;
     motor_handler->effort_output_reg = pwm_timer->Instance->CCR1; // TODO remove direct register write
-    motor_handler->last_enc_update = 0;
-    motor_handler->htim = pwm_timer;
+   
 
     // Start timers for motor PWM generation (gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback)
     HAL_TIM_Base_Start_IT(pwm_timer);
@@ -39,30 +41,30 @@ void motor_update(MotorHandleType *ptr_motor)
     double effort_epsilon = 100; // this is a counter value from where the motor exceeds its internal friction, also
                                  // instabilities in PWM generation occured with lower values.
 
-    if (ptr_motor->effort > effort_epsilon)
+    if (ptr_motor->data->effort > effort_epsilon)
     {
         // Forward
         ptr_motor->pwm_pin = ptr_motor->pinout->en1_pin;
-        *(ptr_motor->effort_output_reg) = abs(ptr_motor->effort);
+        *(ptr_motor->effort_output_reg) = abs(ptr_motor->data->effort);
         ioif_writePin(&ptr_motor->pinout->en2_pin, false);
         // motor_enable(ptr_motor);
-        HAL_TIM_PWM_Start_IT(ptr_motor->htim, TIM_CHANNEL_1);
+        HAL_TIM_PWM_Start_IT(ptr_motor->pwm_timer, TIM_CHANNEL_1);
     }
-    else if (ptr_motor->effort < -effort_epsilon)
+    else if (ptr_motor->data->effort < -effort_epsilon)
     {
         // Reverse
         ptr_motor->pwm_pin = ptr_motor->pinout->en2_pin;
-        *(ptr_motor->effort_output_reg) = abs(ptr_motor->effort);
+        *(ptr_motor->effort_output_reg) = abs(ptr_motor->data->effort);
         ioif_writePin(&ptr_motor->pinout->en1_pin, false);
         // motor_enable(ptr_motor);
-        HAL_TIM_PWM_Start_IT(ptr_motor->htim, TIM_CHANNEL_1);
+        HAL_TIM_PWM_Start_IT(ptr_motor->pwm_timer, TIM_CHANNEL_1);
     }
     else
     {
         // effort is inbetween [-epsilon...epsilon]
         //Disable driver
         *(ptr_motor->effort_output_reg) = effort_epsilon;
-        HAL_TIM_PWM_Stop_IT(ptr_motor->htim, TIM_CHANNEL_1);
+        HAL_TIM_PWM_Stop_IT(ptr_motor->pwm_timer, TIM_CHANNEL_1);
         ioif_writePin(&ptr_motor->pwm_pin, false);
         // motor_disable(ptr_motor);
     }

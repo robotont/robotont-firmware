@@ -20,6 +20,7 @@
 #include "peripheral.h"
 #include "pid.h"
 #include "sw_enc.h"
+#include "timerif.h"
 
 // TODO [code quality] Move this define?
 #define PACKET_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped
@@ -60,6 +61,8 @@ static void initPID(void);
 
 void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler)
 {
+    timerif_init();
+    
     ptr_motor0 = m0_handler;
     ptr_motor1 = m1_handler;
     ptr_motor2 = m2_handler;
@@ -182,9 +185,9 @@ void movement_update()
         motor_speed.motor2 = 0.0f;
     }
 
-    ptr_motor0->linear_velocity_setpoint = motor_speed.motor0;
-    ptr_motor1->linear_velocity_setpoint = motor_speed.motor1;
-    ptr_motor2->linear_velocity_setpoint = motor_speed.motor2;
+    ptr_motor0->data->linear_velocity_setpoint = motor_speed.motor0;
+    ptr_motor1->data->linear_velocity_setpoint = motor_speed.motor1;
+    ptr_motor2->data->linear_velocity_setpoint = motor_speed.motor2;
 
     PID_Compute(&hPID0);
     PID_Compute(&hPID1);
@@ -194,8 +197,8 @@ void movement_update()
     motor_update(ptr_motor1);
     motor_update(ptr_motor2);
 
-    odom_update(&hodom, ptr_motor0->linear_velocity, ptr_motor1->linear_velocity, ptr_motor2->linear_velocity,
-                MAIN_LOOP_DT_MS / 1000.0f);
+    odom_update(&hodom, ptr_motor0->data->linear_velocity, ptr_motor1->data->linear_velocity, ptr_motor2->data->linear_velocity,
+               ( MAIN_LOOP_DT_MS / 1000.0f));
 
     printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
            hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
@@ -206,11 +209,11 @@ static void initPID(void)
     uint32_t pid_k = 600;
     uint32_t pid_i = 15000;
     uint32_t pid_d = 0;
-    PID(&hPID0, &(ptr_motor0->linear_velocity), &(ptr_motor0->effort), &(ptr_motor0->linear_velocity_setpoint), pid_k,
+    PID(&hPID0, &(ptr_motor0->data->linear_velocity), &(ptr_motor0->data->effort), &(ptr_motor0->data->linear_velocity_setpoint), pid_k,
         pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
-    PID(&hPID1, &(ptr_motor1->linear_velocity), &(ptr_motor1->effort), &(ptr_motor1->linear_velocity_setpoint), pid_k,
+    PID(&hPID1, &(ptr_motor1->data->linear_velocity), &(ptr_motor1->data->effort), &(ptr_motor1->data->linear_velocity_setpoint), pid_k,
         pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
-    PID(&hPID2, &(ptr_motor2->linear_velocity), &(ptr_motor2->effort), &(ptr_motor2->linear_velocity_setpoint), pid_k,
+    PID(&hPID2, &(ptr_motor2->data->linear_velocity), &(ptr_motor2->data->effort), &(ptr_motor2->data->linear_velocity_setpoint), pid_k,
         pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
 
     PID_SetMode(&hPID0, _PID_MODE_AUTOMATIC);

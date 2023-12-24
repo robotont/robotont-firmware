@@ -29,7 +29,8 @@
             "peripheral.h": "c",
             "stm32f4xx_hal.h": "c",
             "stdlib.h": "c",
-            "motor.h": "c"
+            "motor.h": "c",
+            "system_hal.h": "c"
         },
     },
     "extensions": {

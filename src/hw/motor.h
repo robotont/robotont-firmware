@@ -45,15 +45,10 @@ typedef struct
     MotorPinoutType *pinout;
     MotorDataType *data; // TODO implement
 
-    double linear_velocity;
-    double linear_velocity_setpoint;
-    double effort;
-    uint32_t last_enc_update;
-
     IoPinType pwm_pin;
 
     volatile uint32_t *effort_output_reg;
-    TIM_HandleTypeDef *htim;
+    TIM_HandleTypeDef *pwm_timer;
 
 } MotorHandleType;
 
