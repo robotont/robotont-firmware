@@ -11,17 +11,19 @@
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
 
-void motor_init(MotorHandleType *ptr_motor, MotorCfgType *ptr_motor_config, TIM_HandleTypeDef *pwm_timer)
+void motor_init(MotorHandleType *ptr_motor, MotorCfgType *pinout, MotorPinoutType *ptr_pinout, TIM_HandleTypeDef *pwm_timer)
 {
     ioif_init();
 
-    ptr_motor->ptr_motor_config = ptr_motor_config;
+    ptr_motor->pinout = ptr_pinout; // TODO test
+
+    ptr_motor->ptr_motor_config = pinout;
     ptr_motor->effort = 0;
     ptr_motor->effort_limit = 300;
     ptr_motor->linear_velocity = 0;
     ptr_motor->linear_velocity_setpoint = 0;
-    ptr_motor->pwm_port = ptr_motor_config->en1_port;
-    ptr_motor->pwm_pin = ptr_motor_config->en1_pin;
+    ptr_motor->pwm_port = pinout->en1_port;
+    ptr_motor->pwm_pin = pinout->en1_pin;
     ptr_motor->effort_output_reg = pwm_timer->Instance->CCR1; // TODO remove direct register write
     ptr_motor->last_enc_update = 0;
     ptr_motor->htim = pwm_timer;

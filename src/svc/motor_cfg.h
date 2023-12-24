@@ -19,5 +19,6 @@
 #define ENCODER_CPR        64 // TODO move to enc
 
 void motor_cfg_setConfig(MotorCfgType *ptr_motor1_config, MotorCfgType *ptr_motor2_config, MotorCfgType *ptr_motor3_config);
+void motor_configurePinout(MotorPinoutType *pinout_m0, MotorPinoutType *pinout_m1, MotorPinoutType *pinout_m2);
 
 #endif

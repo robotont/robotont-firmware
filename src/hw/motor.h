@@ -53,7 +53,7 @@ typedef struct
 
 } MotorHandleType;
 
-void motor_init(MotorHandleType *ptr_motor, MotorCfgType *ptr_motor_config, TIM_HandleTypeDef *pwm_timer);
+void motor_init(MotorHandleType *ptr_motor, MotorCfgType *pinout, MotorPinoutType *ptr_pinout, TIM_HandleTypeDef *pwm_timer);
 void motor_update(MotorHandleType *ptr_motor);
 void motor_debug(MotorHandleType *ptr_motor);
 void motor_enable(MotorHandleType *ptr_motor);

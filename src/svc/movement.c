@@ -42,8 +42,8 @@ typedef struct
 } RobotVelocityType;
 
 // TODO [code quality] consider use setters and getters instead of globals?
-static volatile RobotVelocityType velocity = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-static volatile MotorSpeedType motor_speed = { 0.0f, 0.0f, 0.0f }; // TODO [debug] remove volatile, debug
+static RobotVelocityType velocity = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+static MotorSpeedType motor_speed = { 0.0f, 0.0f, 0.0f };
 
 // TODO [code quality] for timeout logic, use state states? Updates states separately?
 static uint32_t priv_receive_time_ms;
@@ -55,7 +55,6 @@ static MotorHandleType *ptr_motor2;
 static PID_TypeDef hPID0, hPID1, hPID2;
 
 OdomType hodom;
-MotorCfgType mcfg0, mcfg1, mcfg2; // TODO move to the local scope?
 
 static void initPID(void);
 
@@ -65,10 +64,15 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     ptr_motor1 = m1_handler;
     ptr_motor2 = m2_handler;
 
+    MotorCfgType mcfg0, mcfg1, mcfg2;
+    MotorPinoutType m0_pinout, m1_pinout, m2_pinout;
+
     motor_cfg_setConfig(&mcfg0, &mcfg1, &mcfg2);
-    motor_init(ptr_motor0, &mcfg0, &htim11);
-    motor_init(ptr_motor1, &mcfg1, &htim13);
-    motor_init(ptr_motor2, &mcfg2, &htim14);
+    motor_configurePinout(&m0_pinout, &m1_pinout, &m2_pinout);
+
+    motor_init(ptr_motor0, &mcfg0, &m0_pinout, &htim11);
+    motor_init(ptr_motor1, &mcfg1, &m1_pinout, &htim13);
+    motor_init(ptr_motor2, &mcfg2, &m2_pinout, &htim14);
     odom_init(&hodom);
 
     initPID();
