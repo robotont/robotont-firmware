@@ -6,7 +6,6 @@
 #include "ioif.h"
 #include "stm32f4xx_hal.h"
 #include "sw_enc.h"
-#include "ioif.h"
 
 // // TODO remove
 // typedef struct
@@ -33,26 +32,28 @@ typedef struct
 
 } MotorPinoutType;
 
+typedef struct
+{
+    double linear_velocity;
+    double linear_velocity_setpoint;
+    double effort;
+    uint32_t last_enc_update;
+} MotorDataType;
 
 typedef struct
 {
     MotorPinoutType *pinout;
+    MotorDataType *data; // TODO implement
 
-    // MotorCfgType *ptr_motor_config;
-
-    
     double linear_velocity;
     double linear_velocity_setpoint;
     double effort;
-    double effort_limit;
-    GPIO_TypeDef *pwm_port;
-    uint16_t pwm_pin;
+    uint32_t last_enc_update;
 
-    IoPinType pwm_pin_t;
+    IoPinType pwm_pin;
 
     volatile uint32_t *effort_output_reg;
     TIM_HandleTypeDef *htim;
-    uint32_t last_enc_update;
 
 } MotorHandleType;
 
