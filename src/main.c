@@ -33,7 +33,7 @@ int main(void)
     timerif_setEffort(TIMER_PWM_M1, 100);
     timerif_setEffort(TIMER_PWM_M2, 100);
 
-    HAL_Delay(1000); // TODO investigate, is this required?
+    // HAL_Delay(1000);
 
     uint32_t counter = 0; // for debugging purposes
     uint32_t duty = 0;    // for debugging purposes

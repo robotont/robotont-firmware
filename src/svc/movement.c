@@ -22,8 +22,12 @@
 #include "sw_enc.h"
 #include "timerif.h"
 
-// TODO [code quality] Move this define?
-#define PACKET_TIMEOUT_MS 1000 // If velocity command is not received within this period all motors are stopped
+/* If velocity command is not received within this period all motors are stopped */
+#define PACKET_TIMEOUT_MS 1000
+
+#define PID_KP            600u
+#define PID_KI            15000u
+#define PID_KD            0u
 
 /* Speed that goes as an input to the PID controller of the each motor */
 typedef struct
@@ -42,37 +46,39 @@ typedef struct
     float mag; // magnitude (polar)
 } RobotVelocityType;
 
-// TODO [code quality] consider use setters and getters instead of globals?
+/* Runtime variables */
+
 static RobotVelocityType velocity = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-static MotorSpeedType motor_speed = { 0.0f, 0.0f, 0.0f };
+static MotorSpeedType motor_speed = { 0.0f, 0.0f, 0.0f }; /* Target motor speed, that received from CMD handler */
 
-// TODO [code quality] for timeout logic, use state states? Updates states separately?
-static uint32_t priv_receive_time_ms;
+static uint32_t priv_receive_time_ms; /* Last time, when command received. Based on that calculated timeout */
 
-static MotorHandleType *ptr_motor0;
-static MotorHandleType *ptr_motor1;
-static MotorHandleType *ptr_motor2;
-static PID_TypeDef hPID0, hPID1, hPID2;
-
-OdomType hodom;
+static MotorHandleType *motor0_handler;
+static MotorHandleType *motor1_handler;
+static MotorHandleType *motor2_handler;
+static PID_TypeDef pid0_handler;
+static PID_TypeDef pid1_handler;
+static PID_TypeDef pid2_handler;
+OdomType *odom_handler;
 
 static void initPID(void);
+static void printOdom(void);
 
 void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler)
 {
-    ptr_motor0 = m0_handler;
-    ptr_motor1 = m1_handler;
-    ptr_motor2 = m2_handler;
-    MotorPinoutType m0_pinout;
-    MotorPinoutType m1_pinout;
-    MotorPinoutType m2_pinout;
+    motor0_handler = m0_handler;
+    motor1_handler = m1_handler;
+    motor2_handler = m2_handler;
+    MotorPinoutType motor0_pinout;
+    MotorPinoutType motor1_pinout;
+    MotorPinoutType motor2_pinout;
 
     ioif_init();
-    motor_configurePinout(&m0_pinout, &m1_pinout, &m2_pinout);
-    motor_init(ptr_motor0, &m0_pinout, TIMER_PWM_M0);
-    motor_init(ptr_motor1, &m1_pinout, TIMER_PWM_M1);
-    motor_init(ptr_motor2, &m2_pinout, TIMER_PWM_M2);
-    odom_init(&hodom);
+    motor_configurePinout(&motor0_pinout, &motor1_pinout, &motor2_pinout);
+    motor_init(motor0_handler, &motor0_pinout, TIMER_PWM_M0);
+    motor_init(motor1_handler, &motor1_pinout, TIMER_PWM_M1);
+    motor_init(motor2_handler, &motor2_pinout, TIMER_PWM_M2);
+    odom_init(odom_handler);
     initPID();
     timerif_init();
 }
@@ -167,44 +173,63 @@ void movement_update()
         motor_speed.motor2 = 0.0f;
     }
 
-    ptr_motor0->data->linear_velocity_setpoint = motor_speed.motor0;
-    ptr_motor1->data->linear_velocity_setpoint = motor_speed.motor1;
-    ptr_motor2->data->linear_velocity_setpoint = motor_speed.motor2;
+    motor0_handler->data->linear_velocity_setpoint = motor_speed.motor0;
+    motor1_handler->data->linear_velocity_setpoint = motor_speed.motor1;
+    motor2_handler->data->linear_velocity_setpoint = motor_speed.motor2;
 
-    PID_Compute(&hPID0);
-    PID_Compute(&hPID1);
-    PID_Compute(&hPID2);
+    PID_Compute(&pid0_handler);
+    PID_Compute(&pid1_handler);
+    PID_Compute(&pid2_handler);
 
-    motor_update(ptr_motor0);
-    motor_update(ptr_motor1);
-    motor_update(ptr_motor2);
+    motor_update(motor0_handler);
+    motor_update(motor1_handler);
+    motor_update(motor2_handler);
 
-    odom_update(&hodom, ptr_motor0->data->linear_velocity, ptr_motor1->data->linear_velocity, ptr_motor2->data->linear_velocity,
-               ( MAIN_LOOP_DT_MS / 1000.0f));
+    odom_update(odom_handler, motor0_handler->data->linear_velocity, motor1_handler->data->linear_velocity,
+                motor2_handler->data->linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
 
-    printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", hodom.odom_pos_data[0], hodom.odom_pos_data[1], hodom.odom_pos_data[2],
-           hodom.robot_vel_data[0], hodom.robot_vel_data[1], hodom.robot_vel_data[2]);
+    printOdom();
 }
 
 static void initPID(void)
 {
-    uint32_t pid_k = 600;
-    uint32_t pid_i = 15000;
-    uint32_t pid_d = 0;
-    PID(&hPID0, &(ptr_motor0->data->linear_velocity), &(ptr_motor0->data->effort), &(ptr_motor0->data->linear_velocity_setpoint), pid_k,
-        pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
-    PID(&hPID1, &(ptr_motor1->data->linear_velocity), &(ptr_motor1->data->effort), &(ptr_motor1->data->linear_velocity_setpoint), pid_k,
-        pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
-    PID(&hPID2, &(ptr_motor2->data->linear_velocity), &(ptr_motor2->data->effort), &(ptr_motor2->data->linear_velocity_setpoint), pid_k,
-        pid_i, pid_d, _PID_P_ON_E, _PID_CD_DIRECT);
+    double *ptr_input;
+    double *ptr_output;
+    double *ptr_setpoint;
 
-    PID_SetMode(&hPID0, _PID_MODE_AUTOMATIC);
-    PID_SetOutputLimits(&hPID0, -1000, 1000);
-    PID_SetSampleTime(&hPID0, MAIN_LOOP_DT_MS);
-    PID_SetMode(&hPID1, _PID_MODE_AUTOMATIC);
-    PID_SetOutputLimits(&hPID1, -1000, 1000);
-    PID_SetSampleTime(&hPID1, MAIN_LOOP_DT_MS);
-    PID_SetMode(&hPID2, _PID_MODE_AUTOMATIC);
-    PID_SetOutputLimits(&hPID2, -1000, 1000);
-    PID_SetSampleTime(&hPID2, MAIN_LOOP_DT_MS);
+    ptr_input = &(motor0_handler->data->linear_velocity);
+    ptr_output = &(motor0_handler->data->effort);
+    ptr_setpoint = &(motor0_handler->data->linear_velocity_setpoint);
+    PID(&pid0_handler, ptr_input, ptr_output, ptr_setpoint, PID_KP, PID_KI, PID_KD, _PID_P_ON_E, _PID_CD_DIRECT);
+
+    ptr_input = &(motor1_handler->data->linear_velocity);
+    ptr_output = &(motor1_handler->data->effort);
+    ptr_setpoint = &(motor1_handler->data->linear_velocity_setpoint);
+    PID(&pid1_handler, ptr_input, ptr_output, ptr_setpoint, PID_KP, PID_KI, PID_KD, _PID_P_ON_E, _PID_CD_DIRECT);
+
+    ptr_input = &(motor2_handler->data->linear_velocity);
+    ptr_output = &(motor2_handler->data->effort);
+    ptr_setpoint = &(motor2_handler->data->linear_velocity_setpoint);
+    PID(&pid2_handler, ptr_input, ptr_output, ptr_setpoint, PID_KP, PID_KI, PID_KD, _PID_P_ON_E, _PID_CD_DIRECT);
+
+    PID_SetMode(&pid0_handler, _PID_MODE_AUTOMATIC);
+    PID_SetMode(&pid1_handler, _PID_MODE_AUTOMATIC);
+    PID_SetMode(&pid2_handler, _PID_MODE_AUTOMATIC);
+    PID_SetOutputLimits(&pid0_handler, -1000.0f, 1000.0f);
+    PID_SetOutputLimits(&pid1_handler, -1000.0f, 1000.0f);
+    PID_SetOutputLimits(&pid2_handler, -1000.0f, 1000.0f);
+    PID_SetSampleTime(&pid0_handler, MAIN_LOOP_DT_MS);
+    PID_SetSampleTime(&pid1_handler, MAIN_LOOP_DT_MS);
+    PID_SetSampleTime(&pid2_handler, MAIN_LOOP_DT_MS);
+}
+
+static void printOdom(void)
+{
+    float pos_x = odom_handler->odom_pos_data[0];
+    float pos_y = odom_handler->odom_pos_data[1];
+    float pos_z = odom_handler->odom_pos_data[2];
+    float vel_x = odom_handler->robot_vel_data[0];
+    float vel_y = odom_handler->robot_vel_data[1];
+    float vel_z = odom_handler->robot_vel_data[2];
+    printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", pos_x, pos_y, pos_z, vel_x, vel_y, vel_z);
 }
