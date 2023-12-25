@@ -19,6 +19,13 @@
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
 
+/**
+ * @brief 
+ * 
+ * @param motor_handler 
+ * @param pinout 
+ * @param pwm_timer 
+ */
 void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_HandleTypeDef *pwm_timer)
 {
 
@@ -40,6 +47,11 @@ void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_Han
     motor_enable(motor_handler);
 }
 
+/**
+ * @brief 
+ * 
+ * @param ptr_motor 
+ */
 void motor_update(MotorHandleType *ptr_motor)
 {
     double effort_epsilon = 100; // this is a counter value from where the motor exceeds its internal friction, also
@@ -90,16 +102,31 @@ void motor_update(MotorHandleType *ptr_motor)
     #endif
 }
 
+/**
+ * @brief 
+ * 
+ * @param ptr_motor 
+ */
 void motor_enable(MotorHandleType *ptr_motor)
 {
     ioif_writePin(&ptr_motor->pinout->nsleep_pin, true);
 }
 
+/**
+ * @brief 
+ * 
+ * @param ptr_motor 
+ */
 void motor_disable(MotorHandleType *ptr_motor)
 {
     ioif_writePin(&ptr_motor->pinout->nsleep_pin, false);
 }
 
+/**
+ * @brief 
+ * 
+ * @param ptr_motor 
+ */
 void motor_debug(MotorHandleType *ptr_motor)
 {
     // printf("Vel: %ld\t", ptr_motor->linear_velocity);
