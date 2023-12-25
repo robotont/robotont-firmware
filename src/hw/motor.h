@@ -1,6 +1,11 @@
 /**
  * @file motor.h
- * @brief
+ * @brief HW motor driver.
+ *
+ * Main task is to update speed of the motor.
+ * Two timers used for each motor: PWM Timer for pulse generation and Ecnoder Timer for reading wheel position.
+ * PWM pulse generated in timer interrupt context.
+ * Encoder value read in polling context and speed calculated based on counter change speed.
  *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool

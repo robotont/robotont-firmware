@@ -1,6 +1,12 @@
 /**
  * @file motor.c
- * @brief
+ * @brief HW motor driver.
+ *
+ * Main task is to update speed of the motor.
+ * Two timers used for each motor: PWM Timer for pulse generation and Ecnoder Timer for reading wheel position.
+ * PWM pulse generated in timer interrupt context.
+ * Raw effort values are about 100 - 800 (bettween minimal and maximal motor speed)
+ * Encoder value read in polling context and speed calculated based on counter change speed.
  *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool
@@ -20,16 +26,10 @@
 #include "stm32f4xx_hal.h"
 #include "timerif.h"
 
-#define EFFORT_EPSILON 75
-
-static double calculateMotorSpeed(int16_t encoder_counter, uint32_t timestamp);
+#define EFFORT_EPSILON 90 /* If effort value is less, then PWM pulse is not string enogh to run the motor */
 
 /**
- * @brief
- *
- * @param motor_handler
- * @param pinout
- * @param pwm_timer
+ * @brief Initializes given motor
  */
 void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_HandleTypeDef *pwm_timer,
                 TIM_HandleTypeDef *enc_timer)
@@ -57,7 +57,7 @@ void motor_update(MotorHandleType *motor_handler)
     uint16_t effort;
     int16_t enc_counter;
     uint32_t current_timestamp;
-    
+
     /* Updates PWM pins based on effort value. Positive direction is pin EN1, negative - EN2 */
     if (motor_handler->effort >= EFFORT_EPSILON)
     {
@@ -91,15 +91,9 @@ void motor_update(MotorHandleType *motor_handler)
         pulse_to_speed_ratio = 1.0f / MOTOR_ENC_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_OUTER_R;
         linear_velocity = enc_counter * pulse_to_speed_ratio;
 
-        printf("ok: %f\r\n", linear_velocity);
+        motor_handler->linear_velocity = linear_velocity;
     }
-
-    current_timestamp = system_hal_timestamp();
-    enc_counter = timerif_getCounter(motor_handler->enc_timer);
-    linear_velocity = calculateMotorSpeed(enc_counter, current_timestamp);
-    printf("vs: %f\r\n", linear_velocity);
     timerif_resetCounter(motor_handler->enc_timer);
-    motor_handler->linear_velocity = linear_velocity;
     motor_handler->prev_enc_timestamp = system_hal_timestamp();
 }
 
@@ -119,20 +113,4 @@ void motor_disable(MotorHandleType *motor_handler)
 {
     timerif_disablePwmInterrupts(motor_handler->pwm_timer);
     ioif_writePin(&motor_handler->pinout->nsleep_pin, false);
-}
-
-static double calculateMotorSpeed(int16_t encoder_counter, uint32_t timestamp)
-{
-    static uint32_t prev_timestamp = 0u;
-    double pulse_to_speed_ratio;
-    double dt_sec;
-    double speed;
-
-    dt_sec = (timestamp - prev_timestamp) / 100.0f;
-    pulse_to_speed_ratio = 1.0f / MOTOR_ENC_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_OUTER_R;
-    speed = encoder_counter * pulse_to_speed_ratio;
-
-    prev_timestamp = timestamp;
-    return speed;
-
 }
