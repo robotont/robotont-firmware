@@ -87,22 +87,5 @@ int main(void)
     }
 }
 
-/**
- * @brief  Retargets the C library printf function to the VIRTUAL COM PORT.
- */
-int _write(int file, char *ptr_data, int len)
-{
-    uint8_t result = len;
-    static uint8_t transmit_status = USBD_OK;
-
-    transmit_status = CDC_Transmit_FS((uint8_t *)ptr_data, len);
-    if (transmit_status == USBD_FAIL)
-    {
-        Error_Handler();
-        result = 0U;
-    }
-
-    return result;
-}
 
 

@@ -1,4 +1,16 @@
 
+/**
+ * @file timerif.h
+ * @brief Timer interface wrapper over CubeMX generated MX_USB HAL
+ *
+ * Only particula timers are in use, they are pre-defined in .ioc file:
+ * Timers 2, 3 and 4 in encoder mode
+ * Timers 11, 13, 14 in PWM IT mode
+ *
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
+
 #ifndef TIMERIF
 #define TIMERIF
 

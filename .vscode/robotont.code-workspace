@@ -30,7 +30,8 @@
             "stm32f4xx_hal.h": "c",
             "stdlib.h": "c",
             "motor.h": "c",
-            "system_hal.h": "c"
+            "system_hal.h": "c",
+            "motor_cfg.h": "c"
         },
     },
     "extensions": {

@@ -1,7 +1,22 @@
+/**
+ * @file motor_cfg.c
+ * @brief PWM motor configuration source file, contains pinout selection
+ *
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
+
 #include "motor_cfg.h"
 
 #include "peripheral.h"
 
+/**
+ * @brief Assigns all motor pins in the configuration struct
+ * 
+ * @param pinout_m0 [out] Motor 0 pinout struct
+ * @param pinout_m1 [out] Motor 1 pinout struct
+ * @param pinout_m2 [out] Motor 2 pinout struct
+ */
 void motor_configurePinout(MotorPinoutType *pinout_m0, MotorPinoutType *pinout_m1, MotorPinoutType *pinout_m2)
 {
     pinout_m0->nsleep_pin.ptr_port = PIN_M0_NSLEEP_GPIO_Port;

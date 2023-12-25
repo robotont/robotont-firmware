@@ -1,5 +1,13 @@
-#ifndef __MOTOR_H__
-#define __MOTOR_H__
+/**
+ * @file motor.h
+ * @brief 
+ * 
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
+
+#ifndef MOTOR_H
+#define MOTOR_H
 
 #include <stdint.h>
 
@@ -27,11 +35,11 @@ typedef struct
 typedef struct
 {
     MotorPinoutType *pinout;
-    MotorDataType *data; // TODO implement
+    MotorDataType *data;
 
     IoPinType pwm_pin;
 
-    volatile uint32_t *effort_output_reg;
+    volatile uint32_t *effort_output_reg; // TODO remove
     TIM_HandleTypeDef *pwm_timer;
 
 } MotorHandleType;

@@ -1,6 +1,13 @@
 /**
  * @file movement.c
- * @brief
+ * @brief Service. Makes robot move using omnimotional movement
+ *
+ * Robot is able to move by controlling speeds of three PWM motors.
+ * Speed is set by the user via serial (USB). If no data received within ~1s, then robot will stopped automaticly.
+ * Robot calculates and sends back odometry data via serial as well.
+ * All data is transfered as a string (char array) in the format "ARG:VALUE_0:...:VALUE_N\r\n".
+ *
+ * @note "\r\n" is used as a packet separator, so data will be collected until those symbols are received.
  *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool
@@ -21,12 +28,10 @@
 #include "pid.h"
 #include "timerif.h"
 
-/* If velocity command is not received within this period all motors are stopped */
-#define PACKET_TIMEOUT_MS 1000
-
-#define PID_KP            600u
-#define PID_KI            15000u
-#define PID_KD            0u
+#define PACKET_TIMEOUT_MS 1000   /* Timeout, if no new packets received, then all motors will be stopped */
+#define PID_KP            600u   /* Proportional coef*/
+#define PID_KI            15000u /* Integral coef*/
+#define PID_KD            0u     /* Derivative coef*/
 
 /* Speed that goes as an input to the PID controller of the each motor */
 typedef struct
@@ -36,21 +41,8 @@ typedef struct
     float motor2;
 } MotorSpeedType;
 
-typedef struct
-{
-    float x;   // linear (Cartesian)
-    float y;   // linear (Cartesian)
-    float z;   // angular (Cartesian)
-    float dir; // direction (polar)
-    float mag; // magnitude (polar)
-} RobotVelocityType;
-
-/* Runtime variables */
-
-static RobotVelocityType velocity = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-static MotorSpeedType motor_speed = { 0.0f, 0.0f, 0.0f }; /* Target motor speed, that received from CMD handler */
-
-static uint32_t priv_receive_time_ms; /* Last time, when command received. Based on that calculated timeout */
+static MotorSpeedType motor_speed;   /* Target motor speed, that received from CMD handler */
+static uint32_t last_packet_time_ms; /* Last time, when command received. Based on that calculated timeout */
 
 static MotorHandleType *motor0_handler;
 static MotorHandleType *motor1_handler;
@@ -62,11 +54,13 @@ OdomType *odom_handler;
 
 static void initPID(void);
 static void printOdom(void);
-static void pwmSetHigh(TIM_HandleTypeDef *timer_handler);
-static void pwmSetLow(TIM_HandleTypeDef *timer_handler);
 
 void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler)
 {
+    motor_speed.motor0 = 0.0f;
+    motor_speed.motor1 = 0.0f;
+    motor_speed.motor2 = 0.0f;
+
     motor0_handler = m0_handler;
     motor1_handler = m1_handler;
     motor2_handler = m2_handler;
@@ -93,24 +87,31 @@ void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
 {
     // TODO [implementation] error handler, if input is wrong (e.g. "MS:35,abcd\r\n")
 
-    char *token = strtok((char *)ptr_data, ":");
-    velocity.x = atof(token);
-    token = strtok(NULL, ":");
-    velocity.y = atof(token);
-    token = strtok(NULL, "\r\n");
-    velocity.z = atof(token);
+    float velocity_x;   // linear (Cartesian)
+    float velocity_y;   // linear (Cartesian)
+    float velocity_z;   // angular (Cartesian)
+    float velocity_dir; // direction (polar)
+    float velocity_mag; // magnitude (polar)
+    char *ptr_token;
 
-    velocity.dir = atan2(velocity.y, velocity.x);
-    velocity.mag = sqrt(SQUARE_OF(velocity.x) + SQUARE_OF(velocity.y));
+    ptr_token = strtok((char *)ptr_data, ":");
+    velocity_x = atof(ptr_token);
+    ptr_token = strtok(NULL, ":");
+    velocity_y = atof(ptr_token);
+    ptr_token = strtok(NULL, "\r\n");
+    velocity_z = atof(ptr_token);
 
-    velocity.mag = MIN(velocity.mag, MOTOR_MAX_LIN_VEL);
-    velocity.z = MAX(MIN(velocity.z, MOTOR_MAX_ANG_VEL), -MOTOR_MAX_ANG_VEL);
+    velocity_dir = atan2(velocity_y, velocity_x);
+    velocity_mag = sqrt(SQUARE_OF(velocity_x) + SQUARE_OF(velocity_y));
 
-    motor_speed.motor0 = velocity.mag * sin(velocity.dir - MOTOR_0_WHEEL_PHI) + MOTOR_WHEEL_R * velocity.z;
-    motor_speed.motor1 = velocity.mag * sin(velocity.dir - MOTOR_1_WHEEL_PHI) + MOTOR_WHEEL_R * velocity.z;
-    motor_speed.motor2 = velocity.mag * sin(velocity.dir - MOTOR_2_WHEEL_PHI) + MOTOR_WHEEL_R * velocity.z;
+    velocity_mag = MIN(velocity_mag, MOTOR_MAX_LIN_VEL);
+    velocity_z = MAX(MIN(velocity_z, MOTOR_MAX_ANG_VEL), -MOTOR_MAX_ANG_VEL);
 
-    priv_receive_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
+    motor_speed.motor0 = velocity_mag * sin(velocity_dir - MOTOR_0_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
+    motor_speed.motor1 = velocity_mag * sin(velocity_dir - MOTOR_1_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
+    motor_speed.motor2 = velocity_mag * sin(velocity_dir - MOTOR_2_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
+
+    last_packet_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
 }
 
 void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght)
@@ -124,7 +125,7 @@ void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght)
     token = strtok(NULL, "\r\n");
     motor_speed.motor2 = atof(token);
 
-    priv_receive_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
+    last_packet_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
 }
 
 void movement_handleCommandsEF(uint8_t *ptr_data, uint16_t lenght)
@@ -172,7 +173,7 @@ void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght)
 void movement_update()
 {
     uint32_t current_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
-    if (current_time_ms > priv_receive_time_ms + PACKET_TIMEOUT_MS)
+    if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
     {
         motor_speed.motor0 = 0.0f;
         motor_speed.motor1 = 0.0f;

@@ -1,3 +1,11 @@
+/**
+ * @file odom.c
+ * @brief Service. Calculates odometry paramters, based on fact, that robot is omnimotional with three motors
+ *
+ * @author Veiko Vunder
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
+
 #include "odom.h"
 
 #include <stdio.h>
