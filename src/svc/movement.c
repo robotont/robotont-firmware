@@ -165,33 +165,6 @@ void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght)
 
 void movement_update()
 {
-    /*
-    uint32_t current_time_ms = system_hal_timestamp();
-    if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
-    {
-        motor_speed.motor0 = 0.0f;
-        motor_speed.motor1 = 0.0f;
-        motor_speed.motor2 = 0.0f;
-    }
-
-    motor0_handler->linear_velocity_setpoint = motor_speed.motor0;
-    motor1_handler->linear_velocity_setpoint = motor_speed.motor1;
-    motor2_handler->linear_velocity_setpoint = motor_speed.motor2;
-
-    PID_Compute(&pid0_handler);
-    PID_Compute(&pid1_handler);
-    PID_Compute(&pid2_handler);
-    */
-
-    // motor0_handler->effort = motor_speed.motor0;
-    // motor1_handler->effort = motor_speed.motor1;
-    // motor2_handler->effort = motor_speed.motor2;
-
-    // printf("(%f %f %f) -> (%f %f %f) \r\n",
-    //     motor_speed.motor0, motor_speed.motor1, motor_speed.motor2,
-    //     motor0_handler->effort, motor1_handler->effort, motor2_handler->effort
-    // );
-
     if (motor_speed.is_manually_controled)
     {
         motor0_handler.effort = motor_speed.m0_effort;
@@ -201,18 +174,35 @@ void movement_update()
         motor_update(&motor0_handler);
         motor_update(&motor1_handler);
         motor_update(&motor2_handler);
+
+        printf("EF:%d:%d:%d\r\n", motor_speed.m0_effort, motor_speed.m1_effort, motor_speed.m2_effort);
     }
-    printf("\r\n");
+    else
+    {
+        uint32_t current_time_ms = system_hal_timestamp();
+        if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
+        {
+            motor_speed.motor0 = 0.0f;
+            motor_speed.motor1 = 0.0f;
+            motor_speed.motor2 = 0.0f;
+        }
 
-    // printf("%d %d %d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
-    //        timerif_getCounter(TIMER_ENC_M2));
+        motor0_handler.linear_velocity_setpoint = motor_speed.motor0;
+        motor1_handler.linear_velocity_setpoint = motor_speed.motor1;
+        motor2_handler.linear_velocity_setpoint = motor_speed.motor2;
 
-    /*
-    odom_update(odom_handler, motor0_handler->linear_velocity, motor1_handler->linear_velocity,
-                motor2_handler->linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
+        PID_Compute(&pid0_handler);
+        PID_Compute(&pid1_handler);
+        PID_Compute(&pid2_handler);
 
-    printOdom();
-    */
+        motor_update(&motor0_handler);
+        motor_update(&motor1_handler);
+        motor_update(&motor2_handler);
+
+        odom_update(&odom_handler, motor0_handler.linear_velocity, motor1_handler.linear_velocity,
+                    motor2_handler.linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
+        printOdom();
+    }
 }
 
 /**
