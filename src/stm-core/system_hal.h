@@ -9,9 +9,12 @@
 #ifndef _SYSCLK_H_
 #define _SYSCLK_H_
 
+#include <stdint.h>
+
 #define USE_FULL_ASSERT
 
 void system_hal_init(void);
+uint32_t system_hal_timestamp(void);
 void Error_Handler(void);
 
 #endif

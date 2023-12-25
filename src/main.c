@@ -22,11 +22,11 @@ int main(void)
 {
     system_hal_init();
     peripheral_init();
-
+    ioif_init();
+    timerif_init();
+    
     cmd_init();
     movement_init();
-
-    HAL_Delay(1000);
 
     uint32_t counter = 0; // for debugging purposes
     uint32_t duty = 0;    // for debugging purposes

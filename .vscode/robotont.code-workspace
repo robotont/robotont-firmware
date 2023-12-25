@@ -31,7 +31,8 @@
             "stdlib.h": "c",
             "motor.h": "c",
             "system_hal.h": "c",
-            "motor_cfg.h": "c"
+            "motor_cfg.h": "c",
+            "timerif.h": "c"
         },
     },
     "extensions": {

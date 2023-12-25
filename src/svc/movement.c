@@ -26,6 +26,7 @@
 #include "odom.h"
 #include "peripheral.h"
 #include "pid.h"
+#include "system_hal.h"
 #include "timerif.h"
 
 #define PACKET_TIMEOUT_MS 1000   /* Timeout, if no new packets received, then all motors will be stopped */
@@ -39,40 +40,46 @@ typedef struct
     float motor0;
     float motor1;
     float motor2;
+
+    bool is_manually_controled; /* In case of manual control, raw effort value used instead of target speed */
+    int16_t m0_effort;
+    int16_t m1_effort;
+    int16_t m2_effort;
 } MotorSpeedType;
 
 static MotorSpeedType motor_speed;   /* Target motor speed, that received from CMD handler */
 static uint32_t last_packet_time_ms; /* Last time, when command received. Based on that calculated timeout */
 
-MotorHandleType *motor0_handler;
-MotorHandleType *motor1_handler;
-MotorHandleType *motor2_handler;
+MotorHandleType motor0_handler;
+MotorHandleType motor1_handler;
+MotorHandleType motor2_handler;
 PID_TypeDef pid0_handler;
 PID_TypeDef pid1_handler;
 PID_TypeDef pid2_handler;
-OdomType *odom_handler;
+OdomType odom_handler;
 
 static void initPID(void);
 static void printOdom(void);
 
 void movement_init()
 {
+    static MotorPinoutType motor0_pinout;
+    static MotorPinoutType motor1_pinout;
+    static MotorPinoutType motor2_pinout;
+
     motor_speed.motor0 = 0.0f;
     motor_speed.motor1 = 0.0f;
     motor_speed.motor2 = 0.0f;
-
-    MotorPinoutType motor0_pinout;
-    MotorPinoutType motor1_pinout;
-    MotorPinoutType motor2_pinout;
-
-    ioif_init();
-    timerif_init();
+    motor_speed.is_manually_controled = false;
+    motor_speed.m0_effort = 0;
+    motor_speed.m1_effort = 0;
+    motor_speed.m2_effort = 0;
 
     motor_configurePinout(&motor0_pinout, &motor1_pinout, &motor2_pinout);
-    motor_init(motor0_handler, &motor0_pinout, TIMER_PWM_M0);
-    motor_init(motor1_handler, &motor1_pinout, TIMER_PWM_M1);
-    motor_init(motor2_handler, &motor2_pinout, TIMER_PWM_M2);
-    odom_init(odom_handler);
+    motor_init(&motor0_handler, &motor0_pinout, TIMER_PWM_M0);
+    motor_init(&motor1_handler, &motor1_pinout, TIMER_PWM_M1);
+    motor_init(&motor2_handler, &motor2_pinout, TIMER_PWM_M2);
+    odom_init(&odom_handler);
     initPID();
 
     timerif_setPeriodElapsedCallback((TimerCallbackType)movement_pwmHighCallback);
@@ -83,7 +90,6 @@ void movement_init()
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
 {
     // TODO [implementation] error handler, if input is wrong (e.g. "MS:35,abcd\r\n")
-
     float velocity_x;   // linear (Cartesian)
     float velocity_y;   // linear (Cartesian)
     float velocity_z;   // angular (Cartesian)
@@ -91,54 +97,76 @@ void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
     float velocity_mag; // magnitude (polar)
     char *ptr_token;
 
+    motor_speed.is_manually_controled = false;
+    last_packet_time_ms = system_hal_timestamp();
+
     ptr_token = strtok((char *)ptr_data, ":");
     velocity_x = atof(ptr_token);
     ptr_token = strtok(NULL, ":");
     velocity_y = atof(ptr_token);
     ptr_token = strtok(NULL, "\r\n");
     velocity_z = atof(ptr_token);
-
     velocity_dir = atan2(velocity_y, velocity_x);
     velocity_mag = sqrt(SQUARE_OF(velocity_x) + SQUARE_OF(velocity_y));
-
     velocity_mag = MIN(velocity_mag, MOTOR_MAX_LIN_VEL);
     velocity_z = MAX(MIN(velocity_z, MOTOR_MAX_ANG_VEL), -MOTOR_MAX_ANG_VEL);
 
     motor_speed.motor0 = velocity_mag * sin(velocity_dir - MOTOR_0_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
     motor_speed.motor1 = velocity_mag * sin(velocity_dir - MOTOR_1_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
     motor_speed.motor2 = velocity_mag * sin(velocity_dir - MOTOR_2_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
-
-    last_packet_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
 }
 
 void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght)
 {
-    // TODO [implementation] error handler, if input is wrong (e.g. "MS:35\r\n")
+    float m0_speed;
+    float m1_speed;
+    float m2_speed;
+
+    motor_speed.is_manually_controled = false;
+    last_packet_time_ms = system_hal_timestamp();
 
     char *token = strtok((char *)ptr_data, ":");
-    motor_speed.motor0 = atof(token);
+    m0_speed = atof(token);
     token = strtok(NULL, ":");
-    motor_speed.motor1 = atof(token);
+    m1_speed = atof(token);
     token = strtok(NULL, "\r\n");
-    motor_speed.motor2 = atof(token);
+    m2_speed = atof(token);
 
-    last_packet_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
+    motor_speed.motor0 = m0_speed;
+    motor_speed.motor1 = m1_speed;
+    motor_speed.motor2 = m2_speed;
 }
 
 void movement_handleCommandsEF(uint8_t *ptr_data, uint16_t lenght)
 {
-#pragma "not implemented"
+    int16_t m0_effort;
+    int16_t m1_effort;
+    int16_t m2_effort;
+
+    motor_speed.is_manually_controled = true;
+    last_packet_time_ms = system_hal_timestamp();
+
+    char *token = strtok((char *)ptr_data, ":");
+    m0_effort = (int16_t)atof(token);
+    token = strtok(NULL, ":");
+    m1_effort = (int16_t)atof(token);
+    token = strtok(NULL, "\r\n");
+    m2_effort = (int16_t)atof(token);
+
+    motor_speed.m0_effort = m0_effort;
+    motor_speed.m1_effort = m1_effort;
+    motor_speed.m2_effort = m2_effort;
 }
 
 void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght)
 {
-#pragma "not implemented"
+    odom_reset(&odom_handler);
 }
 
 void movement_update()
 {
     /*
-    uint32_t current_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
+    uint32_t current_time_ms = system_hal_timestamp();
     if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
     {
         motor_speed.motor0 = 0.0f;
@@ -146,31 +174,40 @@ void movement_update()
         motor_speed.motor2 = 0.0f;
     }
 
-    motor0_handler->data->linear_velocity_setpoint = motor_speed.motor0;
-    motor1_handler->data->linear_velocity_setpoint = motor_speed.motor1;
-    motor2_handler->data->linear_velocity_setpoint = motor_speed.motor2;
+    motor0_handler->linear_velocity_setpoint = motor_speed.motor0;
+    motor1_handler->linear_velocity_setpoint = motor_speed.motor1;
+    motor2_handler->linear_velocity_setpoint = motor_speed.motor2;
 
     PID_Compute(&pid0_handler);
     PID_Compute(&pid1_handler);
     PID_Compute(&pid2_handler);
     */
 
-    motor0_handler->data->effort = motor_speed.motor0;
-    motor1_handler->data->effort = motor_speed.motor1;
-    motor2_handler->data->effort = motor_speed.motor2;
+    // motor0_handler->effort = motor_speed.motor0;
+    // motor1_handler->effort = motor_speed.motor1;
+    // motor2_handler->effort = motor_speed.motor2;
 
-    printf("(%f %f %f) -> (%f %f %f) \r\n", 
-        motor_speed.motor0, motor_speed.motor1, motor_speed.motor2,
-        motor0_handler->data->effort, motor1_handler->data->effort, motor2_handler->data->effort
-    );
+    // printf("(%f %f %f) -> (%f %f %f) \r\n",
+    //     motor_speed.motor0, motor_speed.motor1, motor_speed.motor2,
+    //     motor0_handler->effort, motor1_handler->effort, motor2_handler->effort
+    // );
 
-    motor_update(motor0_handler);
-    motor_update(motor1_handler);
-    motor_update(motor2_handler);
+    if (motor_speed.is_manually_controled)
+    {
+        motor0_handler.effort = motor_speed.m0_effort;
+        motor1_handler.effort = motor_speed.m1_effort;
+        motor2_handler.effort = motor_speed.m2_effort;
+
+        motor_update(&motor0_handler);
+        motor_update(&motor1_handler);
+        motor_update(&motor2_handler);
+    }
+
+    printf("%d\r\n", motor_speed.is_manually_controled);
 
     /*
-    odom_update(odom_handler, motor0_handler->data->linear_velocity, motor1_handler->data->linear_velocity,
-                motor2_handler->data->linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
+    odom_update(odom_handler, motor0_handler->linear_velocity, motor1_handler->linear_velocity,
+                motor2_handler->linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
 
     printOdom();
     */
@@ -189,15 +226,15 @@ void movement_pwmHighCallback(TIM_HandleTypeDef *timer_handler)
     */
     if (timer_handler->Instance == TIMER_PWM_M0->Instance)
     {
-        ioif_writePin(&motor0_handler->pwm_pin, true);
+        ioif_writePin(&motor0_handler.pwm_pin, true);
     }
     else if (timer_handler->Instance == TIMER_PWM_M1->Instance)
     {
-        ioif_writePin(&motor1_handler->pwm_pin, true);
+        ioif_writePin(&motor1_handler.pwm_pin, true);
     }
     else if (timer_handler->Instance == TIMER_PWM_M2->Instance)
     {
-        ioif_writePin(&motor2_handler->pwm_pin, true);
+        ioif_writePin(&motor2_handler.pwm_pin, true);
     }
 }
 
@@ -209,15 +246,15 @@ void movement_pwmLowCallback(TIM_HandleTypeDef *timer_handler)
 {
     if (timer_handler->Instance == TIMER_PWM_M0->Instance)
     {
-        ioif_writePin(&motor0_handler->pwm_pin, false);
+        ioif_writePin(&motor0_handler.pwm_pin, false);
     }
     else if (timer_handler->Instance == TIMER_PWM_M1->Instance)
     {
-        ioif_writePin(&motor1_handler->pwm_pin, false);
+        ioif_writePin(&motor1_handler.pwm_pin, false);
     }
     else if (timer_handler->Instance == TIMER_PWM_M2->Instance)
     {
-        ioif_writePin(&motor2_handler->pwm_pin, false);
+        ioif_writePin(&motor2_handler.pwm_pin, false);
     }
 }
 
@@ -228,19 +265,19 @@ static void initPID(void)
     double *ptr_output;
     double *ptr_setpoint;
 
-    ptr_input = &(motor0_handler->data->linear_velocity);
-    ptr_output = &(motor0_handler->data->effort);
-    ptr_setpoint = &(motor0_handler->data->linear_velocity_setpoint);
+    ptr_input = &(motor0_handler.linear_velocity);
+    ptr_output = &(motor0_handler.effort);
+    ptr_setpoint = &(motor0_handler.linear_velocity_setpoint);
     PID(&pid0_handler, ptr_input, ptr_output, ptr_setpoint, PID_KP, PID_KI, PID_KD, _PID_P_ON_E, _PID_CD_DIRECT);
 
-    ptr_input = &(motor1_handler->data->linear_velocity);
-    ptr_output = &(motor1_handler->data->effort);
-    ptr_setpoint = &(motor1_handler->data->linear_velocity_setpoint);
+    ptr_input = &(motor1_handler.linear_velocity);
+    ptr_output = &(motor1_handler.effort);
+    ptr_setpoint = &(motor1_handler.linear_velocity_setpoint);
     PID(&pid1_handler, ptr_input, ptr_output, ptr_setpoint, PID_KP, PID_KI, PID_KD, _PID_P_ON_E, _PID_CD_DIRECT);
 
-    ptr_input = &(motor2_handler->data->linear_velocity);
-    ptr_output = &(motor2_handler->data->effort);
-    ptr_setpoint = &(motor2_handler->data->linear_velocity_setpoint);
+    ptr_input = &(motor2_handler.linear_velocity);
+    ptr_output = &(motor2_handler.effort);
+    ptr_setpoint = &(motor2_handler.linear_velocity_setpoint);
     PID(&pid2_handler, ptr_input, ptr_output, ptr_setpoint, PID_KP, PID_KI, PID_KD, _PID_P_ON_E, _PID_CD_DIRECT);
 
     PID_SetMode(&pid0_handler, _PID_MODE_AUTOMATIC);
@@ -257,11 +294,11 @@ static void initPID(void)
 /** @brief Prints over serial odometry data in the format "ODOM:{pos_x}:{pos_y}:{pos_z}:{vel_x}:{vel_y}:{vel_z}\r\n" */
 static void printOdom(void)
 {
-    float pos_x = odom_handler->odom_pos_data[0];
-    float pos_y = odom_handler->odom_pos_data[1];
-    float pos_z = odom_handler->odom_pos_data[2];
-    float vel_x = odom_handler->robot_vel_data[0];
-    float vel_y = odom_handler->robot_vel_data[1];
-    float vel_z = odom_handler->robot_vel_data[2];
+    float pos_x = odom_handler.odom_pos_data[0];
+    float pos_y = odom_handler.odom_pos_data[1];
+    float pos_z = odom_handler.odom_pos_data[2];
+    float vel_x = odom_handler.robot_vel_data[0];
+    float vel_y = odom_handler.robot_vel_data[1];
+    float vel_z = odom_handler.robot_vel_data[2];
     printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", pos_x, pos_y, pos_z, vel_x, vel_y, vel_z);
 }
