@@ -106,41 +106,4 @@ int _write(int file, char *ptr_data, int len)
     return result;
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    // Set PWM pin to high depending on which pwm timer triggered the interrupt
-    if (htim->Instance == htim11.Instance)
-    {
-        HAL_GPIO_WritePin(PIN_M0_EN1_GPIO_Port, PIN_M0_EN1_Pin, SET);
-        // ioif_writePin(&hm0.pwm_pin, true);
-    }
-    else if (htim->Instance == htim13.Instance)
-    {
-        HAL_GPIO_WritePin(PIN_M1_EN1_GPIO_Port, PIN_M1_EN1_Pin, SET);
-        // ioif_writePin(&hm1.pwm_pin, true);
-    }
-    else if (htim->Instance == htim14.Instance)
-    {
-        HAL_GPIO_WritePin(PIN_M2_EN1_GPIO_Port, PIN_M2_EN1_Pin, SET);
-        // ioif_writePin(&hm2.pwm_pin, true);
-    }
-}
 
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == htim11.Instance) // motor 0
-    {
-        HAL_GPIO_WritePin(PIN_M0_EN1_GPIO_Port, PIN_M0_EN1_Pin, RESET);
-        // ioif_writePin(&hm0.pwm_pin, false);
-    }
-    else if (htim->Instance == htim13.Instance) // motor 1
-    {
-        HAL_GPIO_WritePin(PIN_M1_EN1_GPIO_Port, PIN_M1_EN1_Pin, RESET);
-        // ioif_writePin(&hm1.pwm_pin, false);
-    }
-    else if (htim->Instance == htim14.Instance) // motor 2
-    {
-        HAL_GPIO_WritePin(PIN_M2_EN1_GPIO_Port, PIN_M2_EN1_Pin, RESET);
-        // ioif_writePin(&hm2.pwm_pin, false);
-    }
-}
