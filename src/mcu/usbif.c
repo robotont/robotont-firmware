@@ -11,7 +11,7 @@
 #include "usb_device.h"
 #include "usbd_def.h"
 
-static ReceiveCallbackType priv_callback;
+static ReceiveCallbackType receive_callback;
 
 /**
  * @brief
@@ -19,7 +19,7 @@ static ReceiveCallbackType priv_callback;
  */
 void usbif_init(void)
 {
-    priv_callback = NULL;
+    receive_callback = NULL;
     MX_USB_DEVICE_Init();
     usbd_cdc_setUpperLayerCallback((ReceiveCallbackType)usbif_receive);
 }
@@ -66,9 +66,9 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
         }
     }
 
-    if (is_message_complete && priv_callback != NULL)
+    if (is_message_complete && receive_callback != NULL)
     {
-        priv_callback(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF
+        receive_callback(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF
         rx_buffer_length = 0u;
     }
 
@@ -81,5 +81,5 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
  */
 void usbif_setUpperLayerCallback(ReceiveCallbackType rx_callback)
 {
-    priv_callback = rx_callback;
+    receive_callback = rx_callback;
 }

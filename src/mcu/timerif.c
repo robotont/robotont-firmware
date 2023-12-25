@@ -3,8 +3,14 @@
 #include "peripheral.h"
 #include "system_hal.h"
 
+static TimerCallbackType period_elapsed_callback;
+static TimerCallbackType pulse_finished_callback;
+
 void timerif_init()
 {
+    period_elapsed_callback = NULL;
+    pulse_finished_callback = NULL;
+    
     MX_TIM2_Init();
     MX_TIM3_Init();
     MX_TIM4_Init();
@@ -24,6 +30,16 @@ void timerif_init()
     HAL_TIM_Encoder_Start(TIMER_ENC_M0, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(TIMER_ENC_M1, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(TIMER_ENC_M2, TIM_CHANNEL_ALL);
+}
+
+void timerif_setPeriodElapsedCallback(TimerCallbackType callback)
+{
+    period_elapsed_callback = callback;
+}
+
+void timerif_setPulseFinishedCallback(TimerCallbackType callback)
+{
+    pulse_finished_callback = callback;
 }
 
 void timerif_setEffort(TIM_HandleTypeDef *timer_handler, int16_t effort)
@@ -66,6 +82,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         HAL_GPIO_WritePin(PIN_M2_EN1_GPIO_Port, PIN_M2_EN1_Pin, SET);
         // ioif_writePin(&hm2.pwm_pin, true);
     }
+
+    if (period_elapsed_callback != NULL)
+    {
+        period_elapsed_callback(htim);
+    }
 }
 
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
@@ -84,5 +105,10 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
     {
         HAL_GPIO_WritePin(PIN_M2_EN1_GPIO_Port, PIN_M2_EN1_Pin, RESET);
         // ioif_writePin(&hm2.pwm_pin, false);
+    }
+
+    if (pulse_finished_callback != NULL)
+    {
+        pulse_finished_callback(htim);
     }
 }

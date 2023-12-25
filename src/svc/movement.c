@@ -63,6 +63,8 @@ OdomType *odom_handler;
 
 static void initPID(void);
 static void printOdom(void);
+static void pwmSetHigh(TIM_HandleTypeDef *timer_handler);
+static void pwmSetLow(TIM_HandleTypeDef *timer_handler);
 
 void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler)
 {
@@ -74,7 +76,7 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     MotorPinoutType motor2_pinout;
 
     ioif_init();
-    
+
     motor_configurePinout(&motor0_pinout, &motor1_pinout, &motor2_pinout);
     motor_init(motor0_handler, &motor0_pinout, TIMER_PWM_M0);
     motor_init(motor1_handler, &motor1_pinout, TIMER_PWM_M1);
@@ -82,6 +84,8 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     odom_init(odom_handler);
     initPID();
 
+    timerif_setPeriodElapsedCallback((TimerCallbackType)pwmSetHigh);
+    timerif_setPulseFinishedCallback((TimerCallbackType)pwmSetLow);
     timerif_init();
 }
 
@@ -235,3 +239,14 @@ static void printOdom(void)
     float vel_z = odom_handler->robot_vel_data[2];
     printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", pos_x, pos_y, pos_z, vel_x, vel_y, vel_z);
 }
+
+static void pwmSetHigh(TIM_HandleTypeDef *timer_handler)
+{
+    volatile uint32_t x;
+}
+
+static void pwmSetLow(TIM_HandleTypeDef *timer_handler)
+{
+    volatile uint32_t x;
+}
+
