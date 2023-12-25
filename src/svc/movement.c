@@ -61,6 +61,10 @@ OdomType odom_handler;
 static void initPID(void);
 static void printOdom(void);
 
+/**
+ * @brief   Initialized movement module.
+ * @details Initialized three motors with proper pin config, odometry, PID module and starts PWM interrups
+ */
 void movement_init()
 {
     static MotorPinoutType motor0_pinout;
@@ -87,6 +91,11 @@ void movement_init()
     timerif_initInterrups();
 }
 
+/**
+ * @brief   Handles "RS:speed0:speed1:speed2" command
+ * @details Calculates motor speed based on required robot velocities (x, y, z); Omnimotional movement
+ * @note    Called within ISR context from `cmd` module
+ */
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
 {
     // TODO [implementation] error handler, if input is wrong (e.g. "MS:35,abcd\r\n")
@@ -116,6 +125,11 @@ void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
     motor_speed.motor2 = velocity_mag * sin(velocity_dir - MOTOR_2_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
 }
 
+/**
+ * @brief   Handles "MS:speed0:speed1:speed2" command
+ * @details Sets each motor speed based on arguments
+ * @note    Called within ISR context from `cmd` module
+ */
 void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght)
 {
     float m0_speed;
@@ -137,6 +151,12 @@ void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght)
     motor_speed.motor2 = m2_speed;
 }
 
+/**
+ * @brief   Handles "EF:effort0:effort1:effort2" command
+ * @details Sets raw effort value for each motor
+ * @note    Called within ISR context from `cmd` module
+ * @note    Robot will kept in manual effort mode until new command is received
+ */
 void movement_handleCommandsEF(uint8_t *ptr_data, uint16_t lenght)
 {
     int16_t m0_effort;
@@ -144,7 +164,6 @@ void movement_handleCommandsEF(uint8_t *ptr_data, uint16_t lenght)
     int16_t m2_effort;
 
     motor_speed.is_manually_controled = true;
-    last_packet_time_ms = system_hal_timestamp();
 
     char *token = strtok((char *)ptr_data, ":");
     m0_effort = (int16_t)atof(token);
@@ -158,11 +177,22 @@ void movement_handleCommandsEF(uint8_t *ptr_data, uint16_t lenght)
     motor_speed.m2_effort = m2_effort;
 }
 
+/**
+ * @brief   Handles "OR" command
+ * @details Resets odometry data
+ * @note    Called within ISR context from `cmd` module
+ */
 void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght)
 {
     odom_reset(&odom_handler);
 }
 
+/**
+ * @brief   Updates three motors based on desired motor speed.
+ * @details If "EF" command received, robot will kept in manual mode, and motors will always work.
+ *          If "MS" or "RS" command received, robot will update motor speeds using PID controlled and calculate odometry
+ * @note    Should be called continuously in the application layer (i.e. inside the mainloop)
+ */
 void movement_update()
 {
     if (motor_speed.is_manually_controled)
