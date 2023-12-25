@@ -44,26 +44,23 @@ typedef struct
 static MotorSpeedType motor_speed;   /* Target motor speed, that received from CMD handler */
 static uint32_t last_packet_time_ms; /* Last time, when command received. Based on that calculated timeout */
 
-static MotorHandleType *motor0_handler;
-static MotorHandleType *motor1_handler;
-static MotorHandleType *motor2_handler;
-static PID_TypeDef pid0_handler;
-static PID_TypeDef pid1_handler;
-static PID_TypeDef pid2_handler;
+MotorHandleType *motor0_handler;
+MotorHandleType *motor1_handler;
+MotorHandleType *motor2_handler;
+PID_TypeDef pid0_handler;
+PID_TypeDef pid1_handler;
+PID_TypeDef pid2_handler;
 OdomType *odom_handler;
 
 static void initPID(void);
 static void printOdom(void);
 
-void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler)
+void movement_init()
 {
     motor_speed.motor0 = 0.0f;
     motor_speed.motor1 = 0.0f;
     motor_speed.motor2 = 0.0f;
 
-    motor0_handler = m0_handler;
-    motor1_handler = m1_handler;
-    motor2_handler = m2_handler;
     MotorPinoutType motor0_pinout;
     MotorPinoutType motor1_pinout;
     MotorPinoutType motor2_pinout;
@@ -130,48 +127,17 @@ void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght)
 
 void movement_handleCommandsEF(uint8_t *ptr_data, uint16_t lenght)
 {
-    // TODO [implementation]
-    // // Command: EF (Effort control)
-    // else if (last_packet[0] == 'E' && last_packet[1] == 'F')
-    // {
-    //     last_vel_received_tick = HAL_GetTick();
-    //     char *pch;
-    //     pch = strtok((char *)last_packet, ":");
-    //     int arg = 0;
-    //     while (pch != NULL)
-    //     {
-    //         if (arg == 1)
-    //         {
-    //             ptr_motor0->effort = atof(pch);
-    //         }
-    //         else if (arg == 2)
-    //         {
-    //             ptr_motor1->effort = atof(pch);
-    //         }
-    //         else if (arg == 3)
-    //         {
-    //             ptr_motor2->effort = atof(pch);
-    //         }
-    //         pch = strtok(NULL, ":");
-    //         arg++;
-    //     }
-    // }
+#pragma "not implemented"
 }
 
 void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght)
 {
-    // TODO [implementation]
-    // // Command: OR (Odom Reset)
-    // else if (last_packet[0] == 'O' && last_packet[1] == 'R')
-    // {
-    //     odom_reset(&hodom);
-    // }
-    // last_packet[0] = '\0'; // indicate that packet has been processed
-    // last_packet_length = 0;
+#pragma "not implemented"
 }
 
 void movement_update()
 {
+    /*
     uint32_t current_time_ms = HAL_GetTick(); // TODO [code quality] get rid of direct HAL usage
     if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
     {
@@ -187,19 +153,40 @@ void movement_update()
     PID_Compute(&pid0_handler);
     PID_Compute(&pid1_handler);
     PID_Compute(&pid2_handler);
+    */
+
+    motor0_handler->data->effort = motor_speed.motor0;
+    motor1_handler->data->effort = motor_speed.motor1;
+    motor2_handler->data->effort = motor_speed.motor2;
+
+    printf("(%f %f %f) -> (%f %f %f) \r\n", 
+        motor_speed.motor0, motor_speed.motor1, motor_speed.motor2,
+        motor0_handler->data->effort, motor1_handler->data->effort, motor2_handler->data->effort
+    );
 
     motor_update(motor0_handler);
     motor_update(motor1_handler);
     motor_update(motor2_handler);
 
+    /*
     odom_update(odom_handler, motor0_handler->data->linear_velocity, motor1_handler->data->linear_velocity,
                 motor2_handler->data->linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
 
     printOdom();
+    */
 }
 
+/**
+ * @brief   PWM IT handler, that is called, when PWM signal changes state from LOW to HIGH
+ * @note    Called from `timerif` module (HAL_TIM_PeriodElapsedCallback)
+ */
 void movement_pwmHighCallback(TIM_HandleTypeDef *timer_handler)
 {
+    /*
+    Ideally, this interrupt handler should be defined in motor module.
+    But since there's no way to pass motor handler as an argument to the ISR,
+    look up (timer_n <-> motorN_handler) performed here.
+    */
     if (timer_handler->Instance == TIMER_PWM_M0->Instance)
     {
         ioif_writePin(&motor0_handler->pwm_pin, true);
@@ -214,6 +201,10 @@ void movement_pwmHighCallback(TIM_HandleTypeDef *timer_handler)
     }
 }
 
+/**
+ * @brief   PWM IT handler, that is called, when PWM signal changes state from HIGH to LOW
+ * @note    Called from `timerif` module (HAL_TIM_PWM_PulseFinishedCallback)
+ */
 void movement_pwmLowCallback(TIM_HandleTypeDef *timer_handler)
 {
     if (timer_handler->Instance == TIMER_PWM_M0->Instance)
@@ -230,6 +221,7 @@ void movement_pwmLowCallback(TIM_HandleTypeDef *timer_handler)
     }
 }
 
+/** @brief Initializes PID controller for each motor */
 static void initPID(void)
 {
     double *ptr_input;
@@ -262,6 +254,7 @@ static void initPID(void)
     PID_SetSampleTime(&pid2_handler, MAIN_LOOP_DT_MS);
 }
 
+/** @brief Prints over serial odometry data in the format "ODOM:{pos_x}:{pos_y}:{pos_z}:{vel_x}:{vel_y}:{vel_z}\r\n" */
 static void printOdom(void)
 {
     float pos_x = odom_handler->odom_pos_data[0];

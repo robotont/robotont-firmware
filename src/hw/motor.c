@@ -1,7 +1,7 @@
 /**
  * @file motor.c
- * @brief 
- * 
+ * @brief
+ *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool
  */
@@ -18,17 +18,17 @@
 #include "motor_cfg.h"
 #include "peripheral.h"
 #include "stm32f4xx_hal.h"
+#include "timerif.h"
 
 /**
- * @brief 
- * 
- * @param motor_handler 
- * @param pinout 
- * @param pwm_timer 
+ * @brief
+ *
+ * @param motor_handler
+ * @param pinout
+ * @param pwm_timer
  */
 void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_HandleTypeDef *pwm_timer)
 {
-
     motor_handler->pinout = pinout;
     motor_handler->pwm_pin = pinout->en1_pin;
 
@@ -48,29 +48,36 @@ void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_Han
 }
 
 /**
- * @brief 
- * 
- * @param ptr_motor 
+ * @brief
+ *
+ * @param ptr_motor
  */
 void motor_update(MotorHandleType *ptr_motor)
 {
+    timerif_setEffort(ptr_motor->pwm_timer, 150);
+    /*
+    int16_t effort;
     double effort_epsilon = 100; // this is a counter value from where the motor exceeds its internal friction, also
                                  // instabilities in PWM generation occured with lower values.
 
-    if (ptr_motor->data->effort > effort_epsilon)
+    if (ptr_motor->data->effort >= effort_epsilon)
     {
         // Forward
         ptr_motor->pwm_pin = ptr_motor->pinout->en1_pin;
-        *(ptr_motor->effort_output_reg) = abs(ptr_motor->data->effort);
+        // effort = (int16_t)abs(ptr_motor->data->effort);
+        // timerif_setEffort(ptr_motor->pwm_timer, effort);
+        *(ptr_motor->effort_output_reg) = (int16_t)abs(ptr_motor->data->effort);
         ioif_writePin(&ptr_motor->pinout->en2_pin, false);
         // motor_enable(ptr_motor);
         HAL_TIM_PWM_Start_IT(ptr_motor->pwm_timer, TIM_CHANNEL_1);
     }
-    else if (ptr_motor->data->effort < -effort_epsilon)
+    else if (ptr_motor->data->effort <= -effort_epsilon)
     {
         // Reverse
         ptr_motor->pwm_pin = ptr_motor->pinout->en2_pin;
-        *(ptr_motor->effort_output_reg) = abs(ptr_motor->data->effort);
+        // effort = (int16_t)abs(ptr_motor->data->effort);
+        // timerif_setEffort(ptr_motor->pwm_timer, effort);
+        *(ptr_motor->effort_output_reg) = (int16_t)abs(ptr_motor->data->effort);
         ioif_writePin(&ptr_motor->pinout->en1_pin, false);
         // motor_enable(ptr_motor);
         HAL_TIM_PWM_Start_IT(ptr_motor->pwm_timer, TIM_CHANNEL_1);
@@ -78,19 +85,21 @@ void motor_update(MotorHandleType *ptr_motor)
     else
     {
         // effort is inbetween [-epsilon...epsilon]
-        //Disable driver
-        *(ptr_motor->effort_output_reg) = effort_epsilon;
+        // Disable driver
+        // effort = (int16_t)abs(ptr_motor->data->effort);
+        // timerif_setEffort(ptr_motor->pwm_timer, effort);
+        *(ptr_motor->effort_output_reg) = (int16_t)effort_epsilon;
         HAL_TIM_PWM_Stop_IT(ptr_motor->pwm_timer, TIM_CHANNEL_1);
         ioif_writePin(&ptr_motor->pwm_pin, false);
-        // motor_disable(ptr_motor);
     }
+    */
 
-    // Compute velocity
+// Compute velocity
 
-    // Calculate the relation between an encoder pulse and
-    // linear speed on the wheel where it contacts the ground
-    // CCW is positive when looking from the motor towards the wheel
-    #if 0 // TODO continue this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// Calculate the relation between an encoder pulse and
+// linear speed on the wheel where it contacts the ground
+// CCW is positive when looking from the motor towards the wheel
+#if 0 // TODO continue this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (ptr_motor->last_enc_update)
     {
         float dt_sec = (HAL_GetTick() - ptr_motor->last_enc_update) / 1000.0f;
@@ -99,13 +108,13 @@ void motor_update(MotorHandleType *ptr_motor)
     }
     ptr_motor->last_enc_update = HAL_GetTick();
     ptr_motor->ptr_sw_enc->counter = 0; // reset counter
-    #endif
+#endif
 }
 
 /**
- * @brief 
- * 
- * @param ptr_motor 
+ * @brief
+ *
+ * @param ptr_motor
  */
 void motor_enable(MotorHandleType *ptr_motor)
 {
@@ -113,9 +122,9 @@ void motor_enable(MotorHandleType *ptr_motor)
 }
 
 /**
- * @brief 
- * 
- * @param ptr_motor 
+ * @brief
+ *
+ * @param ptr_motor
  */
 void motor_disable(MotorHandleType *ptr_motor)
 {
@@ -123,9 +132,9 @@ void motor_disable(MotorHandleType *ptr_motor)
 }
 
 /**
- * @brief 
- * 
- * @param ptr_motor 
+ * @brief
+ *
+ * @param ptr_motor
  */
 void motor_debug(MotorHandleType *ptr_motor)
 {

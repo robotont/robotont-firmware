@@ -18,19 +18,13 @@
 #define MAX_LIN_VEL 0.4 // m/s
 #define MAX_ANG_VEL 1.0 // rad/s
 
-MotorHandleType hm0, hm1, hm2;
-
 int main(void)
 {
     system_hal_init();
     peripheral_init();
 
     cmd_init();
-    movement_init(&hm0, &hm1, &hm2);
-
-    timerif_setEffort(TIMER_PWM_M0, 100);
-    timerif_setEffort(TIMER_PWM_M1, 100);
-    timerif_setEffort(TIMER_PWM_M2, 100);
+    movement_init();
 
     HAL_Delay(1000);
 
@@ -52,6 +46,8 @@ int main(void)
     led_red.ptr_port = PIN_LED_R_GPIO_Port;
     ioif_togglePin(&led_green);
 
+    int16_t effort = 90;
+
     while (true)
     {
         current_tick = HAL_GetTick();
@@ -61,15 +57,19 @@ int main(void)
             counter++;
 
             /* Service layer modules update */
-            // movement_update();
+            movement_update();
 
-            // example, of how to modules should communicate with each others: via getters and setters
-            // status = battery_monitor_getStatus();
-            // if (status == STATUS_12V_OVERVOLTAGE)
-            // {
-            //     led_blinkRed();
-            //     movement_stop();
-            // }
+            /**
+            @brief Example, of how to modules should communicate with each others: via getters and setters (Pseudocode)
+
+            status = battery_monitor_getStatus();
+            if (status == STATUS_12V_OVERVOLTAGE)
+            {
+                led_blinkRed();
+                movement_stop();
+            }
+
+            */
 
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
 
@@ -79,13 +79,19 @@ int main(void)
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
                 // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
+
+                // effort += 10;
+                // if (effort > 160)
+                // {
+                //     effort = 90;
+                // }
+                // timerif_setEffort(TIMER_PWM_M0, effort);
+                // timerif_setEffort(TIMER_PWM_M1, effort);
+                // timerif_setEffort(TIMER_PWM_M2, effort);
             }
 
-            printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
-                   timerif_getCounter(TIMER_ENC_M2));
+            // printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
+            //        timerif_getCounter(TIMER_ENC_M2));
         }
     }
 }
-
-
-

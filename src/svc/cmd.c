@@ -37,23 +37,23 @@ void cmd_init(void)
  */
 void cmd_handleUsbData(uint8_t *ptr_data, uint16_t lenght)
 {
-    uint16_t cmd_argument = (ptr_data[0] << 8U) | ptr_data[1];
+    uint16_t cmd_argument = (ptr_data[0] << 8u) | ptr_data[1];
     switch (cmd_argument)
     {
         case ARG_ROBOT_SPEED:
-            movement_handleCommandsRS(&ptr_data[3], lenght - 3U);
+            movement_handleCommandsRS(&ptr_data[3], lenght - 3u);
             break;
 
         case ARG_MOTOR_SPEED:
-            movement_handleCommandsMS(&ptr_data[3], lenght - 3U);
+            movement_handleCommandsMS(&ptr_data[3], lenght - 3u);
             break;
 
         case ARG_ODOM_RESET:
-            movement_handleCommandsOR(&ptr_data[3], lenght - 3U);
+            movement_handleCommandsOR(&ptr_data[3], lenght - 3u);
             break;
 
         case ARG_EFFORT_CONTROL:
-            movement_handleCommandsEF(&ptr_data[3], lenght - 3U);
+            movement_handleCommandsEF(&ptr_data[3], lenght - 3u);
             break;
 
         default:

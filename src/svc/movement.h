@@ -21,7 +21,7 @@
 #include "motor.h"
 #include "system_hal.h"
 
-void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler);
+void movement_init();
 
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght);
 void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght);
