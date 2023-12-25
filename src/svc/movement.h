@@ -12,7 +12,6 @@
 #include <stdint.h>
 
 #include "motor.h"
-#include "sw_enc.h"
 #include "system_hal.h"
 
 void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, MotorHandleType *m2_handler);

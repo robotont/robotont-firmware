@@ -74,7 +74,7 @@ void motor_update(MotorHandleType *ptr_motor)
     if (ptr_motor->last_enc_update)
     {
         float dt_sec = (HAL_GetTick() - ptr_motor->last_enc_update) / 1000.0f;
-        float pulse_to_speed_ratio = 1.0f / ENCODER_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_RADIUS;
+        float pulse_to_speed_ratio = 1.0f / MOTOR_ENC_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_OUTER_R;
         ptr_motor->linear_velocity = ptr_motor->ptr_sw_enc->counter * pulse_to_speed_ratio;
     }
     ptr_motor->last_enc_update = HAL_GetTick();

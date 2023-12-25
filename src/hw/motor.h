@@ -5,22 +5,6 @@
 
 #include "ioif.h"
 #include "stm32f4xx_hal.h"
-#include "sw_enc.h"
-
-// // TODO remove
-// typedef struct
-// {
-//     GPIO_TypeDef *nsleep_port;
-//     GPIO_TypeDef *en1_port;
-//     GPIO_TypeDef *en2_port;
-//     GPIO_TypeDef *fault_port;
-//     GPIO_TypeDef *ipropi_port;
-//     uint16_t nsleep_pin;
-//     uint16_t en1_pin;
-//     uint16_t en2_pin;
-//     uint16_t fault_pin;
-//     uint16_t ipropi_pin;
-// } MotorCfgType;
 
 typedef struct
 {

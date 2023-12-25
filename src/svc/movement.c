@@ -19,7 +19,6 @@
 #include "odom.h"
 #include "peripheral.h"
 #include "pid.h"
-#include "sw_enc.h"
 #include "timerif.h"
 
 /* If velocity command is not received within this period all motors are stopped */
