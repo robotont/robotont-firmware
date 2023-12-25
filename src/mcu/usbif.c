@@ -1,34 +1,38 @@
 /**
  * @file usbif.c
- * @brief
+ * @brief USB interface wrapper over CubeMX generated MX_USB HAL
  *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool
  */
 
 #include "usbif.h"
+
 #include <stdbool.h>
+
 #include "usb_device.h"
 #include "usbd_def.h"
 
-static ReceiveCallbackType priv_callback;
+static ReceiveCallbackType receive_callback;
 
 /**
- * @brief
- *
+ * @brief Initializes USB module
  */
 void usbif_init(void)
 {
-    priv_callback = NULL;
-    MX_USB_DEVICE_Init();
-    usbd_cdc_setUpperLayerCallback((ReceiveCallbackType)usbif_receive);
+    static bool is_initialized = false;
+    if (!is_initialized)
+    {
+        receive_callback = NULL;
+        MX_USB_DEVICE_Init();
+        usbd_cdc_setUpperLayerCallback((ReceiveCallbackType)usbif_receive);
+
+        is_initialized = true;
+    }
 }
 
 /**
- * @brief
- * @param ptr_data
- * @param lenght
- * @return uint8_t
+ * @brief Transmits data via USB using CDC_Transmit_FS
  */
 uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
 {
@@ -45,11 +49,12 @@ uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
 }
 
 /**
- * @brief
- * @param ptr_data
- * @param lenght
- * @return uint8_t
- * @note Called in ISR context from usb_cdc_if module
+ * @brief   Handles "USB receive data" event
+ * @details
+ * If termination chars received (CR+LF), then packet marked as complete and data sent to the upper layer
+ * Othervise, chars stored in the buffer.
+ * @note    Called within ISR context from usb_cdc_if module
+ * @note    Buffer size (i.e. maximum allowed packet lenght) is 2048 bytes
  */
 uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
 {
@@ -66,9 +71,9 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
         }
     }
 
-    if (is_message_complete && priv_callback != NULL)
+    if (is_message_complete && receive_callback != NULL)
     {
-        priv_callback(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF
+        receive_callback(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF
         rx_buffer_length = 0u;
     }
 
@@ -76,10 +81,9 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
 }
 
 /**
- * @brief
- * @param rx_callback
+ * @brief Sets funtions, that is called in interrupt, when USB data received
  */
 void usbif_setUpperLayerCallback(ReceiveCallbackType rx_callback)
 {
-    priv_callback = rx_callback;
+    receive_callback = rx_callback;
 }

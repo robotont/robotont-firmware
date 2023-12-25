@@ -1,3 +1,14 @@
+/**
+ * @file ioif.h
+ * @brief GPIO interface wrapper over CubeMX generated MX_USB HAL
+ *
+ * Packs togethers `GPIO_PORT` and `GPIO_Pin` into one IoPinType struct.
+ * As a result, GPIO operation require keeping track on one variable (pin) instead of two (port and pin).
+ *
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
+
 #ifndef IOIF_H
 #define IOIF_H
 

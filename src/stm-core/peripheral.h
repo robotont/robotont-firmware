@@ -22,11 +22,6 @@
 #define PIN_M0_IPROPI_Pin          GPIO_PIN_7
 #define PIN_M0_IPROPI_GPIO_Port    GPIOE
 
-#define PIN_M0_ENCA_Pin            GPIO_PIN_0
-#define PIN_M0_ENCA_GPIO_Port      GPIOA
-#define PIN_M0_ENCB_Pin            GPIO_PIN_1
-#define PIN_M0_ENCB_GPIO_Port      GPIOA
-
 #define PIN_M1_NSLEEP_Pin          GPIO_PIN_9
 #define PIN_M1_NSLEEP_GPIO_Port    GPIOB
 #define PIN_M1_EN1_Pin             GPIO_PIN_1
@@ -38,11 +33,6 @@
 #define PIN_M1_IPROPI_Pin          GPIO_PIN_5
 #define PIN_M1_IPROPI_GPIO_Port    GPIOB
 
-#define PIN_M1_ENCA_Pin            GPIO_PIN_6
-#define PIN_M1_ENCA_GPIO_Port      GPIOA
-#define PIN_M1_ENCB_Pin            GPIO_PIN_7
-#define PIN_M1_ENCB_GPIO_Port      GPIOA
-
 #define PIN_M2_NSLEEP_Pin          GPIO_PIN_13
 #define PIN_M2_NSLEEP_GPIO_Port    GPIOC
 #define PIN_M2_EN1_Pin             GPIO_PIN_15
@@ -53,11 +43,6 @@
 #define PIN_M2_FAULT_GPIO_Port     GPIOE
 #define PIN_M2_IPROPI_Pin          GPIO_PIN_5
 #define PIN_M2_IPROPI_GPIO_Port    GPIOE
-
-#define PIN_M2_ENCA_Pin            GPIO_PIN_12
-#define PIN_M2_ENCA_GPIO_Port      GPIOD
-#define PIN_M2_ENCB_Pin            GPIO_PIN_13
-#define PIN_M2_ENCB_GPIO_Port      GPIOD
 
 #define PIN_ROT_ENC_SW_Pin         GPIO_PIN_14
 #define PIN_ROT_ENC_SW_GPIO_Port   GPIOD
@@ -78,13 +63,21 @@
 extern CAN_HandleTypeDef hcan1;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim11;
 extern TIM_HandleTypeDef htim13;
 extern TIM_HandleTypeDef htim14;
 extern UART_HandleTypeDef huart3;
 
 void MX_GPIO_Init(void);
+void MX_TIM2_Init(void);
+void MX_TIM3_Init(void);
+void MX_TIM4_Init(void);
+void MX_TIM11_Init(void);
+void MX_TIM13_Init(void);
+void MX_TIM14_Init(void);
 void peripheral_init(void);
 
 #endif

@@ -20,6 +20,14 @@ void system_hal_init(void)
     SystemClock_Config();
 }
 
+/**
+ * @brief Returns timespams value in ms
+ */
+uint32_t system_hal_timestamp(void)
+{
+    return HAL_GetTick();
+}
+
 // clang-format off
 
 /**
