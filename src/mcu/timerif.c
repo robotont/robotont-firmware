@@ -81,7 +81,7 @@ void timerif_setPulseFinishedCallback(TimerCallbackType callback)
  * @brief Sets PWM effort value in the timer compare register
  * @note Use only PWM timers
  */
-void timerif_setEffort(TIM_HandleTypeDef *timer_handler, int16_t effort)
+void timerif_setEffort(TIM_HandleTypeDef *timer_handler, uint16_t effort)
 {
     __HAL_TIM_SET_COMPARE(timer_handler, TIM_CHANNEL_1, effort);
 }
@@ -108,6 +108,14 @@ void timerif_disablePwmInterrupts(TIM_HandleTypeDef *timer_handler)
 int16_t timerif_getCounter(TIM_HandleTypeDef *timer_handler)
 {
     return (int16_t)__HAL_TIM_GET_COUNTER(timer_handler);
+}
+
+/**
+ * @brief Resets TIMER ENC counter to 0
+ */
+void timerif_resetCounter(TIM_HandleTypeDef *timer_handler)
+{
+    __HAL_TIM_SET_COUNTER(timer_handler, 0u);
 }
 
 /*======================================================================================================================

@@ -20,7 +20,9 @@
 #include "stm32f4xx_hal.h"
 #include "timerif.h"
 
-#define EFFORT_EPSILON 100
+#define EFFORT_EPSILON 75
+
+static double calculateMotorSpeed(int16_t encoder_counter, uint32_t timestamp);
 
 /**
  * @brief
@@ -29,123 +31,108 @@
  * @param pinout
  * @param pwm_timer
  */
-void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_HandleTypeDef *pwm_timer)
+void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_HandleTypeDef *pwm_timer,
+                TIM_HandleTypeDef *enc_timer)
 {
     motor_handler->pinout = pinout;
     motor_handler->pwm_pin = pinout->en1_pin;
     motor_handler->pwm_timer = pwm_timer;
+    motor_handler->enc_timer = enc_timer;
     motor_handler->effort = 0.0f;
     motor_handler->linear_velocity = 0.0f;
     motor_handler->linear_velocity_setpoint = 0.0f;
-    motor_handler->last_enc_update = 0u;
+    motor_handler->prev_enc_timestamp = 0u;
 
     motor_disable(motor_handler);
 }
 
 /**
- * @brief
- *
- * @param ptr_motor
+ * @brief Updates motor speed based on `motor_handler.effort` parameter. PWM effort calculated in the upper layer.
  */
 void motor_update(MotorHandleType *motor_handler)
 {
-    uint16_t effort = (int16_t)abs(motor_handler->effort);
-
-    if ((effort < EFFORT_EPSILON) && (effort > -EFFORT_EPSILON))
-    {
-        motor_disable(motor_handler);
-    }
-    else
+    double dt_sec;
+    double linear_velocity;
+    double pulse_to_speed_ratio;
+    uint16_t effort;
+    int16_t enc_counter;
+    uint32_t current_timestamp;
+    
+    /* Updates PWM pins based on effort value. Positive direction is pin EN1, negative - EN2 */
+    if (motor_handler->effort >= EFFORT_EPSILON)
     {
         motor_enable(motor_handler);
-        timerif_setEffort(motor_handler->pwm_timer, (int16_t)motor_handler->effort);
-    }
-    
-    /*
-    int16_t effort;
-    double effort_epsilon = 100; // this is a counter value from where the motor exceeds its internal friction, also
-                                 // instabilities in PWM generation occured with lower values.
-
-    if (motor_handler->effort >= effort_epsilon)
-    {
-        // Forward
         motor_handler->pwm_pin = motor_handler->pinout->en1_pin;
-        // effort = (int16_t)abs(motor_handler->effort);
-        // timerif_setEffort(motor_handler->pwm_timer, effort);
-        *(motor_handler->effort_output_reg) = (int16_t)abs(motor_handler->effort);
         ioif_writePin(&motor_handler->pinout->en2_pin, false);
-        // motor_enable(motor_handler);
-        HAL_TIM_PWM_Start_IT(motor_handler->pwm_timer, TIM_CHANNEL_1);
     }
-    else if (motor_handler->effort <= -effort_epsilon)
+    else if (motor_handler->effort <= -EFFORT_EPSILON)
     {
-        // Reverse
+        motor_enable(motor_handler);
         motor_handler->pwm_pin = motor_handler->pinout->en2_pin;
-        // effort = (int16_t)abs(motor_handler->effort);
-        // timerif_setEffort(motor_handler->pwm_timer, effort);
-        *(motor_handler->effort_output_reg) = (int16_t)abs(motor_handler->effort);
         ioif_writePin(&motor_handler->pinout->en1_pin, false);
-        // motor_enable(motor_handler);
-        HAL_TIM_PWM_Start_IT(motor_handler->pwm_timer, TIM_CHANNEL_1);
     }
     else
     {
-        // effort is inbetween [-epsilon...epsilon]
-        // Disable driver
-        // effort = (int16_t)abs(motor_handler->effort);
-        // timerif_setEffort(motor_handler->pwm_timer, effort);
-        *(motor_handler->effort_output_reg) = (int16_t)effort_epsilon;
-        HAL_TIM_PWM_Stop_IT(motor_handler->pwm_timer, TIM_CHANNEL_1);
-        ioif_writePin(&motor_handler->pwm_pin, false);
+        motor_disable(motor_handler);
+        ioif_writePin(&motor_handler->pinout->en1_pin, false);
+        ioif_writePin(&motor_handler->pinout->en2_pin, false);
     }
-    */
 
-// Compute velocity
+    effort = (uint16_t)abs(motor_handler->effort);
+    timerif_setEffort(motor_handler->pwm_timer, effort);
 
-// Calculate the relation between an encoder pulse and
-// linear speed on the wheel where it contacts the ground
-// CCW is positive when looking from the motor towards the wheel
-#if 0 // TODO continue this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if (motor_handler->last_enc_update)
+    /* Calculates wheel rotation speed based on counter pulse value */
+    if (motor_handler->prev_enc_timestamp != 0)
     {
-        float dt_sec = (HAL_GetTick() - motor_handler->last_enc_update) / 1000.0f;
-        float pulse_to_speed_ratio = 1.0f / MOTOR_ENC_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_OUTER_R;
-        motor_handler->linear_velocity = motor_handler->ptr_sw_enc->counter * pulse_to_speed_ratio;
+        enc_counter = timerif_getCounter(motor_handler->enc_timer);
+        current_timestamp = system_hal_timestamp();
+
+        dt_sec = (current_timestamp - motor_handler->prev_enc_timestamp) / 1000.0f;
+        pulse_to_speed_ratio = 1.0f / MOTOR_ENC_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_OUTER_R;
+        linear_velocity = enc_counter * pulse_to_speed_ratio;
+
+        printf("ok: %f\r\n", linear_velocity);
     }
-    motor_handler->last_enc_update = HAL_GetTick();
-    motor_handler->ptr_sw_enc->counter = 0; // reset counter
-#endif
+
+    current_timestamp = system_hal_timestamp();
+    enc_counter = timerif_getCounter(motor_handler->enc_timer);
+    linear_velocity = calculateMotorSpeed(enc_counter, current_timestamp);
+    printf("vs: %f\r\n", linear_velocity);
+    timerif_resetCounter(motor_handler->enc_timer);
+    motor_handler->linear_velocity = linear_velocity;
+    motor_handler->prev_enc_timestamp = system_hal_timestamp();
 }
 
 /**
- * @brief
- *
- * @param ptr_motor
+ * @brief Enables PWM interrupt on given motor and wakes-up motor
  */
-void motor_enable(MotorHandleType *ptr_motor)
+void motor_enable(MotorHandleType *motor_handler)
 {
-    timerif_enablePwmInterrupts(ptr_motor->pwm_timer);
-    ioif_writePin(&ptr_motor->pinout->nsleep_pin, true);
+    timerif_enablePwmInterrupts(motor_handler->pwm_timer);
+    ioif_writePin(&motor_handler->pinout->nsleep_pin, true);
 }
 
 /**
- * @brief
- *
- * @param ptr_motor
+ * @brief Disables PWM interrupt on given motor and puts motor into sleep mode
  */
-void motor_disable(MotorHandleType *ptr_motor)
+void motor_disable(MotorHandleType *motor_handler)
 {
-    timerif_disablePwmInterrupts(ptr_motor->pwm_timer);
-    ioif_writePin(&ptr_motor->pinout->nsleep_pin, false);
+    timerif_disablePwmInterrupts(motor_handler->pwm_timer);
+    ioif_writePin(&motor_handler->pinout->nsleep_pin, false);
 }
 
-/**
- * @brief
- *
- * @param ptr_motor
- */
-void motor_debug(MotorHandleType *ptr_motor)
+static double calculateMotorSpeed(int16_t encoder_counter, uint32_t timestamp)
 {
-    // printf("Vel: %ld\t", ptr_motor->linear_velocity);
-    // printf("Effort: %ld\t", ptr_motor->effort);
+    static uint32_t prev_timestamp = 0u;
+    double pulse_to_speed_ratio;
+    double dt_sec;
+    double speed;
+
+    dt_sec = (timestamp - prev_timestamp) / 100.0f;
+    pulse_to_speed_ratio = 1.0f / MOTOR_ENC_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_OUTER_R;
+    speed = encoder_counter * pulse_to_speed_ratio;
+
+    prev_timestamp = timestamp;
+    return speed;
+
 }

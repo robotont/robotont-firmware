@@ -76,9 +76,9 @@ void movement_init()
     motor_speed.m2_effort = 0;
 
     motor_configurePinout(&motor0_pinout, &motor1_pinout, &motor2_pinout);
-    motor_init(&motor0_handler, &motor0_pinout, TIMER_PWM_M0);
-    motor_init(&motor1_handler, &motor1_pinout, TIMER_PWM_M1);
-    motor_init(&motor2_handler, &motor2_pinout, TIMER_PWM_M2);
+    motor_init(&motor0_handler, &motor0_pinout, TIMER_PWM_M0, TIMER_ENC_M0);
+    motor_init(&motor1_handler, &motor1_pinout, TIMER_PWM_M1, TIMER_ENC_M1);
+    motor_init(&motor2_handler, &motor2_pinout, TIMER_PWM_M2, TIMER_ENC_M2);
     odom_init(&odom_handler);
     initPID();
 
@@ -202,8 +202,10 @@ void movement_update()
         motor_update(&motor1_handler);
         motor_update(&motor2_handler);
     }
+    printf("\r\n");
 
-    printf("%d\r\n", motor_speed.is_manually_controled);
+    // printf("%d %d %d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
+    //        timerif_getCounter(TIMER_ENC_M2));
 
     /*
     odom_update(odom_handler, motor0_handler->linear_velocity, motor1_handler->linear_velocity,
