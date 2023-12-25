@@ -7,14 +7,15 @@
 
 typedef void (*TimerCallbackType)(TIM_HandleTypeDef *timer_handler); /* Callback, that called, when PWM changes state */
 
-#define TIMER_PWM_M0    &htim11
-#define TIMER_PWM_M1    &htim13
-#define TIMER_PWM_M2    &htim14
-#define TIMER_ENC_M0    &htim2
-#define TIMER_ENC_M1    &htim3
-#define TIMER_ENC_M2    &htim4
+#define TIMER_PWM_M0    (&htim11)
+#define TIMER_PWM_M1    (&htim13)
+#define TIMER_PWM_M2    (&htim14)
+#define TIMER_ENC_M0    (&htim2)
+#define TIMER_ENC_M1    (&htim3)
+#define TIMER_ENC_M2    (&htim4)
 
 void timerif_init();
+void timerif_initInterrups(void);
 
 void timerif_setPeriodElapsedCallback(TimerCallbackType callback);
 void timerif_setPulseFinishedCallback(TimerCallbackType callback);

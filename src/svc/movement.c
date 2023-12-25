@@ -76,6 +76,7 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     MotorPinoutType motor2_pinout;
 
     ioif_init();
+    timerif_init();
 
     motor_configurePinout(&motor0_pinout, &motor1_pinout, &motor2_pinout);
     motor_init(motor0_handler, &motor0_pinout, TIMER_PWM_M0);
@@ -84,9 +85,9 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     odom_init(odom_handler);
     initPID();
 
-    timerif_setPeriodElapsedCallback((TimerCallbackType)pwmSetHigh);
-    timerif_setPulseFinishedCallback((TimerCallbackType)pwmSetLow);
-    timerif_init();
+    timerif_setPeriodElapsedCallback((TimerCallbackType)movement_pwmHighCallback);
+    timerif_setPulseFinishedCallback((TimerCallbackType)movement_pwmLowCallback);
+    timerif_initInterrups();
 }
 
 void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
@@ -197,6 +198,38 @@ void movement_update()
     printOdom();
 }
 
+void movement_pwmHighCallback(TIM_HandleTypeDef *timer_handler)
+{
+    if (timer_handler->Instance == TIMER_PWM_M0->Instance)
+    {
+        ioif_writePin(&motor0_handler->pwm_pin, true);
+    }
+    else if (timer_handler->Instance == TIMER_PWM_M1->Instance)
+    {
+        ioif_writePin(&motor1_handler->pwm_pin, true);
+    }
+    else if (timer_handler->Instance == TIMER_PWM_M2->Instance)
+    {
+        ioif_writePin(&motor2_handler->pwm_pin, true);
+    }
+}
+
+void movement_pwmLowCallback(TIM_HandleTypeDef *timer_handler)
+{
+    if (timer_handler->Instance == TIMER_PWM_M0->Instance)
+    {
+        ioif_writePin(&motor0_handler->pwm_pin, false);
+    }
+    else if (timer_handler->Instance == TIMER_PWM_M1->Instance)
+    {
+        ioif_writePin(&motor1_handler->pwm_pin, false);
+    }
+    else if (timer_handler->Instance == TIMER_PWM_M2->Instance)
+    {
+        ioif_writePin(&motor2_handler->pwm_pin, false);
+    }
+}
+
 static void initPID(void)
 {
     double *ptr_input;
@@ -239,14 +272,3 @@ static void printOdom(void)
     float vel_z = odom_handler->robot_vel_data[2];
     printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", pos_x, pos_y, pos_z, vel_x, vel_y, vel_z);
 }
-
-static void pwmSetHigh(TIM_HandleTypeDef *timer_handler)
-{
-    volatile uint32_t x;
-}
-
-static void pwmSetLow(TIM_HandleTypeDef *timer_handler)
-{
-    volatile uint32_t x;
-}
-
