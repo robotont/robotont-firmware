@@ -74,12 +74,14 @@ void movement_init(MotorHandleType *m0_handler, MotorHandleType *m1_handler, Mot
     MotorPinoutType motor2_pinout;
 
     ioif_init();
+    
     motor_configurePinout(&motor0_pinout, &motor1_pinout, &motor2_pinout);
     motor_init(motor0_handler, &motor0_pinout, TIMER_PWM_M0);
     motor_init(motor1_handler, &motor1_pinout, TIMER_PWM_M1);
     motor_init(motor2_handler, &motor2_pinout, TIMER_PWM_M2);
     odom_init(odom_handler);
     initPID();
+
     timerif_init();
 }
 
