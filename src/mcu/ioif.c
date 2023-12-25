@@ -4,10 +4,12 @@
 
 void ioif_init(void)
 {
-    MX_GPIO_Init();
-    // TODO [implementation]
-    // since a lot of modules use GPIO, MX_GPIO init called in main.c inside peripheral module
-    // init inside each module in the future
+    static bool is_initialized = false;
+    if (!is_initialized)
+    {
+        MX_GPIO_Init();
+        is_initialized = true;
+    }
 }
 
 void ioif_writePin(IoPinType *ptr_pin, bool is_active)

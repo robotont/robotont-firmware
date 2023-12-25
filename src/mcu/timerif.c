@@ -1,5 +1,7 @@
 #include "timerif.h"
 
+#include <stdbool.h>
+
 #include "peripheral.h"
 #include "system_hal.h"
 
@@ -8,15 +10,21 @@ static TimerCallbackType pulse_finished_callback;
 
 void timerif_init()
 {
-    period_elapsed_callback = NULL;
-    pulse_finished_callback = NULL;
+    static bool is_initialized = false;
+    if (!is_initialized)
+    {
+        period_elapsed_callback = NULL;
+        pulse_finished_callback = NULL;
 
-    MX_TIM2_Init();
-    MX_TIM3_Init();
-    MX_TIM4_Init();
-    MX_TIM11_Init();
-    MX_TIM13_Init();
-    MX_TIM14_Init();
+        MX_TIM2_Init();
+        MX_TIM3_Init();
+        MX_TIM4_Init();
+        MX_TIM11_Init();
+        MX_TIM13_Init();
+        MX_TIM14_Init();
+
+        is_initialized = true;
+    }
 }
 
 void timerif_initInterrups(void)

@@ -7,7 +7,9 @@
  */
 
 #include "usbif.h"
+
 #include <stdbool.h>
+
 #include "usb_device.h"
 #include "usbd_def.h"
 
@@ -19,9 +21,15 @@ static ReceiveCallbackType receive_callback;
  */
 void usbif_init(void)
 {
-    receive_callback = NULL;
-    MX_USB_DEVICE_Init();
-    usbd_cdc_setUpperLayerCallback((ReceiveCallbackType)usbif_receive);
+    static bool is_initialized = false;
+    if (!is_initialized)
+    {
+        receive_callback = NULL;
+        MX_USB_DEVICE_Init();
+        usbd_cdc_setUpperLayerCallback((ReceiveCallbackType)usbif_receive);
+
+        is_initialized = true;
+    }
 }
 
 /**
