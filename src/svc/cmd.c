@@ -30,10 +30,11 @@ void cmd_init(void)
 
 /**
  * @brief USB RX interrupt handler.
- * Takes raw string, cuts off 1st argument and CR+LF, sends data to the corresponding module
+ * Takes raw string, cuts off 1st argument ("XX:") sends data to the corresponding module
  * @note Called within ISR context from lower layer (usbcdc -> usbif -> cmd)
- * @param ptr_data Raw string in the format `ARG:VALUE_1:...:VALUE_N/r/n`
- * @param lenght Lenght of the whole string (including CR + LF)
+ * @note CR + LF already excluded in the `usbif`
+ * @param ptr_data Raw string in the format `ARG:VALUE_1:...:VALUE_N`
+ * @param lenght Lenght of the raw string
  */
 void cmd_handleUsbData(uint8_t *ptr_data, uint16_t lenght)
 {
