@@ -83,6 +83,8 @@ void timerif_setPulseFinishedCallback(TimerCallbackType callback)
  */
 void timerif_setEffort(TIM_HandleTypeDef *timer_handler, uint16_t effort)
 {
+    // TODO Effort, DutyCicle?
+    // TODO Scale 0 to 100? What is "effor"?
     __HAL_TIM_SET_COMPARE(timer_handler, TIM_CHANNEL_1, effort);
 }
 

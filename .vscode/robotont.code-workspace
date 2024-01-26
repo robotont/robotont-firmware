@@ -43,6 +43,8 @@
             // optional
             "aaron-bond.better-comments",
             "tal7aouy.icons",
+            // todo doxygen
+
         ]
     }
 }
