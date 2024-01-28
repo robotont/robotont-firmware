@@ -1,6 +1,6 @@
 ### How to add new MCU interfaces in current architecture
 
-This guide covers, how to extend microcontroller functionaity, using STM32CubeMX code generator.
+This guide covers, how to extend MCU functionality, using STM32CubeMX code generator.
 As an example, firstly will be configured I2C interface.
 
 ### Code generation
@@ -8,8 +8,8 @@ As an example, firstly will be configured I2C interface.
 In first four steps, configure code generator:
  1. Create new project, using repository .ioc file
  2. Enable interface with required setting
- 3. [Optional] Enable interrups
- 4. Select "Copy only neccessary..." and mark "Generate peripheral as a pair..."
+ 3. [Optional] Enable interrupts
+ 4. Select "Copy only necessary..." and mark "Generate peripheral as a pair..."
 
 ![Step 1](.images/i2c_part1.png)
 ![Step 2: Pinout & Configuration](.images/i2c_part3.png)
@@ -31,15 +31,15 @@ From `i2c.h` and `i2c.c` move `I2C_HandleTypeDef hi2cx` and `MX_I2Cx_Init(void)`
 From `i2c.c` move `HAL_I2C_MspInit(I2C_HandleTypeDef hi2c)` to the `stm32f4xx_hal_msp.c`
 ![Step 8](.images/i2c_part10.png)
 
-From `stm32f4xx_it.h` and `stm32f4xx_it.c` (generated) move interrups handlers to the `stm32f4xx_it.h` and `stm32f4xx_it.c` (robotont)
+From `stm32f4xx_it.h` and `stm32f4xx_it.c` (generated) move interrupts handlers to the `stm32f4xx_it.h` and `stm32f4xx_it.c` (Robotont)
 ![Step 9](.images/i2c_part11.png)
 ![Step 10](.images/i2c_part12.png)
 
 ### Implementing interface wrapper
 
-In order to isolate generated stuff with robotont source code, we create simple `ic2if` module. Since we use only goint wrap `HAL_I2C_Mem_Write`. No need to implement stuff, that we don't use currently, it's always can be done in the future.
+In order to isolate generated stuff with robotont source code, we create simple `ic2if` module. We going to wrap only `HAL_I2C_Mem_Write`. No need to implement stuff, that we don't use currently, it's always can be done in the future.
 
-We will need `init` function to initialize interfaces and `meemoryWrite` to communicate with external devuce, such OLED SSD1306.
+We will need `init` function to initialize interfaces and `memoryWrite` to communicate with external device, such OLED SSD1306.
 
 ```c
 void i2cif_init(void)
@@ -81,4 +81,4 @@ void HAL_I2C_ErrorCallback(FunctionPointerType *i2c_handler)
 }
 ```
 
-In this approach, you don't need to import application level stuff to the interface level. Therefore, this module will keps self-compiable and will not depend on other modules.
+In this approach, you don't need to import application level stuff to the interface level. Therefore, this module will keep self-compilable and will not depend on other modules.
