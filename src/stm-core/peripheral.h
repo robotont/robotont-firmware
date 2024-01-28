@@ -61,8 +61,6 @@
 #define PIN_LED_DATA_GPIO_Port     GPIOE
 
 extern CAN_HandleTypeDef hcan1;
-extern I2C_HandleTypeDef hi2c1;
-extern I2C_HandleTypeDef hi2c2;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
@@ -70,6 +68,9 @@ extern TIM_HandleTypeDef htim11;
 extern TIM_HandleTypeDef htim13;
 extern TIM_HandleTypeDef htim14;
 extern UART_HandleTypeDef huart3;
+extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
+extern I2C_HandleTypeDef hi2c3;
 
 void MX_GPIO_Init(void);
 void MX_TIM2_Init(void);
@@ -78,6 +79,9 @@ void MX_TIM4_Init(void);
 void MX_TIM11_Init(void);
 void MX_TIM13_Init(void);
 void MX_TIM14_Init(void);
+void MX_I2C1_Init(void);
+void MX_I2C2_Init(void);
+void MX_I2C3_Init(void);
 void peripheral_init(void);
 
 #endif
