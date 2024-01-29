@@ -36,7 +36,7 @@ From `i2c.h` and `i2c.c` move `I2C_HandleTypeDef hi2cx` and `MX_I2Cx_Init(void)`
 
 <p float="left">
   <img src=".images/i2c_part7.png" width="200" />
-  <img src=".images/i2c_part8.png" width="600" /> 
+  <img src=".images/i2c_part8.png" width="400" /> 
   <img src=".images/i2c_part9.png" width="400" /> 
 </p>
 
