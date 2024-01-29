@@ -19,7 +19,7 @@ Configure peripheral:
 
 <p float="left">
   <img src=".images/i2c_part3.png" width="500" />
-  <img src=".images/i2c_part4.png" width="490" /> 
+  <img src=".images/i2c_part4.png" width="495" /> 
 </p>
 
 Select "Copy only necessary..." and mark "Generate peripheral as a pair...":
@@ -35,9 +35,9 @@ Those are:
 From `i2c.h` and `i2c.c` move `I2C_HandleTypeDef hi2cx` and `MX_I2Cx_Init(void)` to the `peripheral.h` and `peripheral.c`
 
 <p float="left">
-  <img src=".images/i2c_part7.png" width="500" />
-  <img src=".images/i2c_part8.png" width="490" /> 
-  <img src=".images/i2c_part9.png" width="490" /> 
+  <img src=".images/i2c_part7.png" width="200" />
+  <img src=".images/i2c_part8.png" width="510" /> 
+  <img src=".images/i2c_part9.png" width="510" /> 
 </p>
 
 From `i2c.c` move `HAL_I2C_MspInit(I2C_HandleTypeDef hi2c)` to the `stm32f4xx_hal_msp.c`
