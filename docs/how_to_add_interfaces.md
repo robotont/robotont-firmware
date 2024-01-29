@@ -12,12 +12,16 @@ In first four steps, configure code generator:
  4. Select "Copy only necessary..." and mark "Generate peripheral as a pair..."
 
 Create project:
-<img src=".images/i2c_part1.png" width="200">
+
+<img src=".images/i2c_part1.png" width="400">
+
 Configure peripheral:
-<img src=".images/i2c_part3.png" width="200">
-<img src=".images/i2c_part4.png" width="200">
+
+<img src=".images/i2c_part3.png" width="500">
+<img src=".images/i2c_part4.png" width="500">
+
 Select "Copy only necessary..." and mark "Generate peripheral as a pair...":
-<img src=".images/i2c_part5.png" width="200">
+<img src=".images/i2c_part5.png" width="500">
 
 In the next steps, manually will be copied all necessary code parts.
 Those are:
