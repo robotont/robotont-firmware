@@ -17,8 +17,10 @@ Create project:
 
 Configure peripheral:
 
-<img src=".images/i2c_part3.png" width="500">
-<img src=".images/i2c_part4.png" width="500">
+<p float="left">
+  <img src=".images/i2c_part3.png" width="500" />
+  <img src=".images/i2c_part4.png" width="500" /> 
+</p>
 
 Select "Copy only necessary..." and mark "Generate peripheral as a pair...":
 <img src=".images/i2c_part5.png" width="500">
