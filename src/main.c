@@ -11,6 +11,8 @@
 #include "odom.h"
 #include "peripheral.h"
 #include "pid.h"
+#include "ssd1306.h"
+#include "ssd1306_tests.h"
 #include "system_hal.h"
 #include "timerif.h"
 #include "usbif.h"
@@ -24,7 +26,8 @@ int main(void)
     peripheral_init();
     ioif_init();
     timerif_init();
-    
+    i2cif_init();
+
     cmd_init();
     movement_init();
 
@@ -47,9 +50,16 @@ int main(void)
     ioif_togglePin(&led_green);
 
     int16_t effort = 90;
+    // MX_I2C1_Init();
+    MX_I2C2_Init();
+    // MX_I2C3_Init();
+    ssd1306_Init();
 
     while (true)
     {
+        ssd1306_TestFPS();
+        system_hal_delay(5000);
+#if 0
         current_tick = HAL_GetTick();
         if (current_tick >= last_tick + MAIN_LOOP_DT_MS)
         {
@@ -93,5 +103,6 @@ int main(void)
             // printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
             //        timerif_getCounter(TIMER_ENC_M2));
         }
+#endif
     }
 }
