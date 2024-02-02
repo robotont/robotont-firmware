@@ -1,17 +1,19 @@
+/**
+ * @file odom.c
+ * @brief Service. Calculates odometry paramters, based on fact, that robot is omnimotional with three motors
+ *
+ * @author Veiko Vunder
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
+
 #include "odom.h"
 
 #include <stdio.h>
 
 #include "motor_cfg.h"
 
-void odom_init(OdomType *ptr_odom, MotorCfgType *hmc0, MotorCfgType *hmc1, MotorCfgType *hmc2)
+void odom_init(OdomType *ptr_odom)
 {
-#if 0
-    MotorCfgType *motor_configs[3];
-    motor_configs[0] = hmc0;
-    motor_configs[1] = hmc1;
-    motor_configs[2] = hmc2;
-#endif
     float wheel_pos_phi[3u];
     wheel_pos_phi[0] = MOTOR_0_WHEEL_PHI;
     wheel_pos_phi[1] = MOTOR_1_WHEEL_PHI;
@@ -19,11 +21,6 @@ void odom_init(OdomType *ptr_odom, MotorCfgType *hmc0, MotorCfgType *hmc1, Motor
     // add elements to odom matrix row by row (each row is a wheel)
     for (int i = 0; i < 3; i++)
     {
-#if 0
-        ptr_odom->odom_matrix_data[i * 3 + 0] = -sin(motor_configs[i]->wheel_pos_phi);
-        ptr_odom->odom_matrix_data[i * 3 + 1] = cos(motor_configs[i]->wheel_pos_phi);
-        ptr_odom->odom_matrix_data[i * 3 + 2] = motor_configs[i]->wheel_pos_r;
-#endif
         ptr_odom->odom_matrix_data[i * 3 + 0] = -sin(wheel_pos_phi[i]);
         ptr_odom->odom_matrix_data[i * 3 + 1] = cos(wheel_pos_phi[i]);
         // TODO [implementation] Be careful, if motors are not the same size

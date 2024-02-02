@@ -1,47 +1,54 @@
-#ifndef __MOTOR_H__
-#define __MOTOR_H__
+/**
+ * @file motor.h
+ * @brief HW motor driver.
+ *
+ * Main task is to update speed of the motor.
+ * Two timers used for each motor: PWM Timer for pulse generation and Ecnoder Timer for reading wheel position.
+ * PWM pulse generated in timer interrupt context.
+ * Encoder value read in polling context and speed calculated based on counter change speed.
+ *
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
+
+#ifndef MOTOR_H
+#define MOTOR_H
 
 #include <stdint.h>
 
+#include "ioif.h"
 #include "stm32f4xx_hal.h"
-#include "sw_enc.h"
-#include "gpioif.h"
 
 typedef struct
 {
-    GPIO_TypeDef *nsleep_port;
-    GPIO_TypeDef *en1_port;
-    GPIO_TypeDef *en2_port;
-    GPIO_TypeDef *fault_port;
-    GPIO_TypeDef *ipropi_port;
-    uint16_t nsleep_pin;
-    uint16_t en1_pin;
-    uint16_t en2_pin;
-    uint16_t fault_pin;
-    uint16_t ipropi_pin;
-} MotorCfgType;
+    IoPinType nsleep_pin;
+    IoPinType en1_pin;
+    IoPinType en2_pin;
+    IoPinType fault_pin;
+    IoPinType ipropi_pin;
+} MotorPinoutType;
 
 typedef struct
 {
-    MotorCfgType *ptr_motor_config;
-    EncoderType *ptr_sw_enc;
-    double linear_velocity;
-    double linear_velocity_setpoint;
-    double effort;
-    double effort_limit;
-    GPIO_TypeDef *pwm_port;
-    uint16_t pwm_pin;
-    volatile uint32_t *effort_output_reg;
-    TIM_HandleTypeDef *htim;
-    uint32_t last_enc_update;
+} MotorDataType;
 
-} MotorType; 
+typedef struct
+{
+    MotorPinoutType *pinout;         /* Pin configuration*/
+    TIM_HandleTypeDef *enc_timer;    /* Timer, that counts encoder rotations */
+    TIM_HandleTypeDef *pwm_timer;    /* Timer, that generates PWM signal */
+    IoPinType pwm_pin;               /* PWM signal output pin, that will run motors */
+    double linear_velocity;          /* Actual linear velocity */
+    double linear_velocity_setpoint; /* Desired linear velocity */
+    double effort;                   /* PWM effort */
+    uint32_t prev_enc_timestamp;     /* Time of the encoder update in order to calculate pulse width (and speed) */
 
-void motor_init(MotorType *ptr_motor, MotorCfgType *ptr_motor_config, EncoderType *ptr_sw_enc,
-                volatile uint32_t *effort_output_reg, TIM_HandleTypeDef *htim);
-void motor_update(MotorType *ptr_motor);
-void motor_debug(MotorType *ptr_motor);
-void motor_enable(MotorType *ptr_motor);
-void motor_disable(MotorType *ptr_motor);
+} MotorHandleType;
+
+void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_HandleTypeDef *pwm_timer,
+                TIM_HandleTypeDef *enc_timer);
+void motor_update(MotorHandleType *motor_handler);
+void motor_enable(MotorHandleType *motor_handler);
+void motor_disable(MotorHandleType *motor_handler);
 
 #endif
