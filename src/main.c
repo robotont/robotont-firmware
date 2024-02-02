@@ -51,15 +51,12 @@ int main(void)
 
     int16_t effort = 90;
     // MX_I2C1_Init();
-    MX_I2C2_Init();
-    // MX_I2C3_Init();
+    // MX_I2C2_Init();
+    MX_I2C3_Init();
     ssd1306_Init();
 
     while (true)
     {
-        ssd1306_TestFPS();
-        system_hal_delay(5000);
-#if 0
         current_tick = HAL_GetTick();
         if (current_tick >= last_tick + MAIN_LOOP_DT_MS)
         {
@@ -84,10 +81,24 @@ int main(void)
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
 
             /* Debug info */
-            if (counter % 100u == 0)
+            if (counter % 10u == 0)
             {
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
+                
+                // Print some debug info to OLED display
+                char buff[64];
+                ssd1306_Fill(Black);
+                snprintf(buff, sizeof(buff), "Vel0:%05d", timerif_getCounter(TIMER_ENC_M0));
+                ssd1306_SetCursor(2, 2);
+                ssd1306_WriteString(buff, Font_11x18, White);
+                snprintf(buff, sizeof(buff), "Vel1:%05d", timerif_getCounter(TIMER_ENC_M1));
+                ssd1306_SetCursor(2, 20);
+                ssd1306_WriteString(buff, Font_11x18, White);
+                snprintf(buff, sizeof(buff), "Vel2:%05d", timerif_getCounter(TIMER_ENC_M2));
+                ssd1306_SetCursor(2, 38);
+                ssd1306_WriteString(buff, Font_11x18, White);
+                ssd1306_UpdateScreen();
                 // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
 
                 // effort += 10;
@@ -103,6 +114,5 @@ int main(void)
             // printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
             //        timerif_getCounter(TIMER_ENC_M2));
         }
-#endif
     }
 }
