@@ -99,6 +99,9 @@ int main(void)
                 ssd1306_SetCursor(2, 38);
                 ssd1306_WriteString(buff, Font_11x18, White);
                 ssd1306_UpdateScreen();
+
+                printf('APB1=%d\n', HAL_RCC_GetPCLK1Freq());
+                printf('APB2=%d\n', HAL_RCC_GetPCLK2Freq());
                 // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
 
                 // effort += 10;
