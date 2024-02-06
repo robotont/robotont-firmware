@@ -89,6 +89,16 @@ void timerif_setEffort(TIM_HandleTypeDef *timer_handler, uint16_t effort)
 }
 
 /**
+ * @brief Sets PWM duty cycle in range from 0 to 100
+ * @note  Using formula: CCR (compare capture register raw value) = duty_cycle * timer_period / 100%
+ */
+void timerif_setDutyCycle(TIM_HandleTypeDef *timer_handler, uint8_t duty_cycle)
+{
+    uint32_t ccr_value = timer_handler->Init.Period * duty_cycle / 100;
+    __HAL_TIM_SET_COMPARE(timer_handler, TIM_CHANNEL_1, ccr_value);
+}
+
+/**
  * @brief Enables PWM pulse generation
  */
 void timerif_enablePwmInterrupts(TIM_HandleTypeDef *timer_handler)
