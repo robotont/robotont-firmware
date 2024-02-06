@@ -26,7 +26,7 @@
 #include "stm32f4xx_hal.h"
 #include "timerif.h"
 
-#define EFFORT_EPSILON 0 //90 /* If effort value is less, then PWM pulse is not string enogh to run the motor */
+#define EFFORT_EPSILON 10 //90 /* If effort value is less, then PWM pulse is not string enogh to run the motor */
 
 /**
  * @brief Initializes given motor
