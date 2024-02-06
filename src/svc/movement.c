@@ -30,8 +30,8 @@
 #include "timerif.h"
 
 #define PACKET_TIMEOUT_MS 1000   /* Timeout, if no new packets received, then all motors will be stopped */
-#define PID_KP            600u   /* Proportional coef*/
-#define PID_KI            15000u /* Integral coef*/
+#define PID_KP            60u   /* Proportional coef*/
+#define PID_KI            1500u /* Integral coef*/
 #define PID_KD            0u     /* Derivative coef*/
 
 /* Speed that goes as an input to the PID controller of the each motor */
