@@ -237,7 +237,7 @@ void MX_TIM4_Init(void)
 }
 
 /**
- * @brief TIM11 Initialization Function
+ * @brief TIM11 Initialization Function; Used for motor1 PWM
  * @param None
  * @retval None
  */
@@ -269,7 +269,7 @@ void MX_TIM11_Init(void)
 }
 
 /**
- * @brief TIM13 Initialization Function
+ * @brief TIM13 Initialization Function; Used for motor2 PWM
  * @param None
  * @retval None
  */
@@ -301,7 +301,7 @@ void MX_TIM13_Init(void)
 }
 
 /**
- * @brief TIM14 Initialization Function
+ * @brief TIM14 Initialization Function; Used for motor3 PWM
  * @param None
  * @retval None
  */

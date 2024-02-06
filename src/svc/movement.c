@@ -305,9 +305,9 @@ static void initPID(void)
     PID_SetMode(&pid0_handler, _PID_MODE_AUTOMATIC);
     PID_SetMode(&pid1_handler, _PID_MODE_AUTOMATIC);
     PID_SetMode(&pid2_handler, _PID_MODE_AUTOMATIC);
-    PID_SetOutputLimits(&pid0_handler, -1000.0f, 1000.0f);
-    PID_SetOutputLimits(&pid1_handler, -1000.0f, 1000.0f);
-    PID_SetOutputLimits(&pid2_handler, -1000.0f, 1000.0f);
+    PID_SetOutputLimits(&pid0_handler, -100.0f, 100.0f);
+    PID_SetOutputLimits(&pid1_handler, -100.0f, 100.0f);
+    PID_SetOutputLimits(&pid2_handler, -100.0f, 100.0f);
     PID_SetSampleTime(&pid0_handler, MAIN_LOOP_DT_MS);
     PID_SetSampleTime(&pid1_handler, MAIN_LOOP_DT_MS);
     PID_SetSampleTime(&pid2_handler, MAIN_LOOP_DT_MS);

@@ -78,8 +78,10 @@ void motor_update(MotorHandleType *motor_handler)
         ioif_writePin(&motor_handler->pinout->en2_pin, false);
     }
 
-    effort = (uint16_t)abs(motor_handler->effort);
-    timerif_setEffort(motor_handler->pwm_timer, effort);
+    // effort = (uint16_t)abs(motor_handler->effort);
+    uint8_t duty_cycle = (uint8_t)abs(motor_handler->effort);
+    // timerif_setEffort(motor_handler->pwm_timer, effort);
+    timerif_setDutyCycle(motor_handler->pwm_timer, duty_cycle);
 
     /* Calculates wheel rotation speed based on counter pulse value */
     if (motor_handler->prev_enc_timestamp != 0)
