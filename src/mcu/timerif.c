@@ -45,7 +45,7 @@ void timerif_init()
 /**
  * @brief Starts pre-defined timers and timer interrups
  */
-void timerif_initInterrups(void)
+void timerif_initInterrupts(void)
 {
     // gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback
     HAL_TIM_Base_Start_IT(TIMER_PWM_M0);
@@ -75,17 +75,6 @@ void timerif_setPeriodElapsedCallback(TimerCallbackType callback)
 void timerif_setPulseFinishedCallback(TimerCallbackType callback)
 {
     pulse_finished_callback = callback;
-}
-
-/**
- * @brief Sets PWM effort value in the timer compare register
- * @note Use only PWM timers
- */
-void timerif_setEffort(TIM_HandleTypeDef *timer_handler, uint16_t effort)
-{
-    // TODO Effort, DutyCicle?
-    // TODO Scale 0 to 100? What is "effor"?
-    __HAL_TIM_SET_COMPARE(timer_handler, TIM_CHANNEL_1, effort);
 }
 
 /**

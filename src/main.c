@@ -49,7 +49,7 @@ int main(void)
     led_red.ptr_port = PIN_LED_R_GPIO_Port;
     ioif_togglePin(&led_green);
 
-    int16_t effort = 90;
+    int16_t duty_cycle = 90;
     // MX_I2C1_Init();
     // MX_I2C2_Init();
     MX_I2C3_Init();
@@ -99,19 +99,7 @@ int main(void)
                 ssd1306_SetCursor(2, 38);
                 ssd1306_WriteString(buff, Font_11x18, White);
                 ssd1306_UpdateScreen();
-
-                printf("APB1=%d\n", HAL_RCC_GetPCLK1Freq());
-                printf("APB2=%d\n", HAL_RCC_GetPCLK2Freq());
                 // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
-
-                // effort += 10;
-                // if (effort > 160)
-                // {
-                //     effort = 90;
-                // }
-                // timerif_setEffort(TIMER_PWM_M0, effort);
-                // timerif_setEffort(TIMER_PWM_M1, effort);
-                // timerif_setEffort(TIMER_PWM_M2, effort);
             }
 
             // printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),

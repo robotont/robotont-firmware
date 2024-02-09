@@ -27,12 +27,11 @@ typedef void (*TimerCallbackType)(TIM_HandleTypeDef *timer_handler); /* Callback
 #define TIMER_ENC_M2    (&htim4)
 
 void timerif_init();
-void timerif_initInterrups(void);
+void timerif_initInterrupts(void);
 
 void timerif_setPeriodElapsedCallback(TimerCallbackType callback);
 void timerif_setPulseFinishedCallback(TimerCallbackType callback);
 
-void timerif_setEffort(TIM_HandleTypeDef *timer_handler, uint16_t effort);
 void timerif_setDutyCycle(TIM_HandleTypeDef *timer_handler, uint8_t duty_cycle);
 void timerif_enablePwmInterrupts(TIM_HandleTypeDef *timer_handler);
 void timerif_disablePwmInterrupts(TIM_HandleTypeDef *timer_handler);
