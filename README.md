@@ -1,20 +1,52 @@
 # Robotont mbed mainboard firmware
 
-Simplistic firmware for the Robotex platform mainboard.
+Firmware for the Robotont platform mainboard.
+Main tasks:
+ * Movement control (Three PWM motors)
+ * Addressable LED control
+ * OLED screen control
+ * Communication with battery monitor board (TO BE ADDED)
+ * Serial communication handling
+ 
+## Serial communication
 
-## Serial protocol
+The virtual serial port on the USB bus is used for bidirectional communication. Currently, it's the only way in the firmware to communicate with the external world (e.g. ROS). </br>
+Following table refers to the available commands in the firmware:
 
-The virtual serial port on the mbed USB bus is used for bidirectional communication. Approximately 100 times a second, motor speeds are given (from -100 to 100 in arbitrary units, sorry...). The format is: "motor1:motor2:motor3\n".
+|Type|Argument|Description|Format|
+|---|---|---|---|
+|Output|`ODOM`|Odometry data*|`"ODOM:{pos_x}:{pos_y}:{pos_z}:{speed_x}:{speed_y}:{speed_z}\r\n"`|
+|Input|`RS`|Robot's x, y and rotation speed*|`"RS:{speed_x}:{speed_y}:{speed_z}\r\n"`|
+|Input|`MS`|Individual motor speed*|`"MS:{speed_0}:{speed_1}:{speed_2}\r\n"`|
+|Input|`DC`|Individual motor duty cycle**|`"DC:{motor_0}:{motor_1}:{motor_2}\r\n"`|
+|Input|`OR`|Resets odometry data|`"OR\r\n"`|
 
-In the same format You can also send data to the mainboard to set the motor speeds (from -100 to 100).
+\* *All speed units are arbitrary in range (-100:100).* </br>
+\*\* *Robot will enter "manual mode", meaning that motors will rotate with given duty cycle until `MS` or `RS` commands is received. Duty cycle range is (-100:100), where minus mark means negative rotation direction. Threshold to stop is 10%*
+
+## Updating
+
+Bootloader currently is not supported. In order to flash new firmware, user need a programmer supporting SWD interface. Refer to the pinout to access debug interface pins. __TODO ADD LINK?__
 
 ## Development
 
 Repository contains PlatformIO project. PlatformIO is a development ecosystem for embedded systems and eases working on the code a lot.
+All the dependencies and build tools are installed automatically on the first build. </br>
 
-To work on this code just clone the repo and open it in the PlatformIO IDE (or build and upload it with the PlatformIO core tools from the command line). All the dependencies and build tools are installed automatically on the first build.
+__If you are active developer, please refer to the firmware documentation: TODO ADD LINK__
 
-### CLI
+
+### Installation:
+
+> [!NOTE]  
+> It is highly recommended to use VSCode with PlatformIO extension in order to speed up development and make it more comfortable.
+
+#### VSCode
+
+Navigate to the `robotont-firmware/.vscode/` and open `robotont.code-workspace` with VSCode. </br>
+Install recommended extensions, they included in the workspace file.
+
+#### CLI
 
 1. Install PlatformIO [CLI](https://docs.platformio.org/en/latest/core/installation.html).    
 2. Make sure to add [the standard udev rules](https://docs.platformio.org/en/latest/faq.html#faq-udev-rules) of platformIO and also ST-link 2.1 specific ones:    
