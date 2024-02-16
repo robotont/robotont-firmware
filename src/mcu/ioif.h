@@ -17,10 +17,7 @@
 
 #include "peripheral.h"
 
-typedef void (*EXTICallbackType)(uint16_t GPIO_Pin);
-
-void ioif_setRotaryEncoderCallback(EXTICallbackType callback);
-
+typedef void (*EXTICallbackType)(uint16_t pin_number);
 typedef struct
 {
     GPIO_TypeDef *ptr_port;
@@ -31,5 +28,6 @@ void ioif_init(void);
 void ioif_writePin(IoPinType *ptr_pin, bool is_active);
 bool ioif_isActive(IoPinType *ptr_pin);
 void ioif_togglePin(IoPinType *ptr_pin);
+void ioif_setRotaryEncoderCallback(EXTICallbackType callback);
 
 #endif

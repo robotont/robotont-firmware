@@ -23,6 +23,7 @@ void ioif_init(void)
     static bool is_initialized = false;
     if (!is_initialized)
     {
+        rotary_encoder_callback = NULL;
         MX_GPIO_Init();
         is_initialized = true;
     }
@@ -52,7 +53,12 @@ void ioif_togglePin(IoPinType *ptr_pin)
     HAL_GPIO_TogglePin(ptr_pin->ptr_port, ptr_pin->pin_number);
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void ioif_setRotaryEncoderCallback(EXTICallbackType callback)
 {
-    rotary_encoder_callback = GPIO_Pin;
+    rotary_encoder_callback = callback;
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t pin_number)
+{
+    rotary_encoder_callback(pin_number);
 }
