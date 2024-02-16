@@ -109,17 +109,24 @@ void main(void)
 
 ## Wrapper interrupt configuration
 
-# // TO BE EXPLAINED MORE
+In current architecture is forbidden to include components from top to bottom layers. </br>
+In order to follow this rule even with interrupts, that come from bottom layers, we can use [function pointers](https://www.cprogramming.com/tutorial/function-pointers.html).
 
+
+We need to define interrupt, that we want to use. In this case it is `HAL_I2C_ErrorCallback()`. 
+Also, we need to define callback setter, in this case it is `i2cif_setErrorCallback`.
 ```c
 static FunctionPointerType error_callback = NULL; 
+
+...
+...
 
 void i2cif_setErrorCallback(FunctionPointerType callback)
 {
     error_callback = callback;
 }
 
-void HAL_I2C_ErrorCallback(FunctionPointerType *i2c_handler)
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *i2c_handler)
 {
     if (error_callback != NULL)
     {
@@ -128,4 +135,34 @@ void HAL_I2C_ErrorCallback(FunctionPointerType *i2c_handler)
 }
 ```
 
-In this approach, there is no need to import top-level components into the bottom level. Consequently, this module will remain self-compilable and independent of other modules.
+Demo `main.c` file with I2C error handling would look like this:
+```c
+#include <stdbool.h>
+#include <stdio.h>
+#include "led.h"
+#include "oled.h"
+
+static void custom_error_handler(I2C_HandleTypeDef *i2c_handler);
+
+void main(void)
+{
+    led_init();
+    oled_init();
+    FunctionPointerType error_callback = (FunctionPointerType)custom_error_handler;
+
+    while(true)
+    {
+        oled_updateScreen(); // Using I2C transmission
+    }
+}
+
+static void custom_error_handler(I2C_HandleTypeDef *i2c_handler)
+{
+    if (i2c_handler->Instance == OLED_I2C_INSTANCE)
+    {
+        printf("Error on the OLED I2C bus\r\n");
+        led_setColor(LED_COLOR_RED);
+        led_setMode(LED_MODE_BLINK_5HZ);
+    }
+}
+```
