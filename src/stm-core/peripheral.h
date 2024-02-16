@@ -44,14 +44,17 @@
 #define PIN_M2_IPROPI_Pin        GPIO_PIN_5
 #define PIN_M2_IPROPI_GPIO_Port  GPIOE
 
-#define PIN_ROT_ENC_SW_Pin       GPIO_PIN_14
-#define PIN_ROT_ENC_SW_GPIO_Port GPIOD
-#define PIN_ROT_ENC_B_Pin        GPIO_PIN_15
-#define PIN_ROT_ENC_B_GPIO_Port  GPIOD
-#define PIN_ROT_ENC_A_Pin        GPIO_PIN_6
-#define PIN_ROT_ENC_A_GPIO_Port  GPIOC
-#define PIN_ESTOP_Pin            GPIO_PIN_2
-#define PIN_ESTOP_GPIO_Port      GPIOD
+#define PIN_ROT_ENC_SW_Pin         GPIO_PIN_14
+#define PIN_ROT_ENC_SW_GPIO_Port   GPIOD
+#define PIN_ROT_ENC_SW_EXTI_IRQn   EXTI15_10_IRQn
+#define PIN_ROT_ENC_B_Pin          GPIO_PIN_15
+#define PIN_ROT_ENC_B_GPIO_Port    GPIOD
+#define PIN_ROT_ENC_B_EXTI_IRQn    EXTI15_10_IRQn
+#define PIN_ROT_ENC_A_Pin          GPIO_PIN_6
+#define PIN_ROT_ENC_A_GPIO_Port    GPIOC
+#define PIN_ROT_ENC_A_EXTI_IRQn    EXTI9_5_IRQn
+#define PIN_ESTOP_Pin              GPIO_PIN_2
+#define PIN_ESTOP_GPIO_Port        GPIOD
 
 #define PIN_LED_G_Pin            GPIO_PIN_13
 #define PIN_LED_G_GPIO_Port      GPIOE
