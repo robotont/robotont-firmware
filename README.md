@@ -26,7 +26,7 @@ Following table refers to the available commands in the firmware:
 
 ## Updating
 
-Bootloader currently is not supported. In order to flash new firmware, user need a programmer supporting SWD interface.
+In order to flash new firmware, user needs a programmer supporting SWD interface.
 Refer to the robotont-electronics-mainboard schematic for detailed information.
 <details>
   <summary>Pinout</summary>

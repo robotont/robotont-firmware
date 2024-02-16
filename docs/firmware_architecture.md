@@ -19,7 +19,7 @@ In this project author used layered architecture approach. Firmware divided into
 Each part of the diagram will be explained below.
 
 <p float="left">
-  <img src=".images/fw_architecture.png" width="600" />
+  <img align="top" src=".images/fw_architecture.png" width="600" />
   <img align="top" src=".images/fw_architecture_legend.png" width="200" /> 
 </p>
 
@@ -61,6 +61,8 @@ Robotont firmware divided into the five layers:
 <img src=".images/fw_architecture_extend.png" width="800">
 
 Example: [how_to_add_interfaces.md](./how_to_add_interfaces.md)
+
+// TODO example, how to add upp layer service
 
 
 ## Formatting rules
