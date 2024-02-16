@@ -223,8 +223,8 @@ void sample_function(void)
 
 static someFunction(void)
 {
-  static_variable = 0u;
-  global_variable;
+    static_variable = 0u;
+    global_variable = STATIC_DEFINE_2;
 }
 ```
 </details>

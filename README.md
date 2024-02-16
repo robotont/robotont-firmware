@@ -38,8 +38,11 @@ Refer to the robotont-electronics-mainboard schematic for detailed information.
 Repository contains PlatformIO project. PlatformIO is a development ecosystem for embedded systems and eases working on the code a lot.
 All the dependencies and build tools are installed automatically on the first build. </br>
 
-__If you are active developer, please refer to the firmware documentation: [firmware_architecture.md](./docs/firmware_architecture.md)__
-
+__If you are active developer, please refer to the firmware documentation:__
+ 1. [Style guideline](./docs/style_guideline.md)
+ 2. [Firmware architecture](./docs/firmware_design.md)
+ 3. [How to add MCU peripherals](./docs/how_to_add_interfaces.md)
+ 4. [How to expand application layer](./docs/how_to_add_services.md)
 
 ## Installation:
 
