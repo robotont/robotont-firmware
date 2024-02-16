@@ -13,6 +13,8 @@
 
 #include "peripheral.h"
 
+static EXTICallbackType rotary_encoder_callback;
+
 /**
  * @brief Initializes timer module
  */
@@ -52,18 +54,5 @@ void ioif_togglePin(IoPinType *ptr_pin)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if(GPIO_Pin == PIN_ROT_ENC_SW_Pin)
-    {
-        return;
-    }
-
-    else if (GPIO_Pin == PIN_ROT_ENC_A_Pin)
-    {
-        return;
-    }
-
-    else if (GPIO_Pin == PIN_ROT_ENC_B_Pin)
-    {
-        return;
-    }
+    rotary_encoder_callback = GPIO_Pin;
 }

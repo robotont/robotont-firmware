@@ -17,6 +17,10 @@
 
 #include "peripheral.h"
 
+typedef void (*EXTICallbackType)(uint16_t GPIO_Pin);
+
+void ioif_setRotaryEncoderCallback(EXTICallbackType callback);
+
 typedef struct
 {
     GPIO_TypeDef *ptr_port;
