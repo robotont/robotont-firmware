@@ -49,3 +49,21 @@ void ioif_togglePin(IoPinType *ptr_pin)
 {
     HAL_GPIO_TogglePin(ptr_pin->ptr_port, ptr_pin->pin_number);
 }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if(GPIO_Pin == PIN_ROT_ENC_SW_Pin)
+    {
+        return;
+    }
+
+    else if (GPIO_Pin == PIN_ROT_ENC_A_Pin)
+    {
+        return;
+    }
+
+    else if (GPIO_Pin == PIN_ROT_ENC_B_Pin)
+    {
+        return;
+    }
+}
