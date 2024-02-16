@@ -37,7 +37,7 @@ Robotont firmware divided into the five layers:
 (\*) *Exception made for `cmd handler` service. `cmd handler` includes other services. Reason for this approach is that `cmd handler` only purpose is to redirect serial data. Moving this to the application layer will over-complicate the code.*
 
 > [!IMPORTANT]  
-> Bottom level module should never include module from top level. This approach will keep more portable (not only in terms of MCU and HW, but also in terms of application).
+> Bottom level module should never include module from top level. This approach will keep code more portable (not only in terms of MCU and HW, but also in terms of application).
 
 #### Logical components
 

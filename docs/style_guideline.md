@@ -1,9 +1,11 @@
-### Formatting guideline
+# Formatting guideline
 
 With a uniform source code layout and style we will speed up the development and simplify understanding of existing code. Most of the rules already maintained by the `clang-tidy` and `clang-format`.<br>
 
 > [!NOTE]  
 > Rules should apply only for project related files. No need to apply given rules on third party library files (i.e. Cube HAL, stm32xxx, C library etc.)
+
+## Rules 
 
 **Generic:**
 
@@ -55,7 +57,7 @@ if (true)
 2. Docstring format:
 ```cpp
 /**
- * @brief 
+ * @brief
  * 
  * @param a
  * @param b
@@ -63,14 +65,16 @@ if (true)
  * @return <type>
  */
 ```
+> [!NOTE]  
+> `@param` and `@return` fields can be ignored, if information in the `@brief` is sufficient.
+
 3. Component placement order in `header.h`:
 ```cpp
 /**
  * Includes
  * Defines
  * Type definitions
- * Constants
- * Global Variables
+ * Global Variables (extern)
  * 
  * Public function prototypes
  * */
@@ -92,9 +96,9 @@ if (true)
 5. Keep filenames short, lowercase and avoid using dashes (and underscores, if possible). 
 ```cpp
 // GOOD
-usbdrv.c
+spidrv.c
 usb.c
-// OK
+// ACCEPTABLE
 sw_enc.c
 // BAD
 USB_driver.c
@@ -106,9 +110,14 @@ someModule.c
 
 1. Name global functions like `filename_functionNameInCamelCase(...)`; name static functions like `functionNameInCamelCase(...)`. Add prefix `is`, if function returns boolean
 ```cpp
+// GOOD
 bool robot_isRunning(void);
 uint8_t calc_calculateSum(uint8_t a, uint8_t b);
-void priv_enableInterrupt(void);
+static void enableInterrupt(void);
+// BAD
+bool robot_is_running(void);                    // Can be mistaken with variable
+uint8_t calcCalculateSum(uint8_t a, uint8_t b)  // Can be mistaken with static function
+static void enableinterrupts(void)              // Hard to read
 ```
 2. Name variable in `snake_case`. Add prefix `is_` to the boolean type
 ```cpp
@@ -123,7 +132,7 @@ typedef struct
     uint32_t pos_y;
 } RobotPositionType;
 ```
-4. Name typedefs in `PascalCase` with suffix `Type`
+4. Name typedef's in `PascalCase` with suffix `Type`
 ```cpp
 typedef uint32_t RobotSpeedType;
 ```
@@ -136,26 +145,49 @@ enum PinState
 };
 ``` 
 6. Name macros and defines in `UPPER_CASE`
-7. Pointer variables should have prefix `ptr_` 
+7. Pointer variables should have prefix `ptr_`. Exception is made for postfix `handler`, because it is common name for `STM32F4` interface handlers.
 ```cpp
 uint32_t *ptr_name;
+I2C_HandleTypeDef *i2c_handler;
 ```
 8. If variable represents physical value, unit suffix should present. SI units are exception
 ```cpp
 #define VOLTAGE_OFFSET_MV 12000u
 uint32_t timeout_ms = 100u;
 int8_t voltage = 12;
-float time_minutes = 32.3f // time_min would be bad examle, since "min" could be confused with minimum
+float time_minutes = 32.3f // time_min would be bad example, since "min" could be confused with word "minimum"
 ```
 
-**Examples**
+## Examples
 
 There's examples of how code should be formatted:
 <details>
   <summary>sample.h</summary>
   
 ```cpp
-// To be filled
+/**
+ * @file sample.h
+ * @brief Sample code for header file
+ *
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2024 Tartu Ülikool
+ */
+
+#ifndef SAMPLE_H
+#define SAMPLE_H
+
+#include "other_module.h"
+
+#define SAMPLE_VALUE_BAR 1u
+#define SAMPLE_VALUE_FOO 2u
+
+typedef uint16_t SampleType;
+
+extern SampleType global_variable;
+
+void sample_function(void);
+
+#endif
 ```
 </details>
 
@@ -163,6 +195,36 @@ There's examples of how code should be formatted:
   <summary>sample.c</summary>
   
 ```cpp
-// To be filled
+/**
+ * @file sample.c
+ * @brief Sample code for source file
+ *
+ * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
+ * @copyright Copyright (c) 2024 Tartu Ülikool
+ */
+
+#include "sample.h"
+
+#define STATIC_DEFINE_1 3u
+#define STATIC_DEFINE_2 4u
+
+typedef uint8_t StaticType;
+
+StaticType static_variable;
+SampleType also_static_variable;
+SampleType global_variable;
+
+static someFunction(void);
+
+void sample_function(void)
+{
+    someFunction();
+}
+
+static someFunction(void)
+{
+  static_variable = 0u;
+  global_variable;
+}
 ```
 </details>

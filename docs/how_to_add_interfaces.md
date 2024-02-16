@@ -49,7 +49,7 @@ In the next steps, copy required components to the project folder:
   </details> 
 
   <details>
-    <summary>3. From <code>i2c.c</code> copy <code>HAL_I2C_MspInit(I2C_HandleTypeDef hi2c)</code> to the <code>stm32f4xx_hal_msp.c</code></br></summary>
+    <summary>3. From <code>i2c.c</code> copy <code>HAL_I2C_MspInit(I2C_HandleTypeDef hi2c)</code> definition to the <code>stm32f4xx_hal_msp.c</code></br></summary>
     <img align="top" src=".images/i2c_part10.png" width="800">
   </details> 
 
