@@ -15,31 +15,36 @@ Following table refers to the available commands in the firmware:
 
 |Type|Argument|Description|Format|
 |---|---|---|---|
-|Output|`ODOM`|Odometry data*|`"ODOM:{pos_x}:{pos_y}:{pos_z}:{speed_x}:{speed_y}:{speed_z}\r\n"`|
-|Input|`RS`|Robot's x, y and rotation speed*|`"RS:{speed_x}:{speed_y}:{speed_z}\r\n"`|
-|Input|`MS`|Individual motor speed*|`"MS:{speed_0}:{speed_1}:{speed_2}\r\n"`|
-|Input|`DC`|Individual motor duty cycle**|`"DC:{motor_0}:{motor_1}:{motor_2}\r\n"`|
+|Output|`ODOM`|Odometry data(*)|`"ODOM:{pos_x}:{pos_y}:{pos_z}:{speed_x}:{speed_y}:{speed_z}\r\n"`|
+|Input|`RS`|Robot's x, y and rotation speed(*)|`"RS:{speed_x}:{speed_y}:{speed_z}\r\n"`|
+|Input|`MS`|Individual motor speed(*)|`"MS:{speed_0}:{speed_1}:{speed_2}\r\n"`|
+|Input|`DC`|Individual motor duty cycle(**)|`"DC:{motor_0}:{motor_1}:{motor_2}\r\n"`|
 |Input|`OR`|Resets odometry data|`"OR\r\n"`|
 
-\* *All speed units are arbitrary in range (-100:100).* </br>
-\*\* *Robot will enter "manual mode", meaning that motors will rotate with given duty cycle until `MS` or `RS` commands is received. Duty cycle range is (-100:100), where minus mark means negative rotation direction. Threshold to stop is 10%*
+(\*) *All speed units are arbitrary in range (-100:100).* </br>
+(\*\*) *Robot will enter "manual mode", meaning that motors will rotate with given duty cycle until `MS` or `RS` commands is received. Duty cycle range is (-100:100), where minus mark means negative rotation direction. Threshold to stop is 10%.*
 
 ## Updating
 
-Bootloader currently is not supported. In order to flash new firmware, user need a programmer supporting SWD interface. Refer to the pinout to access debug interface pins. __TODO ADD LINK?__
+Bootloader currently is not supported. In order to flash new firmware, user need a programmer supporting SWD interface.
+Refer to the robotont-electronics-mainboard schematic for detailed information.
+<details>
+  <summary>Pinout</summary>
+  <img src="./docs/.images/swd_pinout.png" width="400">
+</details>
 
 ## Development
 
 Repository contains PlatformIO project. PlatformIO is a development ecosystem for embedded systems and eases working on the code a lot.
 All the dependencies and build tools are installed automatically on the first build. </br>
 
-__If you are active developer, please refer to the firmware documentation: TODO ADD LINK__
+__If you are active developer, please refer to the firmware documentation: [firmware_architecture.md](./docs/firmware_architecture.md)__
 
 
-### Installation:
+## Installation:
 
 > [!NOTE]  
-> It is highly recommended to use VSCode with PlatformIO extension in order to speed up development and make it more comfortable.
+> It is highly recommended to use VSCode with PlatformIO extension in order to simplify installation process.
 
 #### VSCode
 
@@ -56,8 +61,11 @@ To build and upload, in project root, do
 `pio run -t upload`
 
 
-### Error: libusb_open() failed
+## FAQ
 
-Do:
-`sudo apt -y install stlink-tools`
-`sudo systemctl restart udev`
+ 1. Q: Using linux, I am facin an issue `libusb_open() failed`. What commands I should run to solve it?</br>
+    A:
+    ```
+    sudo apt -y install stlink-tools
+    sudo systemctl restart udev
+    ```

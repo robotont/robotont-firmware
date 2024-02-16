@@ -96,4 +96,4 @@ void HAL_I2C_ErrorCallback(FunctionPointerType *i2c_handler)
 }
 ```
 
-In this approach, there is no need to import application-level components into the interface level. Consequently, this module will remain self-compilable and independent of other modules.
+In this approach, there is no need to import top-level components into the bottom level. Consequently, this module will remain self-compilable and independent of other modules.
