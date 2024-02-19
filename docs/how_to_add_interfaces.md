@@ -91,7 +91,7 @@ Let's pretend, that we have slave device on the I2C1 bus with the address 0xAB. 
 #include "i2cif.h"
 
 // hi2c3 defined in "peripheral.h", but this file already included in the "i2cif.h"
-#define I2C_HANDLER     (&hi2c3) 
+#define I2C_HANDLER     (&hi2c1) 
 #define I2C_TIMEOUT_MS  200u
 #define I2C_SLAVE_ADDR  0xABu
 
