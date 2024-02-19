@@ -7,6 +7,7 @@
    * [BSP layer](#bsp-layer)
    * [Interface layer](#interface-layer)
    * [MCU HAL and core](#mcu-hal-and-core)
+   * [How to add features](#how-to-add-features)
    * [Limitations](#limitations)
 
 ## General overview
@@ -48,6 +49,7 @@ src/         - Robotont project files
 <img align="top" src=".images/fw_arch_app.png" width="800" />
 
 </br>
+
 The purpose of the application layer is to define how all services act together as a whole. Currently, Robotont has only one application component: the main file.
 
 For example, if a developer wants to implement logic such as "If the battery monitor detects overvoltage, then the robot should not move," this is the right place to do so.
@@ -57,6 +59,7 @@ For example, if a developer wants to implement logic such as "If the battery mon
 <img align="top" src=".images/fw_arch_svc.png" width="800" />
 
 </br>
+
 The purpose of the service layer is to define which tasks Robotont should perform. Each task (or service) is an individual component and should be independent. Communication with services should mostly be performed via getters and setters in the application layer.
 
 Robotont have five services:
@@ -69,6 +72,7 @@ Robotont have five services:
 |Battery monitor|Communicates with the battery monitor hardware to check the status of the battery.|
 
 </br>
+
 Each service, which is called directly (not from an interrupt, such as the CMD handler), should contain its own <code>update</code> function in a non-blocking manner. The application layer will schedule itself how frequently each service should be updated.
 
 With this approach, removing, adding, and changing tasks is significantly easier, as dependencies are hidden within one component.
@@ -78,6 +82,7 @@ With this approach, removing, adding, and changing tasks is significantly easier
 <img align="top" src=".images/fw_arch_bsp.png" width="800" />
 
 </br>
+
 The purpose of the BSP layer (also referred to as the HW driver layer) is to provide drivers for Robotont's hardware components.
 
 ## Interface layer
@@ -85,9 +90,12 @@ The purpose of the BSP layer (also referred to as the HW driver layer) is to pro
 <img align="top" src=".images/fw_arch_if.png" width="800" />
 
 </br>
+
 The purpose of the interface layer is to isolate `STM32F4 HAL` functions from Robotont's application, which are used for communication with MCU peripherals.
 
 This approach provides a significant advantage in terms of portability: If in the future `STM32F4 HAL` is no longer needed (either because the MCU family changed or the HAL framework), developers do not need to edit files in the upper layer. It is sufficient to change only the interface layer files.
+
+__See [How to add interfaces](how_to_add_interfaces.md) for detailed guide with examples.__
 
 ## MCU HAL and core
 
@@ -99,6 +107,22 @@ Manually created modules are:
 - `system_hal`: Contains HAL module initialization, system clock configuration, and wrappers for `HAL_Delay` and `HAL_GetTick` functions.
 
 The reason for those files to exist is that by default, the code generator stores them in `main.c`.
+
+## How to add features
+
+The whole point of the given firmware design is to simplify changes to Robotont's application. If a developer needs to add new functionality, they can simply do it "horizontally."
+
+<img align="top" src=".images/fw_architecture_extend.png" width="300" />
+
+</br>
+
+General steps are:
+1. Define which interface is required.
+2. [Optional] Add the interface; See [Interface layer](#interface-layer).
+3. [Optional] Add a driver for the used hardware.
+4. Add a service. If it's periodic, define an `update` function. If it's interrupt-based, define handlers.
+5. [Optional] Add external library.
+6. Call the `update` function in the main file.
 
 ## Limitations
 
