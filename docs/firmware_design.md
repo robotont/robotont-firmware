@@ -1,7 +1,5 @@
 # Firmware architecture
 
-This document contains all the necessary information to begin developing the Robotont firmware. It is divided into specific sections as follows:
-<!-- https://github.com/derlin/bitdowntoc -->
 - [Firmware architecture](#firmware-architecture)
    * [General overview](#general-overview)
    * [Application layer](#application-layer)
@@ -10,7 +8,6 @@ This document contains all the necessary information to begin developing the Rob
    * [Interface layer](#interface-layer)
    * [MCU HAL and core](#mcu-hal-and-core)
    * [Limitations](#limitations)
-   * [Branching strategy (working with git)](#branching-strategy-working-with-git)
 
 ## General overview
 
@@ -51,59 +48,61 @@ src/         - Robotont project files
 <img align="top" src=".images/fw_arch_app.png" width="800" />
 
 </br>
-Purpose of application layer is to define, how all services acts together as a whole. Currently, Robotont have only one application component: main file. 
+The purpose of the application layer is to define how all services act together as a whole. Currently, Robotont has only one application component: the main file.
 
-For example, if developer wants to implement such logic, as "If battery monitor detects overvoltage, then robot should not move", this is the right place to do so.
-
-C-based pseudo code:
-```cpp
-
-void main(void)
-{
-    while (true)
-    {
-        BatteryStatusType bat_status = battery_getStatus();
-        if (bat_status == BATTERY_OVERVOLTAGE)
-        {
-            movement_stop();
-        }
-        else
-        {
-            movement_start();
-        }
-
-        battery_update();
-        movement_update();
-    }
-}
-```
+For example, if a developer wants to implement logic such as "If the battery monitor detects overvoltage, then the robot should not move," this is the right place to do so.
 
 ## Service layer
 
 <img align="top" src=".images/fw_arch_svc.png" width="800" />
 
 </br>
-Purpose of service layer is to define which tasks Robotont should perform. Each task (or service) is individual component and should be independent. Communications with services should be mostly performed via getters and setters in the application layer.
+The purpose of the service layer is to define which tasks Robotont should perform. Each task (or service) is an individual component and should be independent. Communication with services should mostly be performed via getters and setters in the application layer.
 
 Robotont have five services:
 |Service|Description|
 |---|---|
-|CMD handler|Redirects serial data-in to the according service. See [serial communication](./../README.md#serial-communication) for supported arguments. Also, `printf` function redirected here to serve as serial output.|
-|Movement control|Calculates each motor speed based on Robotont's desired direction and speed (omnimotional movement).</br>Calculates Robotont's odometry based on robot's movement.|
-|LED control|Defines addressable LED behavior.|
-|OLED control|Defines OLED screen behavior, such as what information to show on the screen.|
-|Battery monitor|Communicates with Battery monitor HW to check 12V battery status.|
+|CMD handler|Redirect serial data-in to the corresponding service. Refer to the [serial communication](./../README.md#serial-communication) for supported arguments. Additionally, the `printf` function is redirected here to serve as serial output.|
+|Movement control|Calculates each motor speed based on Robotont's desired direction and speed for omnimotional movement. Additionally, calculates Robotont's odometry based on the robot's movement and prints it out to the serial bus.|
+|LED control|Defines the behavior of addressable LEDs.|
+|OLED control|Defines the behavior of the OLED screen, specifying what information to display on the screen.|
+|Battery monitor|Communicates with the battery monitor hardware to check the status of the battery.|
 
 </br>
-Using this architecture, removing, adding and changing tasks is significantly easier, since dependencies are hidden within one component. 
+Each service, which is called directly (not from an interrupt, such as the CMD handler), should contain its own <code>update</code> function in a non-blocking manner. The application layer will schedule itself how frequently each service should be updated.
+
+With this approach, removing, adding, and changing tasks is significantly easier, as dependencies are hidden within one component.
 
 ## BSP layer
 
+<img align="top" src=".images/fw_arch_bsp.png" width="800" />
+
+</br>
+The purpose of the BSP layer (also referred to as the HW driver layer) is to provide drivers for Robotont's hardware components.
+
 ## Interface layer
+
+<img align="top" src=".images/fw_arch_if.png" width="800" />
+
+</br>
+The purpose of the interface layer is to isolate `STM32F4 HAL` functions from Robotont's application, which are used for communication with MCU peripherals.
+
+This approach provides a significant advantage in terms of portability: If in the future `STM32F4 HAL` is no longer needed (either because the MCU family changed or the HAL framework), developers do not need to edit files in the upper layer. It is sufficient to change only the interface layer files.
 
 ## MCU HAL and core
 
+Mostly contains core files generated by `STM32CubeMX`. 
+
+Manually created modules are:
+
+- `peripheral`: Contains pin definitions, `HandleTypeDef`s, and MX peripheral initializations
+- `system_hal`: Contains HAL module initialization, system clock configuration, and wrappers for `HAL_Delay` and `HAL_GetTick` functions.
+
+The reason for those files to exist is that by default, the code generator stores them in `main.c`.
+
 ## Limitations
+
+In the `main.h` file, the main loop time period is defined. If the current value is 20 ms, for developers, this means that all service's `update` functions should complete within the 20 ms window in total (roughly 4ms per service).
 
 
 
