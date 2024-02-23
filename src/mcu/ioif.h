@@ -18,6 +18,7 @@
 #include "peripheral.h"
 
 typedef void (*EXTICallbackType)(uint16_t pin_number);
+
 typedef struct
 {
     GPIO_TypeDef *ptr_port;

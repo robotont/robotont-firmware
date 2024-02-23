@@ -52,7 +52,6 @@
 #define PIN_ROT_ENC_B_EXTI_IRQn    EXTI15_10_IRQn
 #define PIN_ROT_ENC_A_Pin          GPIO_PIN_6
 #define PIN_ROT_ENC_A_GPIO_Port    GPIOC
-#define PIN_ROT_ENC_A_EXTI_IRQn    EXTI9_5_IRQn
 #define PIN_ESTOP_Pin              GPIO_PIN_2
 #define PIN_ESTOP_GPIO_Port        GPIOD
 
