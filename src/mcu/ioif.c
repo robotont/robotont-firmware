@@ -16,7 +16,7 @@
 static EXTICallbackType rotary_encoder_callback;
 
 /**
- * @brief Initializes timer module
+ * @brief Initializes GPIO module
  */
 void ioif_init(void)
 {
