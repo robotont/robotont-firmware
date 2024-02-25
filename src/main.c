@@ -16,6 +16,7 @@
 #include "system_hal.h"
 #include "timerif.h"
 #include "usbif.h"
+#include "led.h"
 
 #define MAX_LIN_VEL 0.4 // m/s
 #define MAX_ANG_VEL 1.0 // rad/s
@@ -54,6 +55,7 @@ int main(void)
     // MX_I2C2_Init();
     MX_I2C3_Init();
     ssd1306_Init();
+    led_init();
 
     while (true)
     {
@@ -79,7 +81,8 @@ int main(void)
             */
 
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
-
+            led_update();
+            
             /* Debug info */
             if (counter % 10u == 0)
             {

@@ -31,6 +31,7 @@ void timerif_init()
         period_elapsed_callback = NULL;
         pulse_finished_callback = NULL;
 
+        MX_TIM1_Init();
         MX_TIM2_Init();
         MX_TIM3_Init();
         MX_TIM4_Init();

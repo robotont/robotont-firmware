@@ -15,6 +15,7 @@
 void led_init();
 void led_handleCommandsLD(uint8_t *ptr_data, uint16_t lenght);
 void led_handleCommandsLM(uint8_t *ptr_data, uint16_t lenght);
+void led_handleCommandsLs(uint8_t *ptr_data, uint16_t lenght);
 void led_update();
 
 #endif
