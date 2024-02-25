@@ -5,39 +5,31 @@
 #include <stdio.h>
 
 #include "cmd.h"
+#include "ioif.h"
 #include "motor.h"
 #include "movement.h"
 #include "odom.h"
 #include "peripheral.h"
 #include "pid.h"
-#include "sw_enc.h"
+#include "ssd1306.h"
+#include "ssd1306_tests.h"
 #include "system_hal.h"
+#include "timerif.h"
 #include "usbif.h"
-#include "gpioif.h"
-#include "led.h"
 
 #define MAX_LIN_VEL 0.4 // m/s
 #define MAX_ANG_VEL 1.0 // rad/s
-
-MotorType hm0, hm1, hm2;
-EncoderType henc0, henc1, henc2;
 
 int main(void)
 {
     system_hal_init();
     peripheral_init();
+    ioif_init();
+    timerif_init();
+    i2cif_init();
 
-    sw_enc_init(&henc0, PIN_M0_ENCA_GPIO_Port, PIN_M0_ENCA_Pin, PIN_M0_ENCB_GPIO_Port, PIN_M0_ENCB_Pin);
-    sw_enc_init(&henc1, PIN_M1_ENCA_GPIO_Port, PIN_M1_ENCA_Pin, PIN_M1_ENCB_GPIO_Port, PIN_M1_ENCB_Pin);
-    sw_enc_init(&henc2, PIN_M2_ENCA_GPIO_Port, PIN_M2_ENCA_Pin, PIN_M2_ENCB_GPIO_Port, PIN_M2_ENCB_Pin);
-    // Start timer for reading encoders
-    HAL_TIM_Base_Start_IT(&htim14);
-
-    // Service layer
     cmd_init();
-    movement_init(&hm0, &hm1, &hm2, &henc0, &henc1, &henc2);
-    led_init();
-    HAL_Delay(1000); // TODO investigate, is this required?
+    movement_init();
 
     uint32_t counter = 0; // for debugging purposes
     uint32_t duty = 0;    // for debugging purposes
@@ -48,9 +40,20 @@ int main(void)
     counter = 1;
     duty = 50;
 
-    GpioPinType led_green;
-    led_green.pin_number = PIN_LED_Pin;
-    led_green.ptr_port = PIN_LED_GPIO_Port;
+    IoPinType led_green;
+    led_green.pin_number = PIN_LED_G_Pin;
+    led_green.ptr_port = PIN_LED_G_GPIO_Port;
+
+    IoPinType led_red;
+    led_red.pin_number = PIN_LED_R_Pin;
+    led_red.ptr_port = PIN_LED_R_GPIO_Port;
+    ioif_togglePin(&led_green);
+
+    int16_t effort = 90;
+    // MX_I2C1_Init();
+    // MX_I2C2_Init();
+    MX_I2C3_Init();
+    ssd1306_Init();
 
     while (true)
     {
@@ -62,84 +65,54 @@ int main(void)
 
             /* Service layer modules update */
             movement_update();
-            led_update();
+
+            /**
+            @brief Example, of how to modules should communicate with each others: via getters and setters (Pseudocode)
+
+            status = battery_monitor_getStatus();
+            if (status == STATUS_12V_OVERVOLTAGE)
+            {
+                led_blinkRed();
+                movement_stop();
+            }
+
+            */
+
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
 
             /* Debug info */
-            if (counter % 100 == 0)
+            if (counter % 10u == 0)
             {
-                gpioif_togglePin(&led_green);
-                printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
+                ioif_togglePin(&led_green);
+                ioif_togglePin(&led_red);
+
+                // Print some debug info to OLED display
+                char buff[64];
+                ssd1306_Fill(Black);
+                snprintf(buff, sizeof(buff), "Vel0:%05d", timerif_getCounter(TIMER_ENC_M0));
+                ssd1306_SetCursor(2, 2);
+                ssd1306_WriteString(buff, Font_11x18, White);
+                snprintf(buff, sizeof(buff), "Vel1:%05d", timerif_getCounter(TIMER_ENC_M1));
+                ssd1306_SetCursor(2, 20);
+                ssd1306_WriteString(buff, Font_11x18, White);
+                snprintf(buff, sizeof(buff), "Vel2:%05d", timerif_getCounter(TIMER_ENC_M2));
+                ssd1306_SetCursor(2, 38);
+                ssd1306_WriteString(buff, Font_11x18, White);
+                ssd1306_UpdateScreen();
+                // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
+
+                // effort += 10;
+                // if (effort > 160)
+                // {
+                //     effort = 90;
+                // }
+                // timerif_setEffort(TIMER_PWM_M0, effort);
+                // timerif_setEffort(TIMER_PWM_M1, effort);
+                // timerif_setEffort(TIMER_PWM_M2, effort);
             }
+
+            // printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
+            //        timerif_getCounter(TIMER_ENC_M2));
         }
-    }
-}
-
-/**
- * @brief  Retargets the C library printf function to the VIRTUAL COM PORT.
- * @param  None
- * @retval None
- */
-int _write(int file, char *ptr, int len)
-{
-    static uint8_t rc = USBD_OK;
-
-    // loop commented out for a non-blocking behavior
-    // do {
-    rc = CDC_Transmit_FS((unsigned char *)ptr, len);
-    //} while (USBD_BUSY == rc);
-    if (USBD_FAIL == rc)
-    {
-        /// NOTE: Should never reach here.
-        /// TODO: Handle this error.
-        return 0;
-    }
-    return len;
-}
-
-// TODO interrupts handlers
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    // Set PWM pin to high depending on which pwm timer triggered the interrupt
-    if (htim->Instance == htim3.Instance)
-    {
-        HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, SET);
-    }
-    else if (htim->Instance == htim11.Instance)
-    {
-        HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, SET);
-    }
-    else if (htim->Instance == htim13.Instance)
-    {
-        HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, SET);
-    }
-    // Check if the timer for the encoder interrupt triggered
-    else if (htim->Instance == htim14.Instance)
-    {
-        sw_enc_interrupt(&henc0);
-        sw_enc_interrupt(&henc1);
-        sw_enc_interrupt(&henc2);
-    }
-}
-
-/**
- * @brief  This function is executed when the PWM pulses finish. Depending on which timer triggered the interrupt, the
- * corresponding PWM pin is set to low.
- * @retval None
- */
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == htim3.Instance) // motor 0
-    {
-        HAL_GPIO_WritePin(hm0.pwm_port, hm0.pwm_pin, RESET);
-    }
-    else if (htim->Instance == htim11.Instance) // motor 1
-    {
-        HAL_GPIO_WritePin(hm1.pwm_port, hm1.pwm_pin, RESET);
-    }
-    else if (htim->Instance == htim13.Instance) // motor 2
-    {
-        HAL_GPIO_WritePin(hm2.pwm_port, hm2.pwm_pin, RESET);
     }
 }

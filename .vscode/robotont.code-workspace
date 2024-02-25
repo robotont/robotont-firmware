@@ -28,8 +28,16 @@
             "stm32f4xx_it.h": "c",
             "peripheral.h": "c",
             "stm32f4xx_hal.h": "c",
-            "stdlib.h": "c"
+            "stdlib.h": "c",
+            "motor.h": "c",
+            "system_hal.h": "c",
+            "motor_cfg.h": "c",
+            "timerif.h": "c"
         },
+        "cSpell.words": [
+            "OLED",
+            "Robotont"
+        ],
     },
     "extensions": {
         "recommendations": [
@@ -39,6 +47,8 @@
             // optional
             "aaron-bond.better-comments",
             "tal7aouy.icons",
+            // todo doxygen
+
         ]
     }
 }

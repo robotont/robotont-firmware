@@ -1,6 +1,6 @@
 /**
  * @file usbif.h
- * @brief
+ * @brief USB interface wrapper over CubeMX generated MX_USB HAL
  *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool

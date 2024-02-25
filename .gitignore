@@ -12,3 +12,6 @@
 .vscode/launch.json
 .vscode/ipch
 .vscode/extensions.json
+cubemx
+!cubemx/.mxproject
+!cubemx/robotont-firmware.ioc
