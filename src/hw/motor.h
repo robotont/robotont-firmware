@@ -40,7 +40,7 @@ typedef struct
     IoPinType pwm_pin;               /* PWM signal output pin, that will run motors */
     double linear_velocity;          /* Actual linear velocity */
     double linear_velocity_setpoint; /* Desired linear velocity */
-    double effort;                   /* PWM effort */
+    double duty_cycle;               /* PWM duty cycle. Note: PID input is double; Mark (+/-) defines direction */
     uint32_t prev_enc_timestamp;     /* Time of the encoder update in order to calculate pulse width (and speed) */
 
 } MotorHandleType;

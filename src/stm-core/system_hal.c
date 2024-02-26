@@ -29,7 +29,7 @@ void system_hal_delay(uint32_t delay_ms)
 }
 
 /**
- * @brief Returns timespams value in ms
+ * @brief Returns timestamp value in ms
  */
 uint32_t system_hal_timestamp(void)
 {

@@ -15,13 +15,13 @@
 #include "movement.h"
 #include "usbif.h"
 
-#define ARG_ROBOT_SPEED    0x5253 /* "RS" */
-#define ARG_MOTOR_SPEED    0x4D53 /* "MS" */
-#define ARG_ODOM_RESET     0x4F52 /* "OR" */
-#define ARG_EFFORT_CONTROL 0x4546 /* "EF" */
-#define ARG_LED_CONTROL    0x4C44 /* "LD" */
-#define ARG_LED_MODE       0x4C4D /* "LM" */
-#define ARG_LED_SEGMENT    0x4C53 /* "LS" */
+#define ARG_ROBOT_SPEED         0x5253 /* "RS" */
+#define ARG_MOTOR_SPEED         0x4D53 /* "MS" */
+#define ARG_ODOM_RESET          0x4F52 /* "OR" */
+#define ARG_DUTY_CYCLE_CONTROL  0x4443 /* "DC" */
+#define ARG_LED_CONTROL         0x4C44 /* "LD" */
+#define ARG_LED_MODE            0x4C4D /* "LM" */
+#define ARG_LED_SEGMENT         0x4C53 /* "LS" */
 
 /**
  * @brief Inits usbif and sets usbif callback to `cmd_handleUsbData`
@@ -57,8 +57,8 @@ void cmd_handleUsbData(uint8_t *ptr_data, uint16_t lenght)
             movement_handleCommandsOR(&ptr_data[3], lenght - 3u);
             break;
 
-        case ARG_EFFORT_CONTROL:
-            movement_handleCommandsEF(&ptr_data[3], lenght - 3u);
+        case ARG_DUTY_CYCLE_CONTROL:
+            movement_handleCommandsDC(&ptr_data[3], lenght - 3u);
             break;
 
         case ARG_LED_CONTROL:

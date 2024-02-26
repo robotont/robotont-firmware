@@ -1,7 +1,7 @@
 /**
  * @file peripheral.c
- * @brief Contains auto-generated CUBEMX code. // TODO Create interface for each perepheral
- *
+ * @brief Contains auto-generated CUBEMX code.
+ * 
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool
  */
@@ -29,6 +29,9 @@ DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 static void MX_CAN1_Init(void);
 static void MX_USART3_UART_Init(void);
 
+/**
+ * @note This is temporary placeholder. If you are going to implement canif or uartif, then this function can be removed
+ */
 void peripheral_init(void)
 {
     MX_DMA_Init();
@@ -318,7 +321,7 @@ void MX_TIM4_Init(void)
 }
 
 /**
- * @brief TIM11 Initialization Function
+ * @brief TIM11 Initialization Function; Used for motor1 PWM
  * @param None
  * @retval None
  */
@@ -350,7 +353,7 @@ void MX_TIM11_Init(void)
 }
 
 /**
- * @brief TIM13 Initialization Function
+ * @brief TIM13 Initialization Function; Used for motor2 PWM
  * @param None
  * @retval None
  */
@@ -382,7 +385,7 @@ void MX_TIM13_Init(void)
 }
 
 /**
- * @brief TIM14 Initialization Function
+ * @brief TIM14 Initialization Function; Used for motor3 PWM
  * @param None
  * @retval None
  */

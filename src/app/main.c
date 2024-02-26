@@ -18,9 +18,6 @@
 #include "usbif.h"
 #include "led.h"
 
-#define MAX_LIN_VEL 0.4 // m/s
-#define MAX_ANG_VEL 1.0 // rad/s
-
 int main(void)
 {
     system_hal_init();
@@ -31,15 +28,12 @@ int main(void)
 
     cmd_init();
     movement_init();
+    led_init();
+    ssd1306_Init(); // TODO: Move this init from main.c to the according service init
 
-    uint32_t counter = 0; // for debugging purposes
-    uint32_t duty = 0;    // for debugging purposes
-
-    uint32_t last_tick = HAL_GetTick();
+    uint32_t counter = 1u;
+    uint32_t last_tick = system_hal_timestamp();
     uint32_t current_tick;
-
-    counter = 1;
-    duty = 50;
 
     IoPinType led_green;
     led_green.pin_number = PIN_LED_G_Pin;
@@ -50,16 +44,9 @@ int main(void)
     led_red.ptr_port = PIN_LED_R_GPIO_Port;
     ioif_togglePin(&led_green);
 
-    int16_t effort = 90;
-    // MX_I2C1_Init();
-    // MX_I2C2_Init();
-    MX_I2C3_Init();
-    ssd1306_Init();
-    led_init();
-
     while (true)
     {
-        current_tick = HAL_GetTick();
+        current_tick = system_hal_timestamp();
         if (current_tick >= last_tick + MAIN_LOOP_DT_MS)
         {
             last_tick = current_tick;
@@ -82,13 +69,13 @@ int main(void)
 
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
             led_update();
-            
+
             /* Debug info */
             if (counter % 10u == 0)
             {
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
-
+                
                 // Print some debug info to OLED display
                 char buff[64];
                 ssd1306_Fill(Black);
@@ -103,15 +90,6 @@ int main(void)
                 ssd1306_WriteString(buff, Font_11x18, White);
                 ssd1306_UpdateScreen();
                 // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
-
-                // effort += 10;
-                // if (effort > 160)
-                // {
-                //     effort = 90;
-                // }
-                // timerif_setEffort(TIMER_PWM_M0, effort);
-                // timerif_setEffort(TIMER_PWM_M1, effort);
-                // timerif_setEffort(TIMER_PWM_M2, effort);
             }
 
             // printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
