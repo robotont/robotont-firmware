@@ -1,11 +1,11 @@
-# Robotont mbed mainboard firmware
+# Robotont mainboard firmware
 
 Firmware for the Robotont platform mainboard.
 Main tasks:
  * Movement control (Three PWM motors)
  * Addressable LED control
  * OLED screen control
- * Communication with battery monitor board (TO BE ADDED)
+ * Communication with power management board (TO BE ADDED)
  * Serial communication handling
  
 ## Serial communication
@@ -22,9 +22,9 @@ Following table refers to the available commands in the firmware:
 |Input|`OR`|Resets odometry data|`"OR\r\n"`|
 
 (\*) *All speed units are arbitrary in range (-100:100).* </br>
-(\*\*) *Robot will enter "manual mode", meaning that motors will rotate with given duty cycle until `MS` or `RS` commands is received. Duty cycle range is (-100:100), where minus mark means negative rotation direction. Threshold to stop is 10%.*
+(\*\*) *Robot will enter "manual mode", meaning that motors will rotate with given duty cycle until `MS` or `RS` commands is received. Duty cycle range is (-100:100)%, where minus mark means negative rotation direction. Threshold to stop is 10%.*
 
-## Updating
+## Uploading
 
 In order to flash new firmware, user needs a programmer supporting SWD interface.
 Refer to the robotont-electronics-mainboard schematic for detailed information.

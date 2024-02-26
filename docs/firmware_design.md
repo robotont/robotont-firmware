@@ -93,7 +93,7 @@ The purpose of the BSP layer (also referred to as the HW driver layer) is to pro
 
 The purpose of the interface layer is to isolate `STM32F4 HAL` functions from Robotont's application, which are used for communication with MCU peripherals.
 
-This approach provides a significant advantage in terms of portability: If in the future `STM32F4 HAL` is no longer needed (either because the MCU family changed or the HAL framework), developers do not need to edit files in the upper layer. It is sufficient to change only the interface layer files.
+This approach provides a significant advantage in terms of portability. If the MCU family and HAL framework undergo changes, developers need only modify the interface layer files, without editing upper layer files.
 
 __See [How to add interfaces](how_to_add_interfaces.md) for detailed guide with examples.__
 
