@@ -16,6 +16,7 @@
 #include "system_hal.h"
 #include "timerif.h"
 #include "usbif.h"
+#include "led.h"
 
 int main(void)
 {
@@ -27,6 +28,7 @@ int main(void)
 
     cmd_init();
     movement_init();
+    led_init();
     ssd1306_Init(); // TODO: Move this init from main.c to the according service init
 
     uint32_t counter = 1u;
@@ -66,6 +68,7 @@ int main(void)
             */
 
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
+            led_update();
 
             /* Debug info */
             if (counter % 10u == 0)
