@@ -45,7 +45,7 @@ void timerif_init()
 /**
  * @brief Starts pre-defined timers and timer interrups
  */
-void timerif_initInterrups(void)
+void timerif_initInterrupts(void)
 {
     // gpios are SET in periodelapsedCallback and RESET in pulseFinishedCallback
     HAL_TIM_Base_Start_IT(TIMER_PWM_M0);
@@ -78,14 +78,13 @@ void timerif_setPulseFinishedCallback(TimerCallbackType callback)
 }
 
 /**
- * @brief Sets PWM effort value in the timer compare register
- * @note Use only PWM timers
+ * @brief Sets PWM duty cycle in range from 0 to 100
+ * @note  Using formula: CCR (compare capture register raw value) = duty_cycle * timer_period / 100%
  */
-void timerif_setEffort(TIM_HandleTypeDef *timer_handler, uint16_t effort)
+void timerif_setDutyCycle(TIM_HandleTypeDef *timer_handler, uint8_t duty_cycle)
 {
-    // TODO Effort, DutyCicle?
-    // TODO Scale 0 to 100? What is "effor"?
-    __HAL_TIM_SET_COMPARE(timer_handler, TIM_CHANNEL_1, effort);
+    uint32_t ccr_value = timer_handler->Init.Period * duty_cycle / 100;
+    __HAL_TIM_SET_COMPARE(timer_handler, TIM_CHANNEL_1, ccr_value);
 }
 
 /**
