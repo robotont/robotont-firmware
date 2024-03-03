@@ -37,7 +37,38 @@ static bool is_input_counterclockwise = false;
 
 int item_index = 0;
 
-// TODO Write new item adding algorithm
+int dummy = 10;
+
+
+static MenuItem menu[][MAX_MENUITEMS] = 
+{
+    // ROOT
+    {
+        {"^-- Dashboard", &showDashboard},
+        {"Submenu 1", &enterSubmenu1},
+        {"Change value", &inputValue1, &dummy},
+        {"Dummy 1.2", &doNothing},
+        {"Dummy 1.3", &doNothing},
+        {"Dummy 1.4", &doNothing},
+        {"Dummy 1.5", &doNothing}
+    },
+    // SUBMENU 1
+    {
+        {"^-- Main menu", &enterMainmenu},
+        {"Submenu 2", &enterSubmenu2},
+        {"Item 2.2", &doNothing},
+        {"Item 2.3", &doNothing}
+    },
+    // SUBMENU 2
+    {
+        {"^-- Main menu", &enterMainmenu},
+        {"Item 3.1", &doNothing},
+        {"Item 3.2", &doNothing},
+        {"Item 3.3", &doNothing}
+    },
+};
+
+
 // ITEM label MAX LENGTH?
 // use const to save memory?
 
@@ -48,6 +79,16 @@ static void enterMainmenu() {
     border_position = ITEM_TOP;
     drawMenuItems();
 }
+
+static void inputValue1() {
+    menu_state = STATE_INPUT;
+    
+    drawInputScreen();
+
+
+    
+}
+
 
 static void showDashboard() {
     menu_state = STATE_DASHBOARD;
@@ -73,36 +114,7 @@ static void enterSubmenu2() {
     drawMenuItems();
 }
 
-static MenuItem menu[][MAX_MENUITEMS] = 
-{
-    {
-        {"^-- Dashboard", &showDashboard},
-        {"Submenu 1", &enterSubmenu1},
-        {"Dummy 1.1", &doNothing},
-        {"Dummy 1.2", &doNothing},
-        {"Dummy 1.3", &doNothing},
-        {"Dummy 1.4", &doNothing},
-        {"Dummy 1.5", &doNothing}
-    },
-    {
-        {"^-- Main menu", &enterMainmenu},
-        {"Submenu 2", &enterSubmenu2},
-        {"Item 2.2", &doNothing},
-        {"Item 2.3", &doNothing}
-    },
-    {
-        {"^-- Main menu", &enterMainmenu},
-        {"Item 3.1", &doNothing},
-        {"Item 3.2", &doNothing},
-        {"Item 3.3", &doNothing}
-    },
-    
-
-};
-
-
-
-static void processInput(uint16_t pin_number)
+static void inputHandler(uint16_t pin_number)
 {
     static IoPinType enc_a;
     enc_a.ptr_port = PIN_ROT_ENC_A_GPIO_Port;
@@ -147,7 +159,10 @@ static size_t getCurrentMenuSize() {
 
 static void drawScrollbar()
 {
-    // ssd1306_FillRectangle();
+    // divide space between no of items
+    int pixelsPerItem = SSD1306_HEIGHT / getCurrentMenuSize();
+
+    ssd1306_FillRectangle(124, (item_index-border_position)*pixelsPerItem, 128, (item_index - border_position + 3) * pixelsPerItem, White);
 }
 
 static void drawDashboard() 
@@ -162,12 +177,13 @@ static void drawDashboard()
     ssd1306_WriteString("Bat volt: 14.6 V", Font_7x10, White);
 
     ssd1306_SetCursor(2, 15);
-    ssd1306_WriteString("Robot mode: teleop", Font_7x10, White);
+    char buff[64];
+    snprintf(buff, sizeof(buff), "Dummy value: %d", dummy);
+    ssd1306_WriteString(buff, Font_7x10, White);
 
     ssd1306_SetCursor(2, 27);
     ssd1306_WriteString("IP:123.123.123.123", Font_7x10, White);
 
-    
     ssd1306_SetCursor(2, 39);
     ssd1306_WriteString("press knob 4 menu", Font_7x10, White);
 
@@ -189,8 +205,23 @@ static void drawMenuItems()
     ssd1306_WriteString(menu[current_menu][item_index + ITEM_BOTTOM - border_position].label, Font_7x10, White);
 
     drawBorder(border_position);
-    // drawScrollbar();
+    drawScrollbar();
 }
+
+static void drawInputScreen() {
+    ssd1306_Fill(Black);
+
+    ssd1306_SetCursor(2, 3);
+    ssd1306_WriteString(menu[current_menu][item_index].label, Font_7x10, White);
+
+
+    char buff[64];
+    snprintf(buff, sizeof(buff), "%d", *(menu[current_menu][item_index].ptr_valuetochange));
+    ssd1306_SetCursor(2, 35);
+
+    ssd1306_WriteString(buff, Font_16x24, White);
+}
+
 
 static void updateHandlerDashboard()
 {
@@ -208,7 +239,7 @@ static void updateHandlerMenu() {
     if (is_input_select)
     {
         // run current menu item callback 
-        menu[current_menu][item_index].pressed_callback();
+        menu[current_menu][item_index].select_callback();
         is_input_select = false;
     }
 
@@ -254,6 +285,8 @@ static void updateHandlerInput()
         // set value, return to prev menu
 
         menu_state = STATE_MENU;
+        // leave other menu specific variables unchanged
+        drawMenuItems();
         is_input_select = false;
     }
 
@@ -261,6 +294,9 @@ static void updateHandlerInput()
     {
 
         // run current menu item left callback
+        (*(menu[current_menu][item_index].ptr_valuetochange))--;
+
+        drawInputScreen();
 
         is_input_counterclockwise = false;
     }
@@ -268,6 +304,8 @@ static void updateHandlerInput()
     else if (is_input_clockwise)
     {   
         // run current menu item right callback
+        (*(menu[current_menu][item_index].ptr_valuetochange))++;
+        drawInputScreen();
 
         is_input_clockwise = false;
     }
@@ -276,18 +314,13 @@ static void updateHandlerInput()
 
 void menu_init(void)
 {
-    EXTICallbackType my_callback = (EXTICallbackType)processInput;
+    EXTICallbackType my_callback = (EXTICallbackType)inputHandler;
     ioif_setRotaryEncoderCallback(my_callback);
+
+    menu_state = STATE_DASHBOARD;
 
     MX_I2C3_Init();
     ssd1306_Init();
-
-    // initializeMenuItems();
-
-    // drawDashboard();
-    // drawMenuItems();
-    ssd1306_UpdateScreen();
-
 }
 
 // frequency of calling this depends on main(). possibly optimize this, if updating menu is too resource intensive

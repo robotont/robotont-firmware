@@ -21,8 +21,9 @@
 typedef struct
 {
     char* label;
-    // bool is_submenu ??? doesnt matter, can use pressed_callback
-    void (*pressed_callback)(void);
+    // bool is_submenu ??? doesnt matter, can use select_callback
+    void (*select_callback)(void);
+    int * ptr_valuetochange;
     // ptr left_callback --- this is for numeric input selection. not used for dashboard or menu navigation
     // ptr right_callback
 } MenuItem;
@@ -49,15 +50,23 @@ typedef enum
     STATE_DEBUG // rohke info kuvamiseks, nt 6 v2lja arvmuutujatega
 } MenuState;
 
+// BEGIN MENU CALLBACKS
+static void enterMainmenu();
+static void showDashboard();
+static void doNothing();
+static void enterSubmenu1();
+static void enterSubmenu2();
+static void inputValue1();
+// END MENU CALLBACKS
 
 void menu_init(void);
-static void processInput(uint16_t pin_number);
 void menu_update();
+
+static void inputHandler(uint16_t pin_number);
 static void drawDashboard();
 static void drawScrollbar();
 static void drawBorder(int borderIndex);
 static void drawMenuItems();
-static MenuItem createMenuItem(char* title, uint8_t index);
-static initializeMenuItems();
+static void drawInputScreen();
 
 #endif
