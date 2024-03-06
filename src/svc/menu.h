@@ -1,6 +1,3 @@
-#ifndef MENU_H
-#define MENU_H
-
 /**
  * Includes
  * Defines
@@ -10,6 +7,9 @@
  * Public function prototypes
  * */
 
+#ifndef MENU_H
+#define MENU_H
+
 #include "ioif.h"
 #include "ssd1306.h"
 #include "ssd1306_tests.h"
@@ -18,22 +18,13 @@
 #define PIN_ENC_B GPIO_PIN_15
 #define PIN_ENC_A GPIO_PIN_6
 
-typedef struct
-{
-    char* label;
-    // bool is_submenu ??? doesnt matter, can use select_callback
-    void (*select_callback)(void);
-    int * ptr_valuetochange;
-    // ptr left_callback --- this is for numeric input selection. not used for dashboard or menu navigation
-    // ptr right_callback
-} MenuItem;
-
 typedef enum 
 {
     MENU_ROOT,
     MENU_SUBMENU1,
     MENU_SUBMENU2,
-} CurrentMenu;
+    MENU_LED_SETTINGS
+} MenuType;
 
 typedef enum 
 {
@@ -50,19 +41,32 @@ typedef enum
     STATE_DEBUG // rohke info kuvamiseks, nt 6 v2lja arvmuutujatega
 } MenuState;
 
+typedef struct
+{
+    char* label;
+    void (*select_callback)(void);
+    int * ptr_valuetochange;
+    MenuType submenu_index;
+} MenuItem;
+
 // BEGIN MENU CALLBACKS
 static void enterMainmenu();
 static void showDashboard();
 static void doNothing();
-static void enterSubmenu1();
-static void enterSubmenu2();
-static void inputValue1();
+static void enterSubmenu();
+static void setValue();
+static void setLEDMode();
 // END MENU CALLBACKS
 
 void menu_init(void);
 void menu_update();
 
 static void inputHandler(uint16_t pin_number);
+static void inputHandlerDashboard();
+static void inputHandlerMenu();
+static void inputHandlerInput();
+
+static int getCurrentMenuSize();
 static void drawDashboard();
 static void drawScrollbar();
 static void drawBorder(int borderIndex);
