@@ -10,6 +10,8 @@
  * Static function definitions
  * */
 
+
+// TODO remake menu so it shows submenu names and depth on top or bottom
 // TODO implement led mode switching
 // TODO implement changing max speed
 // TODO make dashboard nicer
@@ -32,12 +34,15 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
+
 
 #define BORDER_BEGIN_X 0
 #define BORDER_BEGIN_Y 0
 #define BORDER_END_X 120
 #define FIELD_HEIGHT 21 // in pixels
 #define MAX_MENUITEMS 16
+#define MAX_MENUITEM_LABEL_LENGTH 16
 
 ItemPosition border_position = ITEM_TOP;
 MenuType current_menu = MENU_ROOT;
@@ -47,6 +52,8 @@ static bool is_input_clockwise = false;
 static bool is_input_select = false;
 static bool is_input_counterclockwise = false;
 
+int counter_scrolling = 0;
+int index_scrolling = 0;
 int item_index = 0;
 
 int dummy = 10;
@@ -61,8 +68,8 @@ static MenuItem menu[][MAX_MENUITEMS] =
         {"LED settings", &enterSubmenu, NULL, MENU_LED_SETTINGS},
         {"Dummy 1.3", &doNothing},
         {"Dummy 1.4", &doNothing},
-        {"12345678901234567", &doNothing},
-        {"12345678901234567", &doNothing}
+        {"123456789012345678901234567890", &doNothing},
+        {"scrolling scrolling scrolling scrolling", &doNothing}
     },
     // SUBMENU 1
     {
@@ -183,21 +190,50 @@ static void drawDashboard()
 static void drawMenuItems() 
 {
     ssd1306_Fill(Black);
-    
-    // max label length 17 chars
-    // or 19 with smallest font
 
-    // top item
-    ssd1306_SetCursor(2, 6);
-    ssd1306_WriteString(menu[current_menu][item_index + ITEM_TOP - border_position].label, Font_7x10, White);
+    for (uint8_t item_pos = 0; item_pos < 3; item_pos++)
+    {
+        ssd1306_SetCursor(2, 6 + item_pos * 21);
+        // if label too long
+        if (strlen(menu[current_menu][item_index + item_pos - border_position].label) > MAX_MENUITEM_LABEL_LENGTH)
+        {
+            char buffer_label[MAX_MENUITEM_LABEL_LENGTH + 1];
+            // if item selected
+            if (item_pos == border_position)
+            {
+                // do scrolling
 
-    // center item
-    ssd1306_SetCursor(2, 6+21);
-    ssd1306_WriteString(menu[current_menu][item_index + ITEM_CENTER - border_position].label, Font_7x10, White);
+                // if scrolled to end
+                if (strlen(menu[current_menu][item_index + item_pos - border_position].label) < MAX_MENUITEM_LABEL_LENGTH + index_scrolling)
+                {
+                    // only show end
+                    strncpy(buffer_label, menu[current_menu][item_index + item_pos - border_position].label +
+                    strlen(menu[current_menu][item_index + item_pos - border_position].label) - MAX_MENUITEM_LABEL_LENGTH, MAX_MENUITEM_LABEL_LENGTH);
+                }
 
-    // bottom item
-    ssd1306_SetCursor(2, 6+21+21);
-    ssd1306_WriteString(menu[current_menu][item_index + ITEM_BOTTOM - border_position].label, Font_7x10, White);
+                // else keep scrolling 
+                else
+                {
+                    strncpy(buffer_label, menu[current_menu][item_index + item_pos - border_position].label + index_scrolling, MAX_MENUITEM_LABEL_LENGTH);
+                }
+                
+            }
+
+            else
+            {
+                // just show beginning
+                strncpy(buffer_label, menu[current_menu][item_index + item_pos - border_position].label, MAX_MENUITEM_LABEL_LENGTH);
+            }
+            buffer_label[MAX_MENUITEM_LABEL_LENGTH] = '\0';
+
+            ssd1306_WriteString(buffer_label, Font_7x10, White);
+        }
+        // label fits
+        else
+        {
+            ssd1306_WriteString(menu[current_menu][item_index + item_pos - border_position].label, Font_7x10, White);
+        }
+    }
 
     drawBorder(border_position);
     drawScrollbar();
@@ -254,6 +290,11 @@ static void inputHandlerDashboard()
 
 static void inputHandlerMenu()
 {
+    if (counter_scrolling == 10)
+    {
+        index_scrolling++;
+        counter_scrolling == 0;
+    }
     // run current menu item callback 
     if (is_input_select)
     {
@@ -273,7 +314,8 @@ static void inputHandlerMenu()
                 border_position--;
             }
         }
-
+        counter_scrolling = 0;
+        index_scrolling = 0;
         is_input_counterclockwise = false;
     }
 
@@ -289,7 +331,8 @@ static void inputHandlerMenu()
                 border_position++;
             }
         }
-
+        counter_scrolling = 0;
+        index_scrolling = 0;
         is_input_clockwise = false;
     }
 }
@@ -342,6 +385,7 @@ void menu_update()
 
     else if (menu_state == STATE_MENU) 
     {
+        counter_scrolling++;
         inputHandlerMenu();
         drawMenuItems();
     }
