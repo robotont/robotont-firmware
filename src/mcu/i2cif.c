@@ -9,8 +9,13 @@
 #include "i2cif.h"
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <math.h>
+#include "measurements.h"
 
 static I2CCallbackType error_callback;
+
+
 
 /**
  * @brief Initializes i2c module
@@ -46,6 +51,16 @@ void i2cif_memoryWrite(I2C_HandleTypeDef *i2c_handler, uint16_t slave_addr, uint
     (void)HAL_I2C_Mem_Write(i2c_handler, slave_addr, mem_addr, mem_size, ptr_data, data_size, timeout_ms);
 }
 
+void i2cif_masterRead(I2C_HandleTypeDef *i2c_handler, uint16_t slave_addr, uint8_t *I2C1_data, uint16_t data_size, uint32_t timeout_ms)
+{
+    if (HAL_I2C_Master_Receive(i2c_handler, slave_addr, I2C1_data, data_size, timeout_ms) != HAL_OK){
+        if (error_callback != NULL)
+        {
+            error_callback(i2c_handler);
+        }
+    }
+}
+
 /*======================================================================================================================
  * I2C ISR handlers. Naming comes from CUBE HAL
 ======================================================================================================================*/
@@ -61,4 +76,39 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *i2c_handler)
     }
 }
 
+void HAL_I2C_ListenCpltCallback (I2C_HandleTypeDef *i2c_handler)
+{
+	HAL_I2C_EnableListen_IT(i2c_handler);
+}
+
+void HAL_I2C_AddrCallback(I2C_HandleTypeDef *i2c_handler, uint8_t TransferDirection, uint16_t AddrMatchCode)
+{
+	if(TransferDirection == I2C_DIRECTION_TRANSMIT)  // if attiny wants to transmit the data
+	{
+		HAL_I2C_Slave_Sequential_Receive_IT(i2c_handler, I2C_Data, 8, I2C_FIRST_AND_LAST_FRAME);
+	}
+}
+
+void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *i2c_handler)
+{
+    if(i2c_handler == &hi2c1){
+        processData();
+    }
+    
+	// // Process the received data
+    // uint16_t MtrCurrent = (I2C_Data[0] << 8) | I2C_Data[1];
+    // MtrCurrentf = ((MtrCurrent * 3.3) / (1024 * 40)) * 200; // AMPS
+
+    // uint16_t NucCurrent = (I2C_Data[2] << 8) | I2C_Data[3];
+    // NucCurrentf = ((NucCurrent * 3.3) / (1024 * 60)) * 100; // AMPS
+
+    // uint16_t WallVoltage = (I2C_Data[4] << 8) | I2C_Data[5];
+    // WallVoltagef = (((WallVoltage * 3.3) / 1024) * 118) / 18; // VOLTS
+
+    // uint16_t BatVoltage = (I2C_Data[6] << 8) | I2C_Data[7];
+    // BatVoltagef = (((BatVoltage * 3.3) / 1024) * 118) / 18; // VOLTS
+    
+    // // Print the processed data
+    // printf("Motor Current: %f A, Nuc Current: %f A, Wall Voltage: %f V, Bat Voltage: %f V\n",MtrCurrentf, NucCurrentf, WallVoltagef, BatVoltagef);
+}
 

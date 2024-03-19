@@ -16,6 +16,10 @@
 #include "system_hal.h"
 #include "timerif.h"
 #include "usbif.h"
+#include "measurements.h"
+
+#define ATtiny_ADR 0x08
+uint8_t I2C1_data[8];
 
 int main(void)
 {
@@ -41,6 +45,10 @@ int main(void)
     led_red.pin_number = PIN_LED_R_Pin;
     led_red.ptr_port = PIN_LED_R_GPIO_Port;
     ioif_togglePin(&led_green);
+    if (HAL_I2C_EnableListen_IT(&hi2c1) != HAL_OK)
+    {
+	    ioif_writePin(&led_red, 1);
+    }
 
     while (true)
     {
@@ -72,25 +80,22 @@ int main(void)
             {
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
+                //i2cif_masterRead(&hi2c1, ATtiny_ADR << 1, I2C1_data, sizeof(I2C1_data), HAL_MAX_DELAY);
                 
                 // Print some debug info to OLED display
                 char buff[64];
                 ssd1306_Fill(Black);
-                snprintf(buff, sizeof(buff), "Vel0:%05d", timerif_getCounter(TIMER_ENC_M0));
+                snprintf(buff, sizeof(buff), "BAT:%.2f", BatVoltage);
                 ssd1306_SetCursor(2, 2);
                 ssd1306_WriteString(buff, Font_11x18, White);
-                snprintf(buff, sizeof(buff), "Vel1:%05d", timerif_getCounter(TIMER_ENC_M1));
+                snprintf(buff, sizeof(buff), "NucI:%.2f", NucCurrent);
                 ssd1306_SetCursor(2, 20);
                 ssd1306_WriteString(buff, Font_11x18, White);
-                snprintf(buff, sizeof(buff), "Vel2:%05d", timerif_getCounter(TIMER_ENC_M2));
-                ssd1306_SetCursor(2, 38);
-                ssd1306_WriteString(buff, Font_11x18, White);
                 ssd1306_UpdateScreen();
+                
                 // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
             }
 
-            // printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
-            //        timerif_getCounter(TIMER_ENC_M2));
         }
     }
 }
