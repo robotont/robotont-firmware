@@ -95,20 +95,5 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *i2c_handler)
         processData();
     }
     
-	// // Process the received data
-    // uint16_t MtrCurrent = (I2C_Data[0] << 8) | I2C_Data[1];
-    // MtrCurrentf = ((MtrCurrent * 3.3) / (1024 * 40)) * 200; // AMPS
-
-    // uint16_t NucCurrent = (I2C_Data[2] << 8) | I2C_Data[3];
-    // NucCurrentf = ((NucCurrent * 3.3) / (1024 * 60)) * 100; // AMPS
-
-    // uint16_t WallVoltage = (I2C_Data[4] << 8) | I2C_Data[5];
-    // WallVoltagef = (((WallVoltage * 3.3) / 1024) * 118) / 18; // VOLTS
-
-    // uint16_t BatVoltage = (I2C_Data[6] << 8) | I2C_Data[7];
-    // BatVoltagef = (((BatVoltage * 3.3) / 1024) * 118) / 18; // VOLTS
-    
-    // // Print the processed data
-    // printf("Motor Current: %f A, Nuc Current: %f A, Wall Voltage: %f V, Bat Voltage: %f V\n",MtrCurrentf, NucCurrentf, WallVoltagef, BatVoltagef);
 }
 
