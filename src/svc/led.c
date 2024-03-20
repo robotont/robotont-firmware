@@ -9,19 +9,11 @@
 #include "timerif.h"
 #include "ARGB.h"
 
-#define LED_MODE_SPIN          0 // LED spin green
-#define LED_MODE_PULSE         1 // Leds pulse on/off
-#define LED_MODE_COLORS_SMOOTH 2 // Change colours
-#define LED_MODE_WHEEL_COLORS  3 // Behind the wheel change colours
-#define LED_MODE_COLORS_RGB    4 // Switch all leds between red, green, blue
-#define LED_MODE_COLORS_SPIN   5 // Change colours spin
-#define LED_MODE_MOTOR_SPEEDS  6 // Motor speed changes wheel colors
-#define LED_MODE_SCAN_RANGES   7 // Laser scan ranges
 
 uint16_t led_val = 0;
 uint8_t led_val_increasing = 1;
 uint8_t led_i = 0;
-uint8_t led_mode = LED_MODE_SPIN;
+LEDMode led_mode = LED_MODE_SPIN;
 uint8_t led_mode_color[3] = { 0, 255, 0 };
 uint32_t counter = 0;
 
