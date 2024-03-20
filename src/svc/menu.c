@@ -170,14 +170,13 @@ static void drawDashboard()
     // * current ROS program
     // *  
     ssd1306_Fill(Black);
+    char buff[64];
 
     ssd1306_SetCursor(2, 3);
-    char buff[64];
-    snprintf(buff, sizeof(buff), "Bat volt: %d V", BatVoltage);
+    snprintf(buff, sizeof(buff), "Bat volt: %f V", BatVoltage);
     ssd1306_WriteString(buff, Font_6x8, White);
 
     ssd1306_SetCursor(2, 15);
-    char buff[64];
     snprintf(buff, sizeof(buff), "Max speed: %d", dummy);
     ssd1306_WriteString(buff, Font_6x8, White);
 
