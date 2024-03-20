@@ -54,6 +54,7 @@ static bool is_input_counterclockwise = false;
 
 int counter_scrolling = 0;
 int index_scrolling = 0;
+bool scrolling_activated = 0;
 int item_index = 0;
 
 int dummy = 10;
@@ -290,10 +291,15 @@ static void inputHandlerDashboard()
 
 static void inputHandlerMenu()
 {
-    if (counter_scrolling == 10)
+    if (counter_scrolling > 6)
+    {
+        scrolling_activated = true;
+        counter_scrolling = 0;
+    }
+    if (counter_scrolling == 2 && scrolling_activated)
     {
         index_scrolling++;
-        counter_scrolling == 0;
+        counter_scrolling = 0;
     }
     // run current menu item callback 
     if (is_input_select)
@@ -316,6 +322,8 @@ static void inputHandlerMenu()
         }
         counter_scrolling = 0;
         index_scrolling = 0;
+        scrolling_activated = false;
+
         is_input_counterclockwise = false;
     }
 
@@ -333,6 +341,7 @@ static void inputHandlerMenu()
         }
         counter_scrolling = 0;
         index_scrolling = 0;
+        scrolling_activated = false;
         is_input_clockwise = false;
     }
 }
