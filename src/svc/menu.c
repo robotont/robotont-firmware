@@ -29,6 +29,7 @@
 
 #include "menu.h"
 #include "ioif.h"
+#include "measurements.h"
 // #include "led.h"
 
 #include <stdint.h>
@@ -171,7 +172,9 @@ static void drawDashboard()
     ssd1306_Fill(Black);
 
     ssd1306_SetCursor(2, 3);
-    ssd1306_WriteString("Bat volt: 14.6 V", Font_6x8, White);
+    char buff[64];
+    snprintf(buff, sizeof(buff), "Bat volt: %d V", BatVoltage);
+    ssd1306_WriteString(buff, Font_6x8, White);
 
     ssd1306_SetCursor(2, 15);
     char buff[64];
