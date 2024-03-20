@@ -30,7 +30,7 @@
 #include "menu.h"
 #include "ioif.h"
 #include "measurements.h"
-// #include "led.h"
+#include "led.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -104,7 +104,7 @@ static MenuItem menu[][MAX_MENUITEMS] =
 
 static void setLEDMode()
 {
-    // led_mode = item_index - 1;
+    led_mode = item_index - 1;
 }
 
 
