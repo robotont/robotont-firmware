@@ -16,6 +16,12 @@
 #include "system_hal.h"
 #include "timerif.h"
 #include "usbif.h"
+#include "led.h"
+#include "measurements.h"
+#include "menu.h"
+
+#define ATtiny_ADR 0x08
+uint8_t I2C1_data[8];
 
 int main(void)
 {
@@ -25,9 +31,11 @@ int main(void)
     timerif_init();
     i2cif_init();
 
+    HAL_I2C_EnableListen_IT(&hi2c2); // TODO measurements_init()
     cmd_init();
     movement_init();
-    ssd1306_Init(); // TODO: Move this init from main.c to the according service init
+    led_init();
+    menu_init();
 
     uint32_t counter = 1u;
     uint32_t last_tick = system_hal_timestamp();
@@ -41,6 +49,10 @@ int main(void)
     led_red.pin_number = PIN_LED_R_Pin;
     led_red.ptr_port = PIN_LED_R_GPIO_Port;
     ioif_togglePin(&led_green);
+    if (HAL_I2C_EnableListen_IT(&hi2c1) != HAL_OK)
+    {
+	    ioif_writePin(&led_red, 1);
+    }
 
     while (true)
     {
@@ -66,31 +78,17 @@ int main(void)
             */
 
             // TODO [implementation] here goes "led_update()", "oled_update()" ...
+            led_update();
 
             /* Debug info */
             if (counter % 10u == 0)
-            {
+            {   
+                menu_update();
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
                 
-                // Print some debug info to OLED display
-                char buff[64];
-                ssd1306_Fill(Black);
-                snprintf(buff, sizeof(buff), "Vel0:%05d", timerif_getCounter(TIMER_ENC_M0));
-                ssd1306_SetCursor(2, 2);
-                ssd1306_WriteString(buff, Font_11x18, White);
-                snprintf(buff, sizeof(buff), "Vel1:%05d", timerif_getCounter(TIMER_ENC_M1));
-                ssd1306_SetCursor(2, 20);
-                ssd1306_WriteString(buff, Font_11x18, White);
-                snprintf(buff, sizeof(buff), "Vel2:%05d", timerif_getCounter(TIMER_ENC_M2));
-                ssd1306_SetCursor(2, 38);
-                ssd1306_WriteString(buff, Font_11x18, White);
-                ssd1306_UpdateScreen();
-                // printf("Main_delay:%ld %ld\r\n", current_tick, last_tick);
             }
 
-            // printf("%05d %05d %05d\r\n", timerif_getCounter(TIMER_ENC_M0), timerif_getCounter(TIMER_ENC_M1),
-            //        timerif_getCounter(TIMER_ENC_M2));
         }
     }
 }

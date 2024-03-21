@@ -19,3 +19,5 @@ typedef void (*I2CCallbackType)(I2C_HandleTypeDef *i2c_handler); /* Callback, th
 void i2cif_init(void);
 void i2cif_memoryWrite(I2C_HandleTypeDef *i2c_handler, uint16_t slave_addr, uint16_t mem_addr,
                                     uint16_t mem_size, uint8_t *ptr_data, uint16_t data_size, uint32_t timeout);
+
+void i2cif_masterRead(I2C_HandleTypeDef *i2c_handler, uint16_t slave_addr, uint8_t *ptr_data, uint16_t data_size, uint32_t timeout_ms);

@@ -13,14 +13,17 @@
 
 #include "peripheral.h"
 
+static EXTICallbackType rotary_encoder_callback;
+
 /**
- * @brief Initializes timer module
+ * @brief Initializes GPIO module
  */
 void ioif_init(void)
 {
     static bool is_initialized = false;
     if (!is_initialized)
     {
+        rotary_encoder_callback = NULL;
         MX_GPIO_Init();
         is_initialized = true;
     }
@@ -48,4 +51,14 @@ bool ioif_isActive(IoPinType *ptr_pin)
 void ioif_togglePin(IoPinType *ptr_pin)
 {
     HAL_GPIO_TogglePin(ptr_pin->ptr_port, ptr_pin->pin_number);
+}
+
+void ioif_setRotaryEncoderCallback(EXTICallbackType callback)
+{
+    rotary_encoder_callback = callback;
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t pin_number)
+{
+    rotary_encoder_callback(pin_number);
 }

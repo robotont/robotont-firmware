@@ -234,7 +234,7 @@ void movement_update()
 
         odom_update(&odom_handler, motor0_handler.linear_velocity, motor1_handler.linear_velocity,
                     motor2_handler.linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
-        printOdom();
+        //printOdom();
     }
 }
 
