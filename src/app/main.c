@@ -64,6 +64,8 @@ int main(void)
 
             /* Service layer modules update */
             movement_update();
+            menu_update();
+            led_update();
 
             /**
             @brief Example, of how to modules should communicate with each others: via getters and setters (Pseudocode)
@@ -77,17 +79,13 @@ int main(void)
 
             */
 
-            // TODO [implementation] here goes "led_update()", "oled_update()" ...
-            led_update();
-
             /* Debug info */
             if (counter % 10u == 0)
             {   
-                menu_update();
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
-                
             }
+                
 
         }
     }
