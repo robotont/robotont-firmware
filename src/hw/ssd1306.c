@@ -194,6 +194,13 @@ void ssd1306_UpdateScreen(void) {
     }
 }
 
+void ssd1306_UpdateScreenByPage(int ram_page) {
+    ssd1306_WriteCommand(0xB0 + ram_page); // Set the current RAM page address.
+    ssd1306_WriteCommand(0x00 + SSD1306_X_OFFSET_LOWER);
+    ssd1306_WriteCommand(0x10 + SSD1306_X_OFFSET_UPPER);
+    ssd1306_WriteData(&SSD1306_Buffer[SSD1306_WIDTH*ram_page],SSD1306_WIDTH);
+}
+
 /*
  * Draw one pixel in the screenbuffer
  * X => X Coordinate
