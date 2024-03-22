@@ -12,6 +12,8 @@
 
 
 // TODO remake menu so it shows submenu names and depth on top or bottom
+// TODO saada menyy t88le nii et 10 Hz oleks refresh rate. see t2hendab et iga viies main peaks saama
+// 10 ms aega
 // TODO implement led mode switching
 // TODO implement changing max speed
 // TODO make dashboard nicer
@@ -388,6 +390,8 @@ void menu_init()
 // dashboard updating should happen regularily whatever the robot is doing (for example moving around)
 void menu_update()
 {
+    static int ram_page = 0;
+
     if (menu_state == STATE_DASHBOARD)
     {
         inputHandlerDashboard();
@@ -407,5 +411,9 @@ void menu_update()
         drawInputScreen();
     }
 
-    ssd1306_UpdateScreen();
+    ssd1306_UpdateScreenByPage(ram_page);
+    ram_page++;
+
+    if (ram_page == 8) ram_page = 0;
+
 }
