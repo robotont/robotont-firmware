@@ -12,7 +12,6 @@
 
 #include "ioif.h"
 #include "ssd1306.h"
-#include "ssd1306_tests.h"
 
 #define PIN_ENC_SW GPIO_PIN_14
 #define PIN_ENC_B GPIO_PIN_15
@@ -23,7 +22,7 @@ typedef enum
     MENU_ROOT,
     MENU_SUBMENU1,
     MENU_SUBMENU2,
-    MENU_LED_SETTINGS
+    MENU_LED_SETTINGS,
 } MenuType;
 
 typedef enum 
@@ -44,8 +43,8 @@ typedef enum
 typedef struct
 {
     char* label;
-    void (*select_callback)(void);
-    int * ptr_valuetochange;
+    void (*item_callback)(void);
+    int * ptr_input_value;
     MenuType submenu_index;
 } MenuItem;
 

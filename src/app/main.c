@@ -12,16 +12,12 @@
 #include "peripheral.h"
 #include "pid.h"
 #include "ssd1306.h"
-#include "ssd1306_tests.h"
 #include "system_hal.h"
 #include "timerif.h"
 #include "usbif.h"
 #include "led.h"
 #include "measurements.h"
 #include "menu.h"
-
-#define ATtiny_ADR 0x08
-uint8_t I2C1_data[8];
 
 int main(void)
 {

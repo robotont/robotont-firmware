@@ -10,24 +10,19 @@
  * Static function definitions
  * */
 
-
-// TODO remake menu so it shows submenu names and depth on top or bottom
-// TODO saada menyy t88le nii et 10 Hz oleks refresh rate. see t2hendab et iga viies main peaks saama
-// 10 ms aega
-// TODO implement led mode switching
-// TODO implement changing max speed
+// TODO remake menu so it shows submenu names and depth on top or bottom NO SPACE...
 // TODO make dashboard nicer
+// TODO make led mode selection modular
 // TODO implement debug screen
 // TODO implement sending commands to NUC
 // TODO implement firmware info screen
-// TODO show battery voltage
-// TODO show current draw info
+
+// TODO show power path info incl battery voltage, current draw info
 // TODO show ESTOP state
-// TODO show power path info
 // TODO demo program submenu
 // TODO PID parameters tuning screen
 // TODO network info screen
-// TODO measure robot performance with unoptimised menu
+// TODO make input screen nicer
 
 #include "menu.h"
 #include "ioif.h"
@@ -39,13 +34,20 @@
 #include <stdbool.h>
 #include <string.h>
 
-
 #define BORDER_BEGIN_X 0
 #define BORDER_BEGIN_Y 0
-#define BORDER_END_X 120
-#define FIELD_HEIGHT 21 // in pixels
+#define BORDER_WIDTH 120
+
+#define SCROLLBAR_BEGIN_X 124
+#define SCROLLBAR_WIDTH 4
+
+#define FIELD_HEIGHT 21
+
 #define MAX_MENUITEMS 16
 #define MAX_MENUITEM_LABEL_LENGTH 16
+
+#define SCROLLING_WAIT_IN_MAIN_LOOP_DT_INCREMENTS 25
+#define SCROLLING_CONTINUE_IN_MAIN_LOOP_DT_INCREMENTS 5
 
 ItemPosition border_position = ITEM_TOP;
 MenuType current_menu = MENU_ROOT;
@@ -55,39 +57,38 @@ static bool is_input_clockwise = false;
 static bool is_input_select = false;
 static bool is_input_counterclockwise = false;
 
-int counter_scrolling = 0;
-int index_scrolling = 0;
-bool scrolling_activated = 0;
-int item_index = 0;
+int scrolling_main_loop_counter = 0;
+int scrolling_label_index = 0;
+bool scrolling_activated = false;
+
+int menu_item_index = 0;
 
 int dummy = 10;
 
+// All submenus have to have the same index in menu[] array as their counterparts in MenuType enum
 static MenuItem menu[][MAX_MENUITEMS] = 
 {
     // ROOT
     {
         {"^-- Dashboard", &showDashboard},
-        {"Submenu 1", &enterSubmenu, NULL, MENU_SUBMENU1},
+        {"LED modes", &enterSubmenu, NULL, MENU_LED_SETTINGS},
+        {"Demo submenu 1", &enterSubmenu, NULL, MENU_SUBMENU1},
         {"Set max speed", &setValue, &dummy},
-        {"LED settings", &enterSubmenu, NULL, MENU_LED_SETTINGS},
-        {"Dummy 1.3", &doNothing},
-        {"Dummy 1.4", &doNothing},
-        {"123456789012345678901234567890", &doNothing},
-        {"scrolling scrolling scrolling scrolling", &doNothing}
+        {"scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing}
     },
     // SUBMENU 1
     {
         {"^-- Main menu", &enterMainmenu},
-        {"Submenu 2", &enterSubmenu, NULL, MENU_SUBMENU2},
-        {"Item 2.2", &doNothing},
-        {"Item 2.3", &doNothing}
+        {"Demo submenu 2", &enterSubmenu, NULL, MENU_SUBMENU2},
+        {"Demo item 2.2", &doNothing},
+        {"Demo item 2.3", &doNothing}
     },
     // SUBMENU 2
     {
         {"^-- Main menu", &enterMainmenu},
-        {"Item 3.1", &doNothing},
-        {"Item 3.2", &doNothing},
-        {"Item 3.3", &doNothing}
+        {"Demo item 3.1", &doNothing},
+        {"Demo item 3.2", &doNothing},
+        {"Demo item 3.3", &doNothing}
     },
     // LED SETTINGS
     {
@@ -101,20 +102,19 @@ static MenuItem menu[][MAX_MENUITEMS] =
         {"MODE_MOTOR_SPEEDS", &setLEDMode}, 
         {"MODE_SCAN_RANGES", &setLEDMode}
     },
-
 };
 
+// This implies that LedModes enum has same ordering as LED settings submenu
 static void setLEDMode()
 {
-    led_mode = item_index - 1;
+    led_mode = menu_item_index - 1;
 }
-
 
 static void enterMainmenu()
 {
     menu_state = STATE_MENU;
     current_menu = MENU_ROOT;
-    item_index = 0;
+    menu_item_index = 0;
     border_position = ITEM_TOP;
 }
 
@@ -134,15 +134,14 @@ static void doNothing()
 }
 
 static void enterSubmenu() {
-    current_menu = menu[current_menu][item_index].submenu_index;
-    item_index = 0;
+    current_menu = menu[current_menu][menu_item_index].submenu_index;
+    menu_item_index = 0;
     border_position = ITEM_TOP;
 }
 
 static void drawBorder(int border_position)
 {
-    ssd1306_DrawRectangle(BORDER_BEGIN_X, BORDER_BEGIN_Y + FIELD_HEIGHT * border_position,
-                          BORDER_END_X, (border_position+1) * FIELD_HEIGHT, White);
+    ssd1306_DrawRect(BORDER_BEGIN_X, BORDER_BEGIN_Y + FIELD_HEIGHT * border_position, BORDER_WIDTH, FIELD_HEIGHT);
 }
 
 static int getCurrentMenuSize()
@@ -162,45 +161,38 @@ static void drawScrollbar()
     // divide vertical space between items
     int pixelsPerItem = SSD1306_HEIGHT / getCurrentMenuSize();
 
-    ssd1306_FillRectangle(124, (item_index-border_position)*pixelsPerItem, 128, (item_index - border_position + 3) * pixelsPerItem, White);
+    ssd1306_FillRect(SCROLLBAR_BEGIN_X, (menu_item_index - border_position) * pixelsPerItem, 4, pixelsPerItem * 3 + 2);
 }
 
 static void drawDashboard() 
 {
-    // useful items while operating the robot
-    // * battery voltage
-    // * current ROS program
-    // *  
-    ssd1306_Fill(Black);
+    ssd1306_Clear();
     char buff[64];
 
     ssd1306_SetCursor(2, 3);
-    snprintf(buff, sizeof(buff), "Bat volt: %f V", BatVoltage);
-    ssd1306_WriteString(buff, Font_6x8, White);
+    snprintf(buff, sizeof(buff), "Bat volt: %.1f V", BatVoltage);
+    ssd1306_WriteString(buff, Font_7x10);
 
     ssd1306_SetCursor(2, 15);
     snprintf(buff, sizeof(buff), "Max speed: %d", dummy);
-    ssd1306_WriteString(buff, Font_6x8, White);
+    ssd1306_WriteString(buff, Font_7x10);
 
     ssd1306_SetCursor(2, 27);
-    ssd1306_WriteString("IP:123.123.123.123", Font_6x8, White);
-
-    ssd1306_SetCursor(2, 39);
-    ssd1306_WriteString("press knob 4 menu", Font_6x8, White);
+    ssd1306_WriteString("IP:123.123.123.123", Font_7x10);
 
     ssd1306_SetCursor(2, 51);
-    ssd1306_WriteString("LED mode: blink", Font_6x8, White);
+    ssd1306_WriteString("LED mode: blink", Font_7x10);
 }
 
 static void drawMenuItems() 
 {
-    ssd1306_Fill(Black);
+    ssd1306_Clear();
 
     for (uint8_t item_pos = 0; item_pos < 3; item_pos++)
     {
-        ssd1306_SetCursor(2, 6 + item_pos * 21);
+        ssd1306_SetCursor(4, 6 + item_pos * 21);
         // if label too long
-        if (strlen(menu[current_menu][item_index + item_pos - border_position].label) > MAX_MENUITEM_LABEL_LENGTH)
+        if (strlen(menu[current_menu][menu_item_index + item_pos - border_position].label) > MAX_MENUITEM_LABEL_LENGTH)
         {
             char buffer_label[MAX_MENUITEM_LABEL_LENGTH + 1];
             // if item selected
@@ -209,17 +201,17 @@ static void drawMenuItems()
                 // do scrolling
 
                 // if scrolled to end
-                if (strlen(menu[current_menu][item_index + item_pos - border_position].label) < MAX_MENUITEM_LABEL_LENGTH + index_scrolling)
+                if (strlen(menu[current_menu][menu_item_index + item_pos - border_position].label) < MAX_MENUITEM_LABEL_LENGTH + scrolling_label_index)
                 {
                     // only show end
-                    strncpy(buffer_label, menu[current_menu][item_index + item_pos - border_position].label +
-                    strlen(menu[current_menu][item_index + item_pos - border_position].label) - MAX_MENUITEM_LABEL_LENGTH, MAX_MENUITEM_LABEL_LENGTH);
+                    strncpy(buffer_label, menu[current_menu][menu_item_index + item_pos - border_position].label +
+                    strlen(menu[current_menu][menu_item_index + item_pos - border_position].label) - MAX_MENUITEM_LABEL_LENGTH, MAX_MENUITEM_LABEL_LENGTH);
                 }
 
                 // else keep scrolling 
                 else
                 {
-                    strncpy(buffer_label, menu[current_menu][item_index + item_pos - border_position].label + index_scrolling, MAX_MENUITEM_LABEL_LENGTH);
+                    strncpy(buffer_label, menu[current_menu][menu_item_index + item_pos - border_position].label + scrolling_label_index, MAX_MENUITEM_LABEL_LENGTH);
                 }
                 
             }
@@ -227,16 +219,16 @@ static void drawMenuItems()
             else
             {
                 // just show beginning
-                strncpy(buffer_label, menu[current_menu][item_index + item_pos - border_position].label, MAX_MENUITEM_LABEL_LENGTH);
+                strncpy(buffer_label, menu[current_menu][menu_item_index + item_pos - border_position].label, MAX_MENUITEM_LABEL_LENGTH);
             }
             buffer_label[MAX_MENUITEM_LABEL_LENGTH] = '\0';
 
-            ssd1306_WriteString(buffer_label, Font_7x10, White);
+            ssd1306_WriteString(buffer_label, Font_7x10);
         }
         // label fits
         else
         {
-            ssd1306_WriteString(menu[current_menu][item_index + item_pos - border_position].label, Font_7x10, White);
+            ssd1306_WriteString(menu[current_menu][menu_item_index + item_pos - border_position].label, Font_7x10);
         }
     }
 
@@ -245,20 +237,20 @@ static void drawMenuItems()
 }
 
 static void drawInputScreen() {
-    ssd1306_Fill(Black);
+    ssd1306_Clear();
 
     // draw variable name
-    ssd1306_SetCursor(2, 3);
-    ssd1306_WriteString(menu[current_menu][item_index].label, Font_7x10, White);
+    ssd1306_SetCursor(5, 15);
+    ssd1306_WriteString(menu[current_menu][menu_item_index].label, Font_7x10);
 
     // draw variable value
     char buff[64];
-    snprintf(buff, sizeof(buff), "%d", *(menu[current_menu][item_index].ptr_valuetochange));
+    snprintf(buff, sizeof(buff), "%d", *(menu[current_menu][menu_item_index].ptr_input_value));
     ssd1306_SetCursor(48, 30);
-    ssd1306_WriteString(buff, Font_16x24, White);
+    ssd1306_WriteString(buff, Font_16x26);
 }
 
-static void inputHandler(uint16_t pin_number)
+static void hardwareInputHandler(uint16_t pin_number)
 {
     static IoPinType enc_a;
     enc_a.ptr_port = PIN_ROT_ENC_A_GPIO_Port;
@@ -285,7 +277,6 @@ static void inputHandler(uint16_t pin_number)
 
 static void inputHandlerDashboard()
 {
-    // enter main menu
     if (is_input_select)
     {
         enterMainmenu();
@@ -295,103 +286,103 @@ static void inputHandlerDashboard()
 
 static void inputHandlerMenu()
 {
-    if (counter_scrolling > 6)
+    if (scrolling_activated)
     {
-        scrolling_activated = true;
-        counter_scrolling = 0;
+        if (scrolling_main_loop_counter == SCROLLING_CONTINUE_IN_MAIN_LOOP_DT_INCREMENTS)
+        {
+            scrolling_label_index++;
+            scrolling_main_loop_counter = 0;
+        }
     }
-    if (counter_scrolling == 2 && scrolling_activated)
+
+    else
     {
-        index_scrolling++;
-        counter_scrolling = 0;
+        if (scrolling_main_loop_counter == SCROLLING_WAIT_IN_MAIN_LOOP_DT_INCREMENTS)
+        {
+            scrolling_activated = true;
+            scrolling_main_loop_counter = 0;
+        }
     }
-    // run current menu item callback 
+
     if (is_input_select)
     {
-        menu[current_menu][item_index].select_callback();
+        menu[current_menu][menu_item_index].item_callback();
         is_input_select = false;
     }
 
-    // select upper item
     else if (is_input_counterclockwise)
     {
-        if (item_index > 0)
+        if (menu_item_index > 0)
         {
-            item_index--;
+            menu_item_index--;
 
             if (border_position != ITEM_TOP)
             {
                 border_position--;
             }
         }
-        counter_scrolling = 0;
-        index_scrolling = 0;
+
+        scrolling_main_loop_counter = 0;
+        scrolling_label_index = 0;
         scrolling_activated = false;
 
         is_input_counterclockwise = false;
     }
 
-    // select lower item
     else if (is_input_clockwise)
     {   
-        if (item_index < getCurrentMenuSize() - 1)
+        if (menu_item_index < getCurrentMenuSize() - 1)
         {
-            item_index++;
+            menu_item_index++;
 
             if (border_position != ITEM_BOTTOM)
             {
                 border_position++;
             }
         }
-        counter_scrolling = 0;
-        index_scrolling = 0;
+
+        scrolling_main_loop_counter = 0;
+        scrolling_label_index = 0;
         scrolling_activated = false;
+
         is_input_clockwise = false;
     }
 }
 
 static void inputHandlerInput()
 {
-    // return to previous menu
-    // leaves other menu specific variables unchanged
     if (is_input_select)
     {
         menu_state = STATE_MENU;
         is_input_select = false;
     }
 
-    // decrement variable
     else if (is_input_counterclockwise)
     {
-        (*(menu[current_menu][item_index].ptr_valuetochange))--;
+        (*(menu[current_menu][menu_item_index].ptr_input_value))--;
         is_input_counterclockwise = false;
     }
 
-    // increment variable
     else if (is_input_clockwise)
     {   
-        (*(menu[current_menu][item_index].ptr_valuetochange))++;
+        (*(menu[current_menu][menu_item_index].ptr_input_value))++;
         is_input_clockwise = false;
     }
 }
 
 void menu_init()
 {
-    EXTICallbackType my_callback = (EXTICallbackType)inputHandler;
-    ioif_setRotaryEncoderCallback(my_callback);
+    ioif_setRotaryEncoderCallback((EXTICallbackType) hardwareInputHandler);
 
     menu_state = STATE_DASHBOARD;
 
-    MX_I2C3_Init();
     ssd1306_Init();
+    ssd1306_FlipScreenVertically();
+    ssd1306_SetColor(White);
 }
 
-// frequency of calling this depends on main(). possibly optimize this, if updating menu is too resource intensive
-// dashboard updating should happen regularily whatever the robot is doing (for example moving around)
 void menu_update()
 {
-    static int ram_page = 0;
-
     if (menu_state == STATE_DASHBOARD)
     {
         inputHandlerDashboard();
@@ -400,7 +391,7 @@ void menu_update()
 
     else if (menu_state == STATE_MENU) 
     {
-        counter_scrolling++;
+        scrolling_main_loop_counter++;
         inputHandlerMenu();
         drawMenuItems();
     }
@@ -411,9 +402,8 @@ void menu_update()
         drawInputScreen();
     }
 
-    ssd1306_UpdateScreenByPage(ram_page);
-    ram_page++;
-
-    if (ram_page == 8) ram_page = 0;
-
+    if (ssd1306_UpdateScreenCompleted())
+    {
+        ssd1306_UpdateScreen();
+    }
 }
