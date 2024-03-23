@@ -25,6 +25,7 @@ I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
 DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
+DMA_HandleTypeDef hdma_i2c3_tx;
 
 static void MX_CAN1_Init(void);
 static void MX_USART3_UART_Init(void);
@@ -157,7 +158,11 @@ void MX_DMA_Init(void)
 {
     /* DMA controller clock enable */
     __HAL_RCC_DMA2_CLK_ENABLE();
+    __HAL_RCC_DMA1_CLK_ENABLE();
     /* DMA interrupt init */
+    /* DMA1_Stream4_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
     /* DMA2_Stream4_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
@@ -479,7 +484,7 @@ void MX_I2C2_Init(void)
 void MX_I2C3_Init(void)
 {
     hi2c3.Instance = I2C3;
-    hi2c3.Init.ClockSpeed = 400000;
+    hi2c3.Init.ClockSpeed = 100000;
     hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
     hi2c3.Init.OwnAddress1 = 0;
     hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;

@@ -75,6 +75,7 @@ extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern I2C_HandleTypeDef hi2c3;
 extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
+extern DMA_HandleTypeDef hdma_i2c3_tx;
 
 void MX_GPIO_Init(void);
 void MX_TIM1_Init(void);
