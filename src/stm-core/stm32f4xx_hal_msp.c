@@ -264,8 +264,8 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
     /* I2C3 interrupt Init */
     HAL_NVIC_SetPriority(I2C3_EV_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(I2C3_EV_IRQn);
-    // HAL_NVIC_SetPriority(I2C3_ER_IRQn, 0, 0);
-    // HAL_NVIC_EnableIRQ(I2C3_ER_IRQn);
+    HAL_NVIC_SetPriority(I2C3_ER_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(I2C3_ER_IRQn);
   /* USER CODE BEGIN I2C3_MspInit 1 */
 
   /* USER CODE END I2C3_MspInit 1 */
