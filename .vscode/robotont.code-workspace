@@ -9,8 +9,6 @@
             120
         ],
         "C_Cpp.clang_format_style": "file",
-        "C_Cpp.codeAnalysis.clangTidy.enabled": true,
-        "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [],
         "files.associations": {
             "*.c": "c",
             "stdbool.h": "c",
