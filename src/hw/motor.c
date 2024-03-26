@@ -26,7 +26,10 @@
 #include "stm32f4xx_hal.h"
 #include "timerif.h"
 
-#define DUTY_CYCLE_EPSILON 10 /* If duty cycle value is less, then PWM pulse is not string enough to run the motor */
+#define DUTY_CYCLE_EPSILON       10 /* If duty cycle value is less, then PWM pulse is not strong enough to run the motor */
+#define DUTY_CYCLE_LIMIT_DEFAULT 25 /* If duty cycle value is greater, then motors can be dangerous */
+
+static uint8_t duty_cycle_limit;
 
 /**
  * @brief Initializes given motor
@@ -43,6 +46,7 @@ void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_Han
     motor_handler->linear_velocity_setpoint = 0.0f;
     motor_handler->prev_enc_timestamp = 0u;
 
+    duty_cycle_limit = DUTY_CYCLE_LIMIT_DEFAULT;
     motor_disable(motor_handler);
 }
 
@@ -78,6 +82,10 @@ void motor_update(MotorHandleType *motor_handler)
         ioif_writePin(&motor_handler->pinout->en2_pin, false);
     }
     duty_cycle = (uint8_t)abs(motor_handler->duty_cycle);
+    if (duty_cycle > duty_cycle_limit)
+    {
+        duty_cycle = duty_cycle_limit;
+    }
     timerif_setDutyCycle(motor_handler->pwm_timer, duty_cycle);
 
     /* Calculates wheel rotation speed based on counter pulse value */
@@ -112,4 +120,12 @@ void motor_disable(MotorHandleType *motor_handler)
 {
     timerif_disablePwmInterrupts(motor_handler->pwm_timer);
     ioif_writePin(&motor_handler->pinout->nsleep_pin, false);
+}
+
+/**
+ * @brief Sets motor's duty cycle maximum allowed value (%)
+ */
+void motor_setDutyCycleLimit(MotorHandleType *motor_handler, uint8_t limit)
+{
+    duty_cycle_limit = limit;
 }
