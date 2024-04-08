@@ -12,8 +12,6 @@
 
 // TODO make dashboard nicer
 // TODO implement sending commands to NUC
-// TODO make helper functions for displaying info
-// TODO show ESTOP state
 // TODO demo program submenu
 // TODO racing and normal mode callbacks
 // TODO network info screen ???
@@ -62,15 +60,31 @@ typedef enum
 {
     ITEM_TOP,
     ITEM_CENTER,
-    ITEM_BOTTOM
+    ITEM_BOTTOM,
 } ItemPosition;
+
+typedef enum 
+{
+    COMPACTVIEW_TOP,
+    COMPACTVIEW_ABOVECENTER,
+    COMPACTVIEW_CENTER,
+    COMPACTVIEW_BELOWCENTER,
+    COMPACTVIEW_BOTTOM,
+} CompactViewPosition;
+
+typedef enum 
+{
+    LARGEVIEW_TOP,
+    LARGEVIEW_CENTER,
+    LARGEVIEW_BOTTOM,
+} LargeViewPosition;
 
 typedef enum 
 {
     STATE_DASHBOARD,
     STATE_MENU,
     STATE_USERINPUT,
-    STATE_INFOSCREEN
+    STATE_INFOSCREEN,
 } MenuState;
 
 typedef struct
@@ -84,6 +98,7 @@ typedef struct
 static MenuType current_menu = MENU_ROOT;
 static MenuState menu_state = STATE_DASHBOARD;
 static ItemPosition border_position = ITEM_TOP;
+static FontDef *ptr_current_font;
 
 static bool is_input_select = false;
 static bool is_input_clockwise = false;
@@ -133,6 +148,8 @@ static void clearInputs();
 // END INPUT HANDLERS
 
 static int getCurrentMenuSize();
+static void setCursorCompactView(CompactViewPosition position);
+static void setCursorLargeView(LargeViewPosition position);
 
 // ================ END DECLARATIONS ================
 
@@ -311,15 +328,19 @@ static void showMotorSpeeds()
     menu_state = STATE_INFOSCREEN;
     ssd1306_Clear();
     char buff[64];
+
+    setCursorLargeView(LARGEVIEW_TOP);
     snprintf(buff, sizeof(buff), "Vel0:%05d", timerif_getCounter(TIMER_ENC_M0));
-    ssd1306_SetCursor(2, 2);
-    ssd1306_WriteString(buff, Font_11x18);
+    drawText(buff, true);
+
+    setCursorLargeView(LARGEVIEW_CENTER);
     snprintf(buff, sizeof(buff), "Vel1:%05d", timerif_getCounter(TIMER_ENC_M1));
-    ssd1306_SetCursor(2, 20);
-    ssd1306_WriteString(buff, Font_11x18);
+    drawText(buff, true);
+    
+    setCursorLargeView(LARGEVIEW_BOTTOM);
     snprintf(buff, sizeof(buff), "Vel2:%05d", timerif_getCounter(TIMER_ENC_M2));
-    ssd1306_SetCursor(2, 38);
-    ssd1306_WriteString(buff, Font_11x18);
+    drawText(buff, true);
+
 }
 
 static void showPowerInfo()
@@ -328,21 +349,21 @@ static void showPowerInfo()
     ssd1306_Clear();
     char buff[32];
 
+    setCursorCompactView(COMPACTVIEW_TOP);
     snprintf(buff, sizeof(buff), "Battery: %.2f V", BatVoltage);
-    ssd1306_SetCursor(4, 4);
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 
+    setCursorCompactView(COMPACTVIEW_ABOVECENTER);
     snprintf(buff, sizeof(buff), "Wall: %.2f V", WallVoltage);
-    ssd1306_SetCursor(4, 16);
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 
+    setCursorCompactView(COMPACTVIEW_CENTER);
     snprintf(buff, sizeof(buff), "Motors: %.2f A", MtrCurrent);
-    ssd1306_SetCursor(4, 28);
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 
+    setCursorCompactView(COMPACTVIEW_BELOWCENTER);
     snprintf(buff, sizeof(buff), "NUC: %.2f A", NucCurrent);
-    ssd1306_SetCursor(4, 40);
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 }
 
 static void showFirmwareInfo()
@@ -350,20 +371,25 @@ static void showFirmwareInfo()
     menu_state = STATE_INFOSCREEN;
     ssd1306_Clear();
     char buff[64];
+
+    setCursorCompactView(COMPACTVIEW_TOP);
     snprintf(buff, sizeof(buff), "Firmware ver 3.0.0");
-    ssd1306_SetCursor(2, 2);
     drawText(buff, true);
+
+    setCursorCompactView(COMPACTVIEW_ABOVECENTER);
     snprintf(buff, sizeof(buff), "Hardware ver 3");
-    ssd1306_SetCursor(2, 14);
     drawText(buff, true);
+
+    setCursorCompactView(COMPACTVIEW_CENTER);
     snprintf(buff, sizeof(buff), "Last update 2024-04-04");
-    ssd1306_SetCursor(2, 26);
     drawText(buff, true);
+
+    setCursorCompactView(COMPACTVIEW_BELOWCENTER);
     snprintf(buff, sizeof(buff), "1123456789012345678912345678123456");
-    ssd1306_SetCursor(2, 38);
     drawText(buff, true);
+
+    setCursorCompactView(COMPACTVIEW_BOTTOM);
     snprintf(buff, sizeof(buff), "blah");
-    ssd1306_SetCursor(2, 50);
     drawText(buff, true);
 }
 
@@ -396,19 +422,19 @@ static void drawDashboard()
     ssd1306_Clear();
     char buff[64];
 
-    ssd1306_SetCursor(2, 3);
+    setCursorCompactView(COMPACTVIEW_TOP);
     snprintf(buff, sizeof(buff), "Bat volt: %.1f V", BatVoltage);
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 
-    ssd1306_SetCursor(2, 15);
+    setCursorCompactView(COMPACTVIEW_ABOVECENTER);
     snprintf(buff, sizeof(buff), "Max speed: %d", dummy);
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 
     static IoPinType estop;
     estop.ptr_port = PIN_ESTOP_GPIO_Port;
     estop.pin_number = PIN_ESTOP_Pin;
 
-    ssd1306_SetCursor(2, 15);
+    setCursorCompactView(COMPACTVIEW_CENTER);
     if (ioif_isActive(&estop))
     {
         snprintf(buff, sizeof(buff), "ESTOP: ON");
@@ -418,14 +444,13 @@ static void drawDashboard()
     {
         snprintf(buff, sizeof(buff), "ESTOP: OFF");
     }
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 
+    setCursorCompactView(COMPACTVIEW_BELOWCENTER);
+    drawText("IP:123.123.123.123", true);
 
-    ssd1306_SetCursor(2, 27);
-    ssd1306_WriteString("IP:123.123.123.123", Font_7x10);
-
-    ssd1306_SetCursor(2, 51);
-    ssd1306_WriteString("LED mode: blink", Font_7x10);
+    setCursorCompactView(COMPACTVIEW_BOTTOM);
+    drawText("LED mode: blink", true);
 }
 
 static void drawBorder(int border_position)
@@ -437,7 +462,7 @@ static void drawScrollbar()
 {
     // divide vertical space between items
     float pixelsPerItem = SSD1306_HEIGHT / (float) getCurrentMenuSize();
-    ssd1306_FillRect(SCROLLBAR_BEGIN_X, (menu_item_index - border_position) * pixelsPerItem, SCROLLBAR_WIDTH, (int) pixelsPerItem * 3);
+    ssd1306_FillRect(SCROLLBAR_BEGIN_X, (menu_item_index - border_position) * pixelsPerItem, SCROLLBAR_WIDTH, (int) (pixelsPerItem * 3));
 }
 
 static void drawText(char *text, bool is_scrolling)
@@ -447,7 +472,7 @@ static void drawText(char *text, bool is_scrolling)
     // If label fits
     if (text_length <= MAX_TEXT_LENGTH)
     {
-        ssd1306_WriteString(text, Font_7x10);
+        ssd1306_WriteString(text, *ptr_current_font);
     }
 
     else
@@ -479,7 +504,7 @@ static void drawText(char *text, bool is_scrolling)
 
         buffer_label[MAX_TEXT_LENGTH] = '\0';
 
-        ssd1306_WriteString(buffer_label, Font_7x10);
+        ssd1306_WriteString(buffer_label, *ptr_current_font);
     }
 }
 
@@ -487,6 +512,7 @@ static void drawText(char *text, bool is_scrolling)
 static void drawMenuItems() 
 {
     ssd1306_Clear();
+    ptr_current_font = &Font_7x10;
     // Draw 3 items
     for (uint8_t item_pos = 0; item_pos < 3; item_pos++)
     {
@@ -672,4 +698,60 @@ static int getCurrentMenuSize()
         }
     }
     return MAX_MENUITEMS;
+}
+
+static void setCursorCompactView(CompactViewPosition position)
+{
+    ptr_current_font = &Font_7x10;
+    switch (position)
+    {
+    case COMPACTVIEW_TOP:
+        ssd1306_SetCursor(2, 0);
+        break;
+
+    case COMPACTVIEW_ABOVECENTER:
+        ssd1306_SetCursor(2, 12);
+        break;
+
+    case COMPACTVIEW_CENTER:
+        ssd1306_SetCursor(2, 24);
+        break;
+
+    case COMPACTVIEW_BELOWCENTER:
+        ssd1306_SetCursor(2, 36);
+        break;
+
+    case COMPACTVIEW_BOTTOM:
+        ssd1306_SetCursor(2, 48);
+        break;
+    
+    default:
+        break;
+    }
+
+    return;
+}
+
+static void setCursorLargeView(LargeViewPosition position)
+{
+    ptr_current_font = &Font_11x18;
+    switch (position)
+    {
+    case LARGEVIEW_TOP:
+        ssd1306_SetCursor(2, 0);
+        break;
+
+    case LARGEVIEW_CENTER:
+        ssd1306_SetCursor(2, 20);
+        break;
+
+    case LARGEVIEW_BOTTOM:
+        ssd1306_SetCursor(2, 40);
+        break;
+    
+    default:
+        break;
+    }
+
+    return;
 }

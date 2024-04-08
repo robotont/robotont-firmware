@@ -1,8 +1,6 @@
 /**
  * @file menu.h
  * @brief Service. Displays information and allows for changing various parameters on the display using rotary encoder as input
- *
- * 
  * 
  * @author Andres Sakk (andres.sakk@ut.ee)
  * @copyright Copyright (c) 2023 Tartu Ülikool
