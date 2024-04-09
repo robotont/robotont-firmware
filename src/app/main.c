@@ -76,7 +76,7 @@ int main(void)
             */
 
             /* Debug info */
-            if (counter % 10u == 0)
+            if (counter % 50u == 0)
             {   
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
