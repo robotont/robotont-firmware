@@ -672,7 +672,7 @@ static void userInputInputHandler()
 
     else if (is_input_clockwise)
     {   
-        if (*ptr_user_input_value < 101)
+        if (*ptr_user_input_value < 100)
         {
             (*ptr_user_input_value)++;
         }
