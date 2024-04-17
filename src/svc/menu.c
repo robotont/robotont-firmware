@@ -29,9 +29,11 @@
 #include <string.h>
 
 #define DASHBOARD {"^-- Dashboard", &showDashboard}
+#define MAINMENU {"^-- Main menu", &enterMainMenu}
 #define SUBMENU(submenu_label, MENU_TYPE) {submenu_label, &enterSubmenu, MENU_TYPE}
 #define USERINPUT(setvalue_label, ptr_value) {setvalue_label, &setValue, MENU_NONE, ptr_value}
 #define INFOSCREEN(infoscreen_label, callback) {infoscreen_label, callback}
+#define MENUITEM(menuitem_label, callback) {menuitem_label, callback}
 
 #define BORDER_BEGIN_X 0
 #define BORDER_BEGIN_Y 0
@@ -163,68 +165,65 @@ static MenuItem menu[][MAX_MENUITEMS] =
 {
     // ROOT
     {
-        {"^-- Dashboard", &showDashboard},
+        DASHBOARD,
         SUBMENU("LED modes", MENU_LED_SETTINGS),
-        // {"LED modes", &enterSubmenu, MENU_LED_SETTINGS},
-        {"Motor control settings", &enterSubmenu, MENU_MOTOR_SETTINGS},
-        {"Send commands", &enterSubmenu, MENU_SEND_CMD},
-        {"Demo submenu 1", &enterSubmenu, MENU_DEMO_SUBMENU1},
+        SUBMENU("Motor control settings", MENU_MOTOR_SETTINGS),
+        SUBMENU("Send commands", MENU_SEND_CMD),
+        SUBMENU("Demo submenu 1", MENU_DEMO_SUBMENU1),
         USERINPUT("Set max speed", &dummy),
-        // {"Set max speed", &setValue, MENU_NONE, &dummy},
-        {"scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing},
+        MENUITEM("scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing),
         INFOSCREEN("Motor speeds", &showMotorSpeeds),
-        {"Motor speeds", &showMotorSpeeds},
-        {"Power information", &showPowerInfo},
-        {"Firmware information", &showFirmwareInfo},
+        INFOSCREEN("Power information", &showPowerInfo),
+        INFOSCREEN("Firmware information", &showFirmwareInfo),
     },
     // LED SETTINGS
     {
-        {"^-- Main menu", &enterMainMenu},
-        {"MODE_SPIN", &setLEDMode},
-        {"MODE_PULSE", &setLEDMode},
-        {"MODE_COLORS_SMOOTH", &setLEDMode},
-        {"MODE_WHEEL_COLORS", &setLEDMode},
-        {"MODE_COLORS_RGB", &setLEDMode},
-        {"MODE_COLORS_SPIN", &setLEDMode},
-        {"MODE_MOTOR_SPEEDS", &setLEDMode}, 
-        {"MODE_SCAN_RANGES", &setLEDMode},
+        MAINMENU,
+        MENUITEM("MODE_SPIN", &setLEDMode),
+        MENUITEM("MODE_PULSE", &setLEDMode),
+        MENUITEM("MODE_COLORS_SMOOTH", &setLEDMode),
+        MENUITEM("MODE_WHEEL_COLORS", &setLEDMode),
+        MENUITEM("MODE_COLORS_RGB", &setLEDMode),
+        MENUITEM("MODE_COLORS_SPIN", &setLEDMode),
+        MENUITEM("MODE_MOTOR_SPEEDS", &setLEDMode),
+        MENUITEM("MODE_SCAN_RANGES", &setLEDMode),
     },
     // MOTOR SETTINGS
     {   
-        {"^-- Main menu", &enterMainMenu},
-        {"Activate racing mode", &doNothing},
-        {"Activate normal mode", &doNothing},
-        {"Set motor linear velocity", &setValue, MENU_NONE, &dummy},
-        {"Set motor angular velocity",  &setValue, MENU_NONE, &dummy},
-        {"Set motor effort", &setValue, MENU_NONE, &dummy},
+        MAINMENU,
+        MENUITEM("Activate racing mode", &doNothing),
+        MENUITEM("Activate normal mode", &doNothing),
+        USERINPUT("Set motor linear velocity", &dummy),
+        USERINPUT("Set motor angular velocity", &dummy),
+        USERINPUT("Set motor effort", &dummy),
     },
     // MENU_SEND_CMD
     {
-        {"^-- Main menu", &enterMainMenu},
-        {"Send shutdown", &sendCommand},
-        {"Send reboot", &sendCommand},
-        {"Send debug msg", &sendCommand},
+        MAINMENU,
+        MENUITEM("Send shutdown", &sendCommand),
+        MENUITEM("Send reboot", &sendCommand),
+        MENUITEM("Send debug msg", &sendCommand),
     },
     // DEMO SUBMENU 1
     {
-        {"^-- Main menu", &enterMainMenu},
-        {"Demo submenu 2", &enterSubmenu, MENU_DEMO_SUBMENU2},
-        {"Demo item 2.1", &doNothing},
-        {"Demo item 2.2", &doNothing},
-        {"Demo item 2.3", &doNothing},
-        {"Demo item 2.4", &doNothing},
-        {"Demo item 2.5", &doNothing},
-        {"Demo item 2.6", &doNothing},
-        {"Demo item 2.7", &doNothing},
-        {"Demo item 2.8", &doNothing},
-        {"Demo item 2.9", &doNothing},
+        MAINMENU,
+        SUBMENU("Demo submenu 2", MENU_DEMO_SUBMENU2),
+        MENUITEM("Demo item 2.1", &doNothing),
+        MENUITEM("Demo item 2.2", &doNothing),
+        MENUITEM("Demo item 2.3", &doNothing),
+        MENUITEM("Demo item 2.4", &doNothing),
+        MENUITEM("Demo item 2.5", &doNothing),
+        MENUITEM("Demo item 2.6", &doNothing),
+        MENUITEM("Demo item 2.7", &doNothing),
+        MENUITEM("Demo item 2.8", &doNothing),
+        MENUITEM("Demo item 2.9", &doNothing),
     },
     // DEMO SUBMENU 2
     {
-        {"^-- Demo submenu 1", &enterSubmenu, MENU_DEMO_SUBMENU1},
-        {"Demo item 3.1", &doNothing},
-        {"Demo item 3.2", &doNothing},
-        {"Demo item 3.3", &doNothing},
+        SUBMENU("^-- Demo submenu 1", MENU_DEMO_SUBMENU1),
+        MENUITEM("Demo item 3.1", &doNothing),
+        MENUITEM("Demo item 3.2", &doNothing),
+        MENUITEM("Demo item 3.3", &doNothing),
     },
 };
 
