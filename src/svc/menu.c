@@ -28,6 +28,11 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define DASHBOARD {"^-- Dashboard", &showDashboard}
+#define SUBMENU(submenu_label, MENU_TYPE) {submenu_label, &enterSubmenu, MENU_TYPE}
+#define USERINPUT(setvalue_label, ptr_value) {setvalue_label, &setValue, MENU_NONE, ptr_value}
+#define INFOSCREEN(infoscreen_label, callback) {infoscreen_label, callback}
+
 #define BORDER_BEGIN_X 0
 #define BORDER_BEGIN_Y 0
 #define BORDER_WIDTH 120
@@ -159,12 +164,15 @@ static MenuItem menu[][MAX_MENUITEMS] =
     // ROOT
     {
         {"^-- Dashboard", &showDashboard},
-        {"LED modes", &enterSubmenu, MENU_LED_SETTINGS},
+        SUBMENU("LED modes", MENU_LED_SETTINGS),
+        // {"LED modes", &enterSubmenu, MENU_LED_SETTINGS},
         {"Motor control settings", &enterSubmenu, MENU_MOTOR_SETTINGS},
         {"Send commands", &enterSubmenu, MENU_SEND_CMD},
         {"Demo submenu 1", &enterSubmenu, MENU_DEMO_SUBMENU1},
-        {"Set max speed", &setValue, MENU_NONE, &dummy},
+        USERINPUT("Set max speed", &dummy),
+        // {"Set max speed", &setValue, MENU_NONE, &dummy},
         {"scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing},
+        INFOSCREEN("Motor speeds", &showMotorSpeeds),
         {"Motor speeds", &showMotorSpeeds},
         {"Power information", &showPowerInfo},
         {"Firmware information", &showFirmwareInfo},
@@ -424,11 +432,12 @@ static void drawDashboard()
 
     setCursorCompactView(COMPACTVIEW_TOP);
     snprintf(buff, sizeof(buff), "Bat volt: %.1f V", BatVoltage);
-    drawText(buff, true);
+    ssd1306_WriteString(buff, Font_7x10);
 
     setCursorCompactView(COMPACTVIEW_ABOVECENTER);
     snprintf(buff, sizeof(buff), "Max speed: %d", dummy);
-    drawText(buff, true);
+    ssd1306_WriteString(buff, Font_7x10);
+    
 
     static IoPinType estop;
     estop.ptr_port = PIN_ESTOP_GPIO_Port;
@@ -444,13 +453,13 @@ static void drawDashboard()
     {
         snprintf(buff, sizeof(buff), "ESTOP: OFF");
     }
-    drawText(buff, true);
+    ssd1306_WriteString(buff, Font_7x10);
 
-    setCursorCompactView(COMPACTVIEW_BELOWCENTER);
-    drawText("IP:123.123.123.123", true);
+    // setCursorCompactView(COMPACTVIEW_BELOWCENTER);
+    // drawText("IP:123.123.123.123", true);
 
-    setCursorCompactView(COMPACTVIEW_BOTTOM);
-    drawText("LED mode: blink", true);
+    // setCursorCompactView(COMPACTVIEW_BOTTOM);
+    // drawText("LED mode: blink", true);
 }
 
 static void drawBorder(int border_position)
@@ -663,12 +672,18 @@ static void userInputInputHandler()
 
     else if (is_input_clockwise)
     {   
-        (*ptr_user_input_value)++;
+        if (*ptr_user_input_value < 101)
+        {
+            (*ptr_user_input_value)++;
+        }
     }
 
     else if (is_input_counterclockwise)
     {
-        (*ptr_user_input_value)--;
+        if (*ptr_user_input_value > 0)
+        {
+            (*ptr_user_input_value)--;
+        }
     }
 }
 
