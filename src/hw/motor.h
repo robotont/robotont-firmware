@@ -50,5 +50,6 @@ void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_Han
 void motor_update(MotorHandleType *motor_handler);
 void motor_enable(MotorHandleType *motor_handler);
 void motor_disable(MotorHandleType *motor_handler);
+void motor_setDutyCycleLimit(MotorHandleType *motor_handler, uint8_t limit);
 
 #endif
