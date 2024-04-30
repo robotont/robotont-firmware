@@ -14,14 +14,16 @@
 
 typedef enum 
 {
-    LED_MODE_SPIN,          // LED spin green
-    LED_MODE_PULSE,         // Leds pulse on/off
-    LED_MODE_COLORS_SMOOTH, // Change colours
-    LED_MODE_WHEEL_COLORS,  // Behind the wheel change colours
-    LED_MODE_COLORS_RGB,    // Switch all leds between red, green, blue
-    LED_MODE_COLORS_SPIN,   // Change colours spin
-    LED_MODE_MOTOR_SPEEDS,  // Motor speed changes wheel colors
-    LED_MODE_SCAN_RANGES    // Laser scan ranges
+    SPIN,          // LED spin green
+    PULSE,         // Leds pulse on/off
+    COLORS_SMOOTH, // Change colours
+    WHEEL_COLORS,  // Behind the wheel change colours
+    COLORS_RGB,    // Switch all leds between red, green, blue
+    COLORS_SPIN,   // Change colours spin
+    MOTOR_DUTY,
+    MOTOR_SPEEDS,  // Motor speed changes wheel colors
+    SCAN_RANGES,   // Laser scan ranges
+    NONE           // No mode
 } LEDMode;
 
 LEDMode led_mode;

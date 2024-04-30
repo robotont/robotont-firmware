@@ -204,9 +204,9 @@ void ARGB_SetRGB(uint16_t i, uint8_t r, uint8_t g, uint8_t b) {
         i -= _i * NUM_PIXELS;
     }
     // set brightness
-    r /= 256 / ((uint16_t) ARGB_BR + 1);
-    g /= 256 / ((uint16_t) ARGB_BR + 1);
-    b /= 256 / ((uint16_t) ARGB_BR + 1);
+    r /= 256 / ((float) ARGB_BR + 1);
+    g /= 256 / ((float) ARGB_BR + 1);
+    b /= 256 / ((float) ARGB_BR + 1);
 #if USE_GAMMA_CORRECTION
     g = scale8(g, 0xB0);
     b = scale8(b, 0xF0);
