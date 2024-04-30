@@ -1,20 +1,12 @@
-/**
- * Includes
- * Static defines
- * Static type definitions
- * Static constants
- * Static variables
- * Static function prototypes
- * 
- * Public function definitions
- * Static function definitions
- * */
-
 // TODO make dashboard nicer
-// TODO implement sending commands to NUC
 // TODO demo program submenu
+// TODO check estop pin conf
 // TODO racing and normal mode callbacks
-// TODO network info screen ???
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "menu.h"
 #include "peripheral.h" // Pin defines
@@ -23,13 +15,8 @@
 #include "led.h" // LED modes
 #include "timerif.h" // showMotorSpeeds
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-
-#define DASHBOARD {"^-- Dashboard", &showDashboard}
-#define MAINMENU {"^-- Main menu", &enterMainMenu}
+#define DASHBOARD {"^ Dashboard", &showDashboard}
+#define MAINMENU {"^ Main menu", &enterMainMenu}
 #define SUBMENU(submenu_label, MENU_TYPE) {submenu_label, &enterSubmenu, MENU_TYPE}
 #define USERINPUT(setvalue_label, ptr_value) {setvalue_label, &setValue, MENU_NONE, ptr_value}
 #define INFOSCREEN(infoscreen_label, callback) {infoscreen_label, callback}
@@ -108,8 +95,8 @@ static ItemPosition border_position = ITEM_TOP;
 static FontDef *ptr_current_font;
 
 static bool is_input_select = false;
-static bool is_input_clockwise = false;
-static bool is_input_counterclockwise = false;
+static uint8_t input_clockwise_counter = 0;
+static uint8_t input_counterclockwise_counter = 0;
 
 static int scrolling_main_loop_counter = 0;
 static int scrolling_text_index = 0;
@@ -166,15 +153,15 @@ static MenuItem menu[][MAX_MENUITEMS] =
     // ROOT
     {
         DASHBOARD,
+        INFOSCREEN("Firmware information", &showFirmwareInfo),
         SUBMENU("LED modes", MENU_LED_SETTINGS),
+        INFOSCREEN("Motor speeds", &showMotorSpeeds),
         SUBMENU("Motor control settings", MENU_MOTOR_SETTINGS),
         SUBMENU("Send commands", MENU_SEND_CMD),
         SUBMENU("Demo submenu 1", MENU_DEMO_SUBMENU1),
         USERINPUT("Set max speed", &dummy),
         MENUITEM("scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing),
-        INFOSCREEN("Motor speeds", &showMotorSpeeds),
         INFOSCREEN("Power information", &showPowerInfo),
-        INFOSCREEN("Firmware information", &showFirmwareInfo),
     },
     // LED SETTINGS
     {
@@ -240,35 +227,36 @@ void menu_init()
 
 void menu_update()
 {
-    switch (menu_state)
-    {
-        case STATE_DASHBOARD:
-            drawDashboard();
-            dashboardInputHandler();
-            break;
-
-        case STATE_MENU:
-            drawMenuItems();
-            menuInputHandler();
-            break;
-        
-        case STATE_USERINPUT:
-            drawInputScreen();
-            userInputInputHandler();
-            break;
-
-        case STATE_INFOSCREEN:
-            drawInfoScreen();
-            infoScreenInputHandler();
-            break;
-    }
-
-    clearInputs();
-
     if (ssd1306_UpdateScreenCompleted())
     {
+        switch (menu_state)
+        {
+            case STATE_DASHBOARD:
+                drawDashboard();
+                dashboardInputHandler();
+                break;
+
+            case STATE_MENU:
+                drawMenuItems();
+                menuInputHandler();
+                break;
+            
+            case STATE_USERINPUT:
+                drawInputScreen();
+                userInputInputHandler();
+                break;
+
+            case STATE_INFOSCREEN:
+                drawInfoScreen();
+                infoScreenInputHandler();
+                break;
+        }
+
+        clearInputs();
+
         ssd1306_UpdateScreen();
     }
+
 
     if (is_scrolling_activated)
     {
@@ -454,11 +442,11 @@ static void drawDashboard()
     }
     ssd1306_WriteString(buff, Font_7x10);
 
-    // setCursorCompactView(COMPACTVIEW_BELOWCENTER);
-    // drawText("IP:123.123.123.123", true);
+    setCursorCompactView(COMPACTVIEW_BELOWCENTER);
+    drawText("IP:123.123.123.123", true);
 
-    // setCursorCompactView(COMPACTVIEW_BOTTOM);
-    // drawText("LED mode: blink", true);
+    setCursorCompactView(COMPACTVIEW_BOTTOM);
+    drawText("LED mode: blink", true);
 }
 
 static void drawBorder(int border_position)
@@ -578,12 +566,12 @@ static void hardwareInputHandler(uint16_t pin_number)
     {
         if (ioif_isActive(&enc_a))
         {
-            is_input_clockwise = true;
+            input_clockwise_counter++;
         }
 
         else 
         {
-            is_input_counterclockwise = true;
+            input_counterclockwise_counter++;
         }
     }    
 }
@@ -595,13 +583,13 @@ static void dashboardInputHandler()
         enterMainMenu();
     }
 
-    else if (is_input_clockwise)
+    else if (input_clockwise_counter > 0)
     {
         // No functionality
         ;
     }
 
-    else if (is_input_counterclockwise)
+    else if (input_counterclockwise_counter > 0)
     {
         // No functionality
         ;
@@ -615,7 +603,7 @@ static void menuInputHandler()
         menu[current_menu][menu_item_index].item_callback();
     }
 
-    else if (is_input_clockwise)
+    while (input_clockwise_counter > 0)
     {   
         if (menu_item_index < getCurrentMenuSize() - 1)
         {
@@ -625,10 +613,18 @@ static void menuInputHandler()
             {
                 border_position++;
             }
+
+            input_clockwise_counter--;
         }
+
+        else
+        {
+            input_clockwise_counter = 0;
+        }
+
     }
 
-    else if (is_input_counterclockwise)
+    while (input_counterclockwise_counter > 0)
     {
         if (menu_item_index > 0)
         {
@@ -638,7 +634,15 @@ static void menuInputHandler()
             {
                 border_position--;
             }
+            
+            input_counterclockwise_counter--;
         }
+
+        else
+        {
+            input_counterclockwise_counter = 0;
+        }
+        
     }
 }
 
@@ -649,13 +653,13 @@ static void infoScreenInputHandler()
         menu_state = STATE_MENU;
     }
 
-    else if (is_input_clockwise)
+    else if (input_clockwise_counter > 0)
     {
         // No functionality
         ;
     }
 
-    else if (is_input_counterclockwise)
+    else if (input_counterclockwise_counter > 0)
     {
         // No functionality
         ;
@@ -669,26 +673,28 @@ static void userInputInputHandler()
         menu_state = STATE_MENU;
     }
 
-    else if (is_input_clockwise)
+    while (input_clockwise_counter > 0)
     {   
         if (*ptr_user_input_value < 100)
         {
             (*ptr_user_input_value)++;
         }
+        input_clockwise_counter--;
     }
 
-    else if (is_input_counterclockwise)
+    while (input_counterclockwise_counter > 0)
     {
         if (*ptr_user_input_value > 0)
         {
             (*ptr_user_input_value)--;
         }
+        input_counterclockwise_counter--;
     }
 }
 
 static void clearInputs()
 {   
-    if (is_input_select || is_input_clockwise || is_input_counterclockwise)
+    if (is_input_select || input_clockwise_counter || input_counterclockwise_counter)
     {
         scrolling_main_loop_counter = 0;
         scrolling_text_index = 0;
@@ -696,8 +702,8 @@ static void clearInputs()
     }
 
     is_input_select = false;
-    is_input_clockwise = false;
-    is_input_counterclockwise = false;
+    input_clockwise_counter = 0;
+    input_counterclockwise_counter = 0;
 }
 
 // ================ END INPUT HANDLERS ================
