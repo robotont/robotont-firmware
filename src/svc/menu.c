@@ -8,7 +8,6 @@
 
 // TODO make dashboard nicer
 // TODO demo program submenu
-// TODO check estop pin conf
 // TODO racing and normal mode callbacks
 
 #define DEBUG
@@ -271,10 +270,10 @@ void menu_update()
         clearInputs();
 
         #ifdef DEBUG
-        volatile uint32_t after = system_hal_timestamp();
-        char buff[10];
-        int delay = after-before;
         ssd1306_SetCursor(90,5);
+        char buff[10];
+        volatile uint32_t after = system_hal_timestamp();
+        int delay = after-before;
         snprintf(buff, sizeof(buff), "%d", delay);
         ssd1306_WriteString(buff, *ptr_current_font);
         #endif
@@ -446,7 +445,7 @@ static void drawDashboard()
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_ABOVECENTER);
-    snprintf(buff, sizeof(buff), "Max speed: %d", dummy);
+    snprintf(buff, sizeof(buff), "Dummy value: %d", dummy);
     drawText(buff, true);    
 
     static IoPinType estop;
@@ -536,6 +535,7 @@ static void drawMenuItems()
     for (uint8_t item_pos = 0; item_pos < 3; item_pos++)
     {
         ssd1306_SetCursor(MENU_ITEM_LABEL_BEGIN_X, MENU_ITEM_LABEL_OFFSET_Y + item_pos * FIELD_HEIGHT);
+
         if (item_pos == border_position)
         {
             drawText(menu[current_menu][menu_item_index + item_pos - border_position].label, true);
@@ -646,7 +646,6 @@ static void menuInputHandler()
         {
             input_clockwise_counter = 0;
         }
-
     }
 
     while (input_counterclockwise_counter > 0)
@@ -667,7 +666,6 @@ static void menuInputHandler()
         {
             input_counterclockwise_counter = 0;
         }
-        
     }
 }
 
@@ -704,6 +702,7 @@ static void userInputInputHandler()
         {
             (*ptr_user_input_value)++;
         }
+
         input_clockwise_counter--;
     }
 
@@ -713,6 +712,7 @@ static void userInputInputHandler()
         {
             (*ptr_user_input_value)--;
         }
+
         input_counterclockwise_counter--;
     }
 }
@@ -744,36 +744,38 @@ static int getCurrentMenuSize()
            return size_counter;
         }
     }
+
     return MAX_MENUITEMS;
 }
 
 static void setCursorCompactView(CompactViewPosition position)
 {
     ptr_current_font = &Font_7x10;
+
     switch (position)
     {
-    case COMPACTVIEW_TOP:
-        ssd1306_SetCursor(2, 0);
-        break;
+        case COMPACTVIEW_TOP:
+            ssd1306_SetCursor(2, 0);
+            break;
 
-    case COMPACTVIEW_ABOVECENTER:
-        ssd1306_SetCursor(2, 12);
-        break;
+        case COMPACTVIEW_ABOVECENTER:
+            ssd1306_SetCursor(2, 12);
+            break;
 
-    case COMPACTVIEW_CENTER:
-        ssd1306_SetCursor(2, 24);
-        break;
+        case COMPACTVIEW_CENTER:
+            ssd1306_SetCursor(2, 24);
+            break;
 
-    case COMPACTVIEW_BELOWCENTER:
-        ssd1306_SetCursor(2, 36);
-        break;
+        case COMPACTVIEW_BELOWCENTER:
+            ssd1306_SetCursor(2, 36);
+            break;
 
-    case COMPACTVIEW_BOTTOM:
-        ssd1306_SetCursor(2, 48);
-        break;
-    
-    default:
-        break;
+        case COMPACTVIEW_BOTTOM:
+            ssd1306_SetCursor(2, 48);
+            break;
+        
+        default:
+            break;
     }
 
     return;
@@ -782,22 +784,23 @@ static void setCursorCompactView(CompactViewPosition position)
 static void setCursorLargeView(LargeViewPosition position)
 {
     ptr_current_font = &Font_11x18;
+
     switch (position)
     {
-    case LARGEVIEW_TOP:
-        ssd1306_SetCursor(2, 0);
-        break;
+        case LARGEVIEW_TOP:
+            ssd1306_SetCursor(2, 0);
+            break;
 
-    case LARGEVIEW_CENTER:
-        ssd1306_SetCursor(2, 20);
-        break;
+        case LARGEVIEW_CENTER:
+            ssd1306_SetCursor(2, 20);
+            break;
 
-    case LARGEVIEW_BOTTOM:
-        ssd1306_SetCursor(2, 40);
-        break;
-    
-    default:
-        break;
+        case LARGEVIEW_BOTTOM:
+            ssd1306_SetCursor(2, 40);
+            break;
+        
+        default:
+            break;
     }
 
     return;
