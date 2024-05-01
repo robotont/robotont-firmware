@@ -57,11 +57,10 @@ int main(void)
         {
             last_tick = current_tick;
             counter++;
-
             /* Service layer modules update */
+            led_update();       
             movement_update();
             menu_update();
-            led_update();
 
             /**
             @brief Example, of how to modules should communicate with each others: via getters and setters (Pseudocode)
@@ -76,7 +75,7 @@ int main(void)
             */
 
             /* Debug info */
-            if (counter % 50u == 0)
+            if (counter % (1000/MAIN_LOOP_DT_MS) == 0)
             {   
                 ioif_togglePin(&led_green);
                 ioif_togglePin(&led_red);
