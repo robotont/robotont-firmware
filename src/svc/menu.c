@@ -3,6 +3,8 @@
 // TODO check estop pin conf
 // TODO racing and normal mode callbacks
 
+#define DEBUG
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -95,6 +97,8 @@ static ItemPosition border_position = ITEM_TOP;
 static FontDef *ptr_current_font;
 
 static bool is_input_select = false;
+static bool is_input_clockwise = false;
+static bool is_input_counterclockwise = false;
 static uint8_t input_clockwise_counter = 0;
 static uint8_t input_counterclockwise_counter = 0;
 
@@ -153,12 +157,12 @@ static MenuItem menu[][MAX_MENUITEMS] =
     // ROOT
     {
         DASHBOARD,
+        SUBMENU("> LED modes", MENU_LED_SETTINGS),
+        SUBMENU("> Motor control settings", MENU_MOTOR_SETTINGS),
+        SUBMENU("> Send commands", MENU_SEND_CMD),
+        SUBMENU("> Demo submenu 1", MENU_DEMO_SUBMENU1),
         INFOSCREEN("Firmware information", &showFirmwareInfo),
-        SUBMENU("LED modes", MENU_LED_SETTINGS),
         INFOSCREEN("Motor speeds", &showMotorSpeeds),
-        SUBMENU("Motor control settings", MENU_MOTOR_SETTINGS),
-        SUBMENU("Send commands", MENU_SEND_CMD),
-        SUBMENU("Demo submenu 1", MENU_DEMO_SUBMENU1),
         USERINPUT("Set max speed", &dummy),
         MENUITEM("scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing),
         INFOSCREEN("Power information", &showPowerInfo),
@@ -194,7 +198,7 @@ static MenuItem menu[][MAX_MENUITEMS] =
     // DEMO SUBMENU 1
     {
         MAINMENU,
-        SUBMENU("Demo submenu 2", MENU_DEMO_SUBMENU2),
+        SUBMENU("> Demo submenu 2", MENU_DEMO_SUBMENU2),
         MENUITEM("Demo item 2.1", &doNothing),
         MENUITEM("Demo item 2.2", &doNothing),
         MENUITEM("Demo item 2.3", &doNothing),
@@ -207,7 +211,7 @@ static MenuItem menu[][MAX_MENUITEMS] =
     },
     // DEMO SUBMENU 2
     {
-        SUBMENU("^-- Demo submenu 1", MENU_DEMO_SUBMENU1),
+        SUBMENU("^ Demo submenu 1", MENU_DEMO_SUBMENU1),
         MENUITEM("Demo item 3.1", &doNothing),
         MENUITEM("Demo item 3.2", &doNothing),
         MENUITEM("Demo item 3.3", &doNothing),
@@ -229,6 +233,10 @@ void menu_update()
 {
     if (ssd1306_UpdateScreenCompleted())
     {
+        #ifdef DEBUG
+        volatile uint32_t before = system_hal_timestamp();
+        #endif
+
         switch (menu_state)
         {
             case STATE_DASHBOARD:
@@ -254,9 +262,17 @@ void menu_update()
 
         clearInputs();
 
+        #ifdef DEBUG
+        volatile uint32_t after = system_hal_timestamp();
+        char buff[10];
+        int delay = after-before;
+        ssd1306_SetCursor(90,5);
+        snprintf(buff, sizeof(buff), "%d", delay);
+        ssd1306_WriteString(buff, *ptr_current_font);
+        #endif
+
         ssd1306_UpdateScreen();
     }
-
 
     if (is_scrolling_activated)
     {
@@ -419,12 +435,11 @@ static void drawDashboard()
 
     setCursorCompactView(COMPACTVIEW_TOP);
     snprintf(buff, sizeof(buff), "Bat volt: %.1f V", BatVoltage);
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_ABOVECENTER);
     snprintf(buff, sizeof(buff), "Max speed: %d", dummy);
-    ssd1306_WriteString(buff, Font_7x10);
-    
+    drawText(buff, true);    
 
     static IoPinType estop;
     estop.ptr_port = PIN_ESTOP_GPIO_Port;
@@ -440,7 +455,7 @@ static void drawDashboard()
     {
         snprintf(buff, sizeof(buff), "ESTOP: OFF");
     }
-    ssd1306_WriteString(buff, Font_7x10);
+    drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_BELOWCENTER);
     drawText("IP:123.123.123.123", true);
@@ -566,11 +581,13 @@ static void hardwareInputHandler(uint16_t pin_number)
     {
         if (ioif_isActive(&enc_a))
         {
+            is_input_clockwise = true;
             input_clockwise_counter++;
         }
 
         else 
         {
+            is_input_counterclockwise = true;
             input_counterclockwise_counter++;
         }
     }    
@@ -694,7 +711,7 @@ static void userInputInputHandler()
 
 static void clearInputs()
 {   
-    if (is_input_select || input_clockwise_counter || input_counterclockwise_counter)
+    if (is_input_select || is_input_clockwise || is_input_counterclockwise)
     {
         scrolling_main_loop_counter = 0;
         scrolling_text_index = 0;
@@ -702,6 +719,8 @@ static void clearInputs()
     }
 
     is_input_select = false;
+    is_input_clockwise = false;
+    is_input_counterclockwise = false;
     input_clockwise_counter = 0;
     input_counterclockwise_counter = 0;
 }
