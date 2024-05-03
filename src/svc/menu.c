@@ -1,20 +1,21 @@
 /**
- * Includes
- * Static defines
- * Static type definitions
- * Static constants
- * Static variables
- * Static function prototypes
+ * @file menu.h
+ * @brief Service. Displays information and allows for changing various parameters on the display using rotary encoder as input
  * 
- * Public function definitions
- * Static function definitions
- * */
+ * @author Andres Sakk (andres.sakk@ut.ee)
+ * @copyright Copyright (c) 2023 Tartu Ülikool
+ */
 
 // TODO make dashboard nicer
-// TODO implement sending commands to NUC
 // TODO demo program submenu
 // TODO racing and normal mode callbacks
-// TODO network info screen ???
+
+#define DEBUG
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "menu.h"
 #include "peripheral.h" // Pin defines
@@ -23,10 +24,12 @@
 #include "led.h" // LED modes
 #include "timerif.h" // showMotorSpeeds
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
+#define DASHBOARD {"^ Dashboard", &showDashboard}
+#define MAINMENU {"^ Main menu", &enterMainMenu}
+#define SUBMENU(submenu_label, MENU_TYPE) {submenu_label, &enterSubmenu, MENU_TYPE}
+#define USERINPUT(setvalue_label, ptr_value) {setvalue_label, &setValue, MENU_NONE, ptr_value}
+#define INFOSCREEN(infoscreen_label, callback) {infoscreen_label, callback}
+#define MENUITEM(menuitem_label, callback) {menuitem_label, callback}
 
 #define BORDER_BEGIN_X 0
 #define BORDER_BEGIN_Y 0
@@ -103,6 +106,8 @@ static FontDef *ptr_current_font;
 static bool is_input_select = false;
 static bool is_input_clockwise = false;
 static bool is_input_counterclockwise = false;
+static uint8_t input_clockwise_counter = 0;
+static uint8_t input_counterclockwise_counter = 0;
 
 static int scrolling_main_loop_counter = 0;
 static int scrolling_text_index = 0;
@@ -158,65 +163,65 @@ static MenuItem menu[][MAX_MENUITEMS] =
 {
     // ROOT
     {
-        {"^-- Dashboard", &showDashboard},
-        {"LED modes", &enterSubmenu, MENU_LED_SETTINGS},
-        {"Motor control settings", &enterSubmenu, MENU_MOTOR_SETTINGS},
-        {"Send commands", &enterSubmenu, MENU_SEND_CMD},
-        {"Demo submenu 1", &enterSubmenu, MENU_DEMO_SUBMENU1},
-        {"Set max speed", &setValue, MENU_NONE, &dummy},
-        {"scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing},
-        {"Motor speeds", &showMotorSpeeds},
-        {"Power information", &showPowerInfo},
-        {"Firmware information", &showFirmwareInfo},
+        DASHBOARD,
+        SUBMENU("> LED modes", MENU_LED_SETTINGS),
+        SUBMENU("> Motor control settings", MENU_MOTOR_SETTINGS),
+        SUBMENU("> Send commands", MENU_SEND_CMD),
+        SUBMENU("> Demo submenu 1", MENU_DEMO_SUBMENU1),
+        INFOSCREEN("Firmware information", &showFirmwareInfo),
+        INFOSCREEN("Motor speeds", &showMotorSpeeds),
+        USERINPUT("Set max speed", &dummy),
+        MENUITEM("scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing),
+        INFOSCREEN("Power information", &showPowerInfo),
     },
     // LED SETTINGS
     {
-        {"^-- Main menu", &enterMainMenu},
-        {"MODE_SPIN", &setLEDMode},
-        {"MODE_PULSE", &setLEDMode},
-        {"MODE_COLORS_SMOOTH", &setLEDMode},
-        {"MODE_WHEEL_COLORS", &setLEDMode},
-        {"MODE_COLORS_RGB", &setLEDMode},
-        {"MODE_COLORS_SPIN", &setLEDMode},
-        {"MODE_MOTOR_SPEEDS", &setLEDMode}, 
-        {"MODE_SCAN_RANGES", &setLEDMode},
+        MAINMENU,
+        MENUITEM("MODE_SPIN", &setLEDMode),
+        MENUITEM("MODE_PULSE", &setLEDMode),
+        MENUITEM("MODE_COLORS_SMOOTH", &setLEDMode),
+        MENUITEM("MODE_WHEEL_COLORS", &setLEDMode),
+        MENUITEM("MODE_COLORS_RGB", &setLEDMode),
+        MENUITEM("MODE_COLORS_SPIN", &setLEDMode),
+        MENUITEM("MODE_MOTOR_SPEEDS", &setLEDMode),
+        MENUITEM("MODE_SCAN_RANGES", &setLEDMode),
     },
     // MOTOR SETTINGS
     {   
-        {"^-- Main menu", &enterMainMenu},
-        {"Activate racing mode", &doNothing},
-        {"Activate normal mode", &doNothing},
-        {"Set motor linear velocity", &setValue, MENU_NONE, &dummy},
-        {"Set motor angular velocity",  &setValue, MENU_NONE, &dummy},
-        {"Set motor effort", &setValue, MENU_NONE, &dummy},
+        MAINMENU,
+        MENUITEM("Activate racing mode", &doNothing),
+        MENUITEM("Activate normal mode", &doNothing),
+        USERINPUT("Set motor linear velocity", &dummy),
+        USERINPUT("Set motor angular velocity", &dummy),
+        USERINPUT("Set motor effort", &dummy),
     },
     // MENU_SEND_CMD
     {
-        {"^-- Main menu", &enterMainMenu},
-        {"Send shutdown", &sendCommand},
-        {"Send reboot", &sendCommand},
-        {"Send debug msg", &sendCommand},
+        MAINMENU,
+        MENUITEM("Send shutdown", &sendCommand),
+        MENUITEM("Send reboot", &sendCommand),
+        MENUITEM("Send debug msg", &sendCommand),
     },
     // DEMO SUBMENU 1
     {
-        {"^-- Main menu", &enterMainMenu},
-        {"Demo submenu 2", &enterSubmenu, MENU_DEMO_SUBMENU2},
-        {"Demo item 2.1", &doNothing},
-        {"Demo item 2.2", &doNothing},
-        {"Demo item 2.3", &doNothing},
-        {"Demo item 2.4", &doNothing},
-        {"Demo item 2.5", &doNothing},
-        {"Demo item 2.6", &doNothing},
-        {"Demo item 2.7", &doNothing},
-        {"Demo item 2.8", &doNothing},
-        {"Demo item 2.9", &doNothing},
+        MAINMENU,
+        SUBMENU("> Demo submenu 2", MENU_DEMO_SUBMENU2),
+        MENUITEM("Demo item 2.1", &doNothing),
+        MENUITEM("Demo item 2.2", &doNothing),
+        MENUITEM("Demo item 2.3", &doNothing),
+        MENUITEM("Demo item 2.4", &doNothing),
+        MENUITEM("Demo item 2.5", &doNothing),
+        MENUITEM("Demo item 2.6", &doNothing),
+        MENUITEM("Demo item 2.7", &doNothing),
+        MENUITEM("Demo item 2.8", &doNothing),
+        MENUITEM("Demo item 2.9", &doNothing),
     },
     // DEMO SUBMENU 2
     {
-        {"^-- Demo submenu 1", &enterSubmenu, MENU_DEMO_SUBMENU1},
-        {"Demo item 3.1", &doNothing},
-        {"Demo item 3.2", &doNothing},
-        {"Demo item 3.3", &doNothing},
+        SUBMENU("^ Demo submenu 1", MENU_DEMO_SUBMENU1),
+        MENUITEM("Demo item 3.1", &doNothing),
+        MENUITEM("Demo item 3.2", &doNothing),
+        MENUITEM("Demo item 3.3", &doNothing),
     },
 };
 
@@ -233,33 +238,46 @@ void menu_init()
 
 void menu_update()
 {
-    switch (menu_state)
-    {
-        case STATE_DASHBOARD:
-            drawDashboard();
-            dashboardInputHandler();
-            break;
-
-        case STATE_MENU:
-            drawMenuItems();
-            menuInputHandler();
-            break;
-        
-        case STATE_USERINPUT:
-            drawInputScreen();
-            userInputInputHandler();
-            break;
-
-        case STATE_INFOSCREEN:
-            drawInfoScreen();
-            infoScreenInputHandler();
-            break;
-    }
-
-    clearInputs();
-
     if (ssd1306_UpdateScreenCompleted())
     {
+        #ifdef DEBUG
+        volatile uint32_t before = system_hal_timestamp();
+        #endif
+
+        switch (menu_state)
+        {
+            case STATE_DASHBOARD:
+                drawDashboard();
+                dashboardInputHandler();
+                break;
+
+            case STATE_MENU:
+                drawMenuItems();
+                menuInputHandler();
+                break;
+            
+            case STATE_USERINPUT:
+                drawInputScreen();
+                userInputInputHandler();
+                break;
+
+            case STATE_INFOSCREEN:
+                drawInfoScreen();
+                infoScreenInputHandler();
+                break;
+        }
+
+        clearInputs();
+
+        #ifdef DEBUG
+        ssd1306_SetCursor(90,5);
+        char buff[10];
+        volatile uint32_t after = system_hal_timestamp();
+        int delay = after-before;
+        snprintf(buff, sizeof(buff), "%d", delay);
+        ssd1306_WriteString(buff, *ptr_current_font);
+        #endif
+
         ssd1306_UpdateScreen();
     }
 
@@ -427,8 +445,8 @@ static void drawDashboard()
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_ABOVECENTER);
-    snprintf(buff, sizeof(buff), "Max speed: %d", dummy);
-    drawText(buff, true);
+    snprintf(buff, sizeof(buff), "Dummy value: %d", dummy);
+    drawText(buff, true);    
 
     static IoPinType estop;
     estop.ptr_port = PIN_ESTOP_GPIO_Port;
@@ -517,6 +535,7 @@ static void drawMenuItems()
     for (uint8_t item_pos = 0; item_pos < 3; item_pos++)
     {
         ssd1306_SetCursor(MENU_ITEM_LABEL_BEGIN_X, MENU_ITEM_LABEL_OFFSET_Y + item_pos * FIELD_HEIGHT);
+
         if (item_pos == border_position)
         {
             drawText(menu[current_menu][menu_item_index + item_pos - border_position].label, true);
@@ -571,11 +590,13 @@ static void hardwareInputHandler(uint16_t pin_number)
         if (ioif_isActive(&enc_a))
         {
             is_input_clockwise = true;
+            input_clockwise_counter++;
         }
 
         else 
         {
             is_input_counterclockwise = true;
+            input_counterclockwise_counter++;
         }
     }    
 }
@@ -587,13 +608,13 @@ static void dashboardInputHandler()
         enterMainMenu();
     }
 
-    else if (is_input_clockwise)
+    else if (input_clockwise_counter > 0)
     {
         // No functionality
         ;
     }
 
-    else if (is_input_counterclockwise)
+    else if (input_counterclockwise_counter > 0)
     {
         // No functionality
         ;
@@ -607,7 +628,7 @@ static void menuInputHandler()
         menu[current_menu][menu_item_index].item_callback();
     }
 
-    else if (is_input_clockwise)
+    while (input_clockwise_counter > 0)
     {   
         if (menu_item_index < getCurrentMenuSize() - 1)
         {
@@ -617,10 +638,17 @@ static void menuInputHandler()
             {
                 border_position++;
             }
+
+            input_clockwise_counter--;
+        }
+
+        else
+        {
+            input_clockwise_counter = 0;
         }
     }
 
-    else if (is_input_counterclockwise)
+    while (input_counterclockwise_counter > 0)
     {
         if (menu_item_index > 0)
         {
@@ -630,6 +658,13 @@ static void menuInputHandler()
             {
                 border_position--;
             }
+            
+            input_counterclockwise_counter--;
+        }
+
+        else
+        {
+            input_counterclockwise_counter = 0;
         }
     }
 }
@@ -641,13 +676,13 @@ static void infoScreenInputHandler()
         menu_state = STATE_MENU;
     }
 
-    else if (is_input_clockwise)
+    else if (input_clockwise_counter > 0)
     {
         // No functionality
         ;
     }
 
-    else if (is_input_counterclockwise)
+    else if (input_counterclockwise_counter > 0)
     {
         // No functionality
         ;
@@ -661,14 +696,24 @@ static void userInputInputHandler()
         menu_state = STATE_MENU;
     }
 
-    else if (is_input_clockwise)
+    while (input_clockwise_counter > 0)
     {   
-        (*ptr_user_input_value)++;
+        if (*ptr_user_input_value < 100)
+        {
+            (*ptr_user_input_value)++;
+        }
+
+        input_clockwise_counter--;
     }
 
-    else if (is_input_counterclockwise)
+    while (input_counterclockwise_counter > 0)
     {
-        (*ptr_user_input_value)--;
+        if (*ptr_user_input_value > 0)
+        {
+            (*ptr_user_input_value)--;
+        }
+
+        input_counterclockwise_counter--;
     }
 }
 
@@ -684,6 +729,8 @@ static void clearInputs()
     is_input_select = false;
     is_input_clockwise = false;
     is_input_counterclockwise = false;
+    input_clockwise_counter = 0;
+    input_counterclockwise_counter = 0;
 }
 
 // ================ END INPUT HANDLERS ================
@@ -697,36 +744,38 @@ static int getCurrentMenuSize()
            return size_counter;
         }
     }
+
     return MAX_MENUITEMS;
 }
 
 static void setCursorCompactView(CompactViewPosition position)
 {
     ptr_current_font = &Font_7x10;
+
     switch (position)
     {
-    case COMPACTVIEW_TOP:
-        ssd1306_SetCursor(2, 0);
-        break;
+        case COMPACTVIEW_TOP:
+            ssd1306_SetCursor(2, 0);
+            break;
 
-    case COMPACTVIEW_ABOVECENTER:
-        ssd1306_SetCursor(2, 12);
-        break;
+        case COMPACTVIEW_ABOVECENTER:
+            ssd1306_SetCursor(2, 12);
+            break;
 
-    case COMPACTVIEW_CENTER:
-        ssd1306_SetCursor(2, 24);
-        break;
+        case COMPACTVIEW_CENTER:
+            ssd1306_SetCursor(2, 24);
+            break;
 
-    case COMPACTVIEW_BELOWCENTER:
-        ssd1306_SetCursor(2, 36);
-        break;
+        case COMPACTVIEW_BELOWCENTER:
+            ssd1306_SetCursor(2, 36);
+            break;
 
-    case COMPACTVIEW_BOTTOM:
-        ssd1306_SetCursor(2, 48);
-        break;
-    
-    default:
-        break;
+        case COMPACTVIEW_BOTTOM:
+            ssd1306_SetCursor(2, 48);
+            break;
+        
+        default:
+            break;
     }
 
     return;
@@ -735,22 +784,23 @@ static void setCursorCompactView(CompactViewPosition position)
 static void setCursorLargeView(LargeViewPosition position)
 {
     ptr_current_font = &Font_11x18;
+
     switch (position)
     {
-    case LARGEVIEW_TOP:
-        ssd1306_SetCursor(2, 0);
-        break;
+        case LARGEVIEW_TOP:
+            ssd1306_SetCursor(2, 0);
+            break;
 
-    case LARGEVIEW_CENTER:
-        ssd1306_SetCursor(2, 20);
-        break;
+        case LARGEVIEW_CENTER:
+            ssd1306_SetCursor(2, 20);
+            break;
 
-    case LARGEVIEW_BOTTOM:
-        ssd1306_SetCursor(2, 40);
-        break;
-    
-    default:
-        break;
+        case LARGEVIEW_BOTTOM:
+            ssd1306_SetCursor(2, 40);
+            break;
+        
+        default:
+            break;
     }
 
     return;
