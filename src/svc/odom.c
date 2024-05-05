@@ -12,6 +12,9 @@
 
 #include "motor_cfg.h"
 
+/**
+ * @brief Initializes odometry module
+ */
 void odom_init(OdomType *ptr_odom)
 {
     float wheel_pos_phi[3u];
@@ -47,14 +50,20 @@ void odom_init(OdomType *ptr_odom)
     odom_reset(ptr_odom);
 }
 
+/**
+ * @brief Resets all odometry values to 0.0f
+ */
 void odom_reset(OdomType *ptr_odom)
 {
-    arm_scale_f32(ptr_odom->wheel_vel_data, 0, ptr_odom->wheel_vel_data, 3);
-    arm_scale_f32(ptr_odom->robot_vel_data, 0, ptr_odom->robot_vel_data, 3);
-    arm_scale_f32(ptr_odom->odom_vel_data, 0, ptr_odom->odom_vel_data, 3);
-    arm_scale_f32(ptr_odom->odom_pos_data, 0, ptr_odom->odom_pos_data, 3);
+    arm_scale_f32(ptr_odom->wheel_vel_data, 0.0f, ptr_odom->wheel_vel_data, 3);
+    arm_scale_f32(ptr_odom->robot_vel_data, 0.0f, ptr_odom->robot_vel_data, 3);
+    arm_scale_f32(ptr_odom->odom_vel_data, 0.0f, ptr_odom->odom_vel_data, 3);
+    arm_scale_f32(ptr_odom->odom_pos_data, 0.0f, ptr_odom->odom_pos_data, 3);
 }
 
+/**
+ * @brief Calculates robot's odometry (pos x, y, z and velocity x, y, z) based on each motors velocity
+ */
 void odom_update(OdomType *ptr_odom, float vel_1, float vel_2, float vel_3, float dt)
 {
     ptr_odom->wheel_vel_data[0] = vel_1;
