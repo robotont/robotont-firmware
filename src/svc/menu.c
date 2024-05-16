@@ -180,7 +180,6 @@ static MenuItem menu[][MAX_MENUITEMS] =
         INFOSCREEN("Power information", &showPowerInfo),
     },
     // LED SETTINGS
-        MENUITEM("scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing),
     {
         MAINMENU,
         MENUITEM("MODE_SPIN", &setLEDMode),
