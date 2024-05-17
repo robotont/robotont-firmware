@@ -201,6 +201,17 @@ void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght)
  */
 void movement_update()
 {
+    uint32_t current_time_ms = system_hal_timestamp();
+    if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
+    {
+        motor_speed.motor0 = 0.0f;
+        motor_speed.motor1 = 0.0f;
+        motor_speed.motor2 = 0.0f;
+        motor_speed.m0_duty_cycle = 0u;
+        motor_speed.m1_duty_cycle = 0u;
+        motor_speed.m2_duty_cycle = 0u;
+    }
+
     if (motor_speed.is_manually_controlled)
     {
         motor0_handler.duty_cycle = motor_speed.m0_duty_cycle;
@@ -215,14 +226,6 @@ void movement_update()
     }
     else
     {
-        uint32_t current_time_ms = system_hal_timestamp();
-        if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
-        {
-            motor_speed.motor0 = 0.0f;
-            motor_speed.motor1 = 0.0f;
-            motor_speed.motor2 = 0.0f;
-        }
-
         motor0_handler.linear_velocity_setpoint = motor_speed.motor0;
         motor1_handler.linear_velocity_setpoint = motor_speed.motor1;
         motor2_handler.linear_velocity_setpoint = motor_speed.motor2;
@@ -237,7 +240,7 @@ void movement_update()
 
         odom_update(&odom_handler, motor0_handler.linear_velocity, motor1_handler.linear_velocity,
                     motor2_handler.linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
-        // printOdom();
+        printOdom();
     }
 }
 
