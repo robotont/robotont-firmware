@@ -12,20 +12,28 @@
 #include "measurements.h"
 #include "ioif.h"
 #include "movement.h"
+#include "main.h"
+#include <math.h>
 
 #define MAX_BAT_VOLTAGE 18
 #define LOW_BAT_VOLTAGE 13
 #define BATTERY_V_DISPLAY_TIME 100
 #define max(x, y) (x > y) ? x : y
 #define min(x, y) (x < y) ? x : y
+#define clamp(val, min_val, max_val) max(min(val, max_val), min_val)
 
 int led_val = 0;
 uint8_t led_val_increasing = 1;
 uint8_t led_i = 0;
 LEDMode led_mode = MOTOR_DUTY;
-uint8_t led_mode_color[3] = { 0, 255, 0 };
+LEDMode prev_led_mode = NONE;
 uint32_t counter = 0;
 static IoPinType estop;
+
+void set_mode_speed(uint8_t frequency)
+{
+    led_mode_params.speed = clamp(frequency, 1, 50);
+}
 
 void led_init()
 {
@@ -34,6 +42,11 @@ void led_init()
 
     ARGB_Init();  // Initialization
     ARGB_Clear(); // Clear stirp
+
+    led_mode_params.r = 0;
+    led_mode_params.g = 0;
+    led_mode_params.b = 255;
+    led_mode_params.speed = 25;
 
     // Clamp battery level between low batery voltage and max battery voltage
     float current_bat_v = max(min(BatVoltage, MAX_BAT_VOLTAGE), LOW_BAT_VOLTAGE);
@@ -55,20 +68,77 @@ void led_handleCommandsLD(uint8_t *ptr_data, uint16_t lenght)
     int b = atof(token);
     ARGB_SetBrightness(255);
     ARGB_SetRGB(index, r, g, b);
+    ARGB_Show();
 }
 
 void led_handleCommandsLM(uint8_t *ptr_data, uint16_t lenght)
 {
     ARGB_SetBrightness(255);
-    ARGB_Clear();
     char *token = strtok((char *)ptr_data, ":");
     led_mode = atof(token);
-    token = strtok(NULL, ":");
-    led_mode_color[0] = atof(token);
-    token = strtok(NULL, ":");
-    led_mode_color[1] = atof(token);
-    token = strtok(NULL, "\r\n");
-    led_mode_color[2] = atof(token);
+    switch (led_mode)
+    {
+    case SPIN:
+        token = strtok(NULL, ":");
+        led_mode_params.r = atof(token);
+        token = strtok(NULL, ":");
+        led_mode_params.g = atof(token);
+        token = strtok(NULL, ":");
+        led_mode_params.b = atof(token);
+        token = strtok(NULL, ":");
+        if (token != 0)
+        {
+            set_mode_speed(atof(token));
+        }
+        break;
+    case PULSE:
+        token = strtok(NULL, ":");
+        led_mode_params.r = atof(token);
+        token = strtok(NULL, ":");
+        led_mode_params.g = atof(token);
+        token = strtok(NULL, ":");
+        led_mode_params.b = atof(token);
+        token = strtok(NULL, ":");
+        if (token != 0)
+        {
+            set_mode_speed(atof(token));
+        }
+        break;
+    case COLORS_SMOOTH:
+        token = strtok(NULL, ":");
+        if (token != 0)
+        {
+            set_mode_speed(atof(token));
+        }
+        break;
+    case WHEEL_COLORS:
+        token = strtok(NULL, ":");
+        if (token != 0)
+        {
+            set_mode_speed(atof(token));
+        }
+        break;
+    case COLORS_SPIN:
+        token = strtok(NULL, ":");
+        if (token != 0)
+        {
+            set_mode_speed(atof(token));
+        }
+    case SCAN_RANGES:
+        token = strtok(NULL, ":");
+        led_mode_params.scan_ranges[0] = atof(token);
+        token = strtok(NULL, ":");
+        led_mode_params.scan_ranges[1] = atof(token);
+        token = strtok(NULL, ":");
+        led_mode_params.scan_ranges[2] = atof(token);
+        break;
+    case NONE:
+        ARGB_Clear();
+        ARGB_Show();
+        break;
+    default:
+        break;
+    }
 }
 
 void led_handleCommandsLS(uint8_t *ptr_data, uint16_t lenght)
@@ -95,6 +165,7 @@ void led_handleCommandsLS(uint8_t *ptr_data, uint16_t lenght)
     ARGB_Show();
 }
 
+
 void led_update()
 {
     if (counter >= BATTERY_V_DISPLAY_TIME)
@@ -102,45 +173,53 @@ void led_update()
         if (BatVoltage <= LOW_BAT_VOLTAGE) // Blink red if battery empty
         {
             led_mode = PULSE;
-            led_mode_color[0] = 255;
-            led_mode_color[1] = 0;
-            led_mode_color[2] = 0;
+            led_mode_params.r = 255;
+            led_mode_params.g = 0;
+            led_mode_params.b = 0;
+            led_mode_params.speed = 50;
         }
-        // LED modes
         if (counter == BATTERY_V_DISPLAY_TIME)
         { 
             ARGB_Clear();
-            ARGB_Show();
+            if (ARGB_Ready() == ARGB_READY)
+            {
+                ARGB_Show();
+            }
         }
         else if (ioif_isActive(&estop)) {
             led_mode = PULSE;
-            led_mode_color[0] = 255;
-            led_mode_color[1] = 255;
-            led_mode_color[2] = 0;
+            led_mode_params.r = 255;
+            led_mode_params.g = 0;
+            led_mode_params.b = 0;
+            led_mode_params.speed = 25;
+        }
+        if (prev_led_mode != led_mode) {
+            prev_led_mode = led_mode;
+            ARGB_Clear();
         }
         switch (led_mode)
         {
             case SPIN:
-                if (counter % 2 == 0) // LED spin green
+                if (counter % (uint8_t)round((1000 / MAIN_LOOP_DT_MS) / led_mode_params.speed) == 0) // LED spin green
                 {
                     ARGB_SetBrightness(255);
                     ARGB_Clear();
-                    ARGB_SetRGB(led_i, led_mode_color[0], led_mode_color[1], led_mode_color[2]);
-                    ARGB_Show();
+                    ARGB_SetRGB(led_i, led_mode_params.r, led_mode_params.g, led_mode_params.b);
+       
                     led_i++;
                     if (led_i >= 60)
                         led_i = 0;
                 }
                 break;
             case PULSE:
-                if (counter % 2 == 0) // Leds pulse on/off
+                if (counter % (uint8_t)round((1000 / MAIN_LOOP_DT_MS) / led_mode_params.speed) == 0) // Leds pulse on/off
                 {
                     ARGB_SetBrightness(led_val);
-                    ARGB_FillRGB(led_mode_color[0], led_mode_color[1], led_mode_color[2]);
-                    ARGB_Show();
+                    ARGB_FillRGB(led_mode_params.r, led_mode_params.g, led_mode_params.b);
+         
                     if (led_val_increasing)
                     {
-                        led_val += 5;
+                        led_val += 10;
                         if (led_val > 255)
                         {
                             led_val = 255;
@@ -149,7 +228,7 @@ void led_update()
                     }
                     else
                     {
-                        led_val -= 5;
+                        led_val -= 10;
                         if (led_val <= 0)
                         {
                             led_val = 0;
@@ -159,11 +238,12 @@ void led_update()
                 }
                 break;
             case COLORS_SMOOTH:
-                if (counter % 10 == 0) // Change colours
+                if (counter % (uint8_t)round((1000 / MAIN_LOOP_DT_MS) / led_mode_params.speed) == 0) // Change colours
                 {
                     ARGB_SetBrightness(255);
                     ARGB_FillHSV(led_val, 255, 255);
-                    ARGB_Show();
+               
+
                     if (led_val < 255)
                         led_val += 1;
                     else
@@ -171,10 +251,10 @@ void led_update()
                 }
                 break;
             case WHEEL_COLORS:
-                if (counter % 10 == 0) // Behind the wheel change colours
+                if (counter % (uint8_t)round((1000 / MAIN_LOOP_DT_MS) / led_mode_params.speed) == 0) // Behind the wheel change colours
                 {
                     ARGB_SetBrightness(255);
-                    ARGB_Clear();
+
                     for (uint32_t i = 6; i < 14; i++)
                     {
                         ARGB_SetHSV(i, led_val, 255, 255);
@@ -187,7 +267,7 @@ void led_update()
                     {
                         ARGB_SetHSV(i, led_val, 255, 255);
                     }
-                    ARGB_Show();
+            
                     if (led_val < 255)
                         led_val += 5;
                     else
@@ -208,14 +288,14 @@ void led_update()
                 {
                     ARGB_FillRGB(0, 0, 255);
                 }
-                ARGB_Show();
+     
                 break;
             case COLORS_SPIN:
-                if (counter % 2 == 0) // Change colours spin
+                if (counter % (uint8_t)round((1000 / MAIN_LOOP_DT_MS) / led_mode_params.speed) == 0) // Change colours spin
                 {
                     ARGB_SetBrightness(255);
                     ARGB_SetHSV(led_i, led_val, 255, 255);
-                    ARGB_Show();
+       
                     if (led_val < 255)
                         led_val += 1;
                     else
@@ -229,10 +309,16 @@ void led_update()
                 if (counter % 10 == 0) // Behind the wheel change colours with motor speeds
                 {
                     ARGB_SetBrightness(255);
-                    ARGB_Clear();
-                    int left = max(min(motor0_handler.duty_cycle, 100), -100) / 100.0f * 255;
-                    int middle = max(min(motor1_handler.duty_cycle, 100), -100) / 100.0f * 255;
-                    int right = max(min(motor2_handler.duty_cycle, 100), -100) / 100.0f * 255;
+                    int left = 0;
+                    int middle = 0;
+                    int right = 0;
+
+                    if (motor0_handler.duty_cycle != 0)
+                        left = clamp(motor0_handler.duty_cycle, -100, 100) / 100.0f * 255;
+                    if (motor1_handler.duty_cycle != 0)
+                        middle = clamp(motor1_handler.duty_cycle, -100, 100) / 100.0f * 255;
+                    if (motor2_handler.duty_cycle != 0)
+                        right = clamp(motor2_handler.duty_cycle, -100, 100) / 100.0f * 255;
 
                     for (uint32_t i = 6; i < 14; i++)
                     {
@@ -258,18 +344,23 @@ void led_update()
                             ARGB_SetRGB(i, 0, 0, abs(right));
                         }
                     }
-                    ARGB_Show();
+           
                 }
                 break;
             case MOTOR_SPEEDS:
                 if (counter % 10 == 0) // Behind the wheel change colours with motor speeds
                 {
                     ARGB_SetBrightness(255);
-                    ARGB_Clear();
-                    int left = max(min(motor0_handler.linear_velocity * 255, 255), -255);
-                    int middle = max(min(motor1_handler.linear_velocity * 255, 255), -255);
-                    int right = max(min(motor2_handler.linear_velocity * 255, 255), -255);
-
+                    int left = 0;
+                    int middle = 0;
+                    int right = 0;
+                    if (motor0_handler.linear_velocity != 0)
+                        left = clamp((int)round(motor0_handler.linear_velocity*255.0), -255, 255);
+                    if (motor1_handler.linear_velocity != 0)
+                        middle = clamp((int)round(motor1_handler.linear_velocity*255.0), -255, 255);
+                    if (motor2_handler.linear_velocity != 0)
+                        right = clamp((int)round(motor2_handler.linear_velocity*255.0), -255, 255);
+                    
                     for (uint32_t i = 6; i < 14; i++)
                     {
                         if (left > 0) {
@@ -294,40 +385,44 @@ void led_update()
                             ARGB_SetRGB(i, 0, 0, abs(right));
                         }
                     }
-                    ARGB_Show();
+         
                 }
                 break;
             case SCAN_RANGES:
                 if (counter % 10 == 0)
                 {
                     ARGB_SetBrightness(255);
-                    ARGB_Clear();
+
                     // Left
-                    for (uint32_t i = 3; i < 6; i++)
+                    for (uint32_t i = 3; i < 7; i++)
                     {
-                        ARGB_SetRGB(i, 255 - led_mode_color[0], led_mode_color[0], 0);
+                        ARGB_SetRGB(i, 255 - led_mode_params.scan_ranges[0], led_mode_params.scan_ranges[0], 0);
                     }
                     // Right
-                    for (uint32_t i = 54; i < 57; i++)
+                    for (uint32_t i = 53; i < 57; i++)
                     {
-                        ARGB_SetRGB(i, 255 - led_mode_color[1], led_mode_color[1], 0);
+                        ARGB_SetRGB(i, 255 - led_mode_params.scan_ranges[1], led_mode_params.scan_ranges[1], 0);
                     }
                     // Front
                     for (uint32_t i = 0; i < 3; i++)
                     {
-                        ARGB_SetRGB(i, 255 - led_mode_color[2], led_mode_color[2], 0);
+                        ARGB_SetRGB(i, 255 - led_mode_params.scan_ranges[2], led_mode_params.scan_ranges[2], 0);
                     }
                     for (uint32_t i = 57; i < 60; i++)
                     {
-                        ARGB_SetRGB(i, 255 - led_mode_color[2], led_mode_color[2], 0);
+                        ARGB_SetRGB(i, 255 - led_mode_params.scan_ranges[2], led_mode_params.scan_ranges[2], 0);
                     }
-                    ARGB_Show();
+         
                 }
                 break;
             case NONE:
                 break;
             default:
                 break;
+        }
+        if (ARGB_Ready() == ARGB_READY && counter % 1 == 0)
+        {
+            ARGB_Show();
         }
     }
     counter++;

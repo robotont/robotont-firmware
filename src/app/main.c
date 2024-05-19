@@ -60,7 +60,7 @@ int main(void)
             /* Service layer modules update */
             led_update();       
             movement_update();
-            menu_update();
+            //menu_update();
 
             /**
             @brief Example, of how to modules should communicate with each others: via getters and setters (Pseudocode)

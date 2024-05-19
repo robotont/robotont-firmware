@@ -152,8 +152,8 @@ void ARGB_Init(void) {
     PWM_LO = (uint8_t) (APBfq * 0.20) - 1;     // Log.0 - 20% - 0.25us/0.5us
 #endif
 #ifdef WS2812
-    PWM_HI = (uint8_t) (APBfq * 0.6) - 1;     // Log.1 - 56% - 0.70us
-    PWM_LO = (uint8_t) (APBfq * 0.14) - 1;     // Log.0 - 28% - 0.35us
+    PWM_HI = (uint8_t) (APBfq * 0.56) - 1;     // Log.1 - 56% - 0.70us
+    PWM_LO = (uint8_t) (APBfq * 0.28) - 1;     // Log.0 - 28% - 0.35us
 #endif
 #ifdef SK6812
     PWM_HI = (uint8_t) (APBfq * 0.48) - 1;     // Log.1 - 48% - 0.60us
