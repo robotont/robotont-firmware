@@ -10,7 +10,7 @@
 // TODO demo program submenu
 // TODO racing and normal mode callbacks
 
-#define DEBUG
+// #define DEBUG
 
 #include <stdint.h>
 #include <stdio.h>
@@ -57,6 +57,9 @@ typedef enum
     MENU_SEND_CMD,
     MENU_DEMO_SUBMENU1,
     MENU_DEMO_SUBMENU2,
+    MENU_NETWORK_SETTINGS,
+    MENU_ROS_NODES,
+    MENU_ROS_CONTAINERS,
 } MenuType;
 
 typedef enum 
@@ -168,10 +171,12 @@ static MenuItem menu[][MAX_MENUITEMS] =
         SUBMENU("> Motor control settings", MENU_MOTOR_SETTINGS),
         SUBMENU("> Send commands", MENU_SEND_CMD),
         SUBMENU("> Demo submenu 1", MENU_DEMO_SUBMENU1),
+        SUBMENU("> Network settings", MENU_NETWORK_SETTINGS),
+        SUBMENU("> Reset ROS nodes", MENU_ROS_NODES),
+        SUBMENU("> Choose ROS container", MENU_ROS_CONTAINERS),
         INFOSCREEN("Firmware information", &showFirmwareInfo),
         INFOSCREEN("Motor speeds", &showMotorSpeeds),
         USERINPUT("Set max speed", &dummy),
-        MENUITEM("scrolling demo 1 scrolling demo 2 scrolling demo 3 scrolling demo 4", &doNothing),
         INFOSCREEN("Power information", &showPowerInfo),
     },
     // LED SETTINGS
@@ -223,6 +228,29 @@ static MenuItem menu[][MAX_MENUITEMS] =
         MENUITEM("Demo item 3.2", &doNothing),
         MENUITEM("Demo item 3.3", &doNothing),
     },
+    // NETWORK SETTINGS
+    {
+        MAINMENU,
+        MENUITEM("Show IP address", &doNothing),
+        MENUITEM("Choose network", &doNothing),
+        MENUITEM("Enter network password", &doNothing),
+        MENUITEM("Connect", &doNothing),
+        MENUITEM("AP mode selection", &doNothing),
+    },
+    // ROS NODES
+    {
+        MAINMENU,
+        MENUITEM("Reset camera node", &doNothing),
+        MENUITEM("Reset driver", &doNothing),
+    },
+    // ROS CONTAINERS
+    {
+        MAINMENU,
+        MENUITEM("Container 1 (mapping?)", &doNothing),
+        MENUITEM("Container 2 (AR steering?)", &doNothing),
+        MENUITEM("Container 3 (teleop?)", &doNothing),
+        MENUITEM("Container 4 (demo x?)", &doNothing),
+    }
 };
 
 void menu_init()
@@ -445,7 +473,7 @@ static void drawDashboard()
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_ABOVECENTER);
-    snprintf(buff, sizeof(buff), "Dummy value: %d", dummy);
+    snprintf(buff, sizeof(buff), "Motor duty: %d%%", dummy);
     drawText(buff, true);    
 
     static IoPinType estop;
@@ -465,7 +493,7 @@ static void drawDashboard()
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_BELOWCENTER);
-    drawText("IP:123.123.123.123", true);
+    // drawText("IP:123.123.123.123", true);
 
     setCursorCompactView(COMPACTVIEW_BOTTOM);
     drawText("LED mode: blink", true);
