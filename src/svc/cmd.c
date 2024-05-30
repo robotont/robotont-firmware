@@ -15,13 +15,13 @@
 #include "movement.h"
 #include "usbif.h"
 
-#define ARG_ROBOT_SPEED         0x5253 /* "RS" */
-#define ARG_MOTOR_SPEED         0x4D53 /* "MS" */
-#define ARG_ODOM_RESET          0x4F52 /* "OR" */
-#define ARG_DUTY_CYCLE_CONTROL  0x4443 /* "DC" */
-#define ARG_LED_CONTROL         0x4C44 /* "LD" */
-#define ARG_LED_MODE            0x4C4D /* "LM" */
-#define ARG_LED_SEGMENT         0x4C53 /* "LS" */
+#define ARG_ROBOT_SPEED        0x5253 /* "RS" */
+#define ARG_MOTOR_SPEED        0x4D53 /* "MS" */
+#define ARG_ODOM_RESET         0x4F52 /* "OR" */
+#define ARG_DUTY_CYCLE_CONTROL 0x4443 /* "DC" */
+#define ARG_LED_CONTROL        0x4C44 /* "LD" */
+#define ARG_LED_MODE           0x4C4D /* "LM" */
+#define ARG_LED_SEGMENT        0x4C53 /* "LS" */
 
 /**
  * @brief Inits usbif and sets usbif callback to `cmd_handleUsbData`
@@ -36,8 +36,7 @@ void cmd_init(void)
  * @brief USB RX interrupt handler.
  * Takes raw string, cuts off 1st argument ("XX:") sends data to the corresponding module
  * @note Called within ISR context from lower layer (usbcdc -> usbif -> cmd)
- * @note CR + LF already excluded in the `usbif`
- * @param ptr_data Raw string in the format `ARG:VALUE_1:...:VALUE_N`
+ * @param ptr_data Raw string in the format `ARG:VALUE_1:...:VALUE_N\r\n`
  * @param lenght Lenght of the raw string
  */
 void cmd_handleUsbData(uint8_t *ptr_data, uint16_t lenght)

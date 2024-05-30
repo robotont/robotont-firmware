@@ -29,11 +29,11 @@
 #include "system_hal.h"
 #include "timerif.h"
 
-#define PACKET_TIMEOUT_MS 1000   /* Timeout, if no new packets received, then all motors will be stopped */
+#define PACKET_TIMEOUT_MS 1000 /* Timeout, if no new packets received, then all motors will be stopped */
 
-#define PID_KP            60u    /* Proportional coef*/
-#define PID_KI            1000u  /* Integral coef*/
-#define PID_KD            1u     /* Derivative coef*/
+#define PID_KP            60u   /* Proportional coef*/
+#define PID_KI            1000u /* Integral coef*/
+#define PID_KD            1u    /* Derivative coef*/
 
 /* Speed that goes as an input to the PID controller of the each motor */
 typedef struct
@@ -76,6 +76,9 @@ void movement_init()
     motor_speed.m0_duty_cycle = 0;
     motor_speed.m1_duty_cycle = 0;
     motor_speed.m2_duty_cycle = 0;
+
+    ioif_init();
+    timerif_init();
 
     motor_configurePinout(&motor0_pinout, &motor1_pinout, &motor2_pinout);
     motor_init(&motor0_handler, &motor0_pinout, TIMER_PWM_M0, TIMER_ENC_M0);
@@ -195,6 +198,17 @@ void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght)
  */
 void movement_update()
 {
+    uint32_t current_time_ms = system_hal_timestamp();
+    if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
+    {
+        motor_speed.motor0 = 0.0f;
+        motor_speed.motor1 = 0.0f;
+        motor_speed.motor2 = 0.0f;
+        motor_speed.m0_duty_cycle = 0u;
+        motor_speed.m1_duty_cycle = 0u;
+        motor_speed.m2_duty_cycle = 0u;
+    }
+
     if (motor_speed.is_manually_controlled)
     {
         motor0_handler.duty_cycle = motor_speed.m0_duty_cycle;
@@ -209,14 +223,6 @@ void movement_update()
     }
     else
     {
-        uint32_t current_time_ms = system_hal_timestamp();
-        if (current_time_ms > last_packet_time_ms + PACKET_TIMEOUT_MS)
-        {
-            motor_speed.motor0 = 0.0f;
-            motor_speed.motor1 = 0.0f;
-            motor_speed.motor2 = 0.0f;
-        }
-
         motor0_handler.linear_velocity_setpoint = motor_speed.motor0;
         motor1_handler.linear_velocity_setpoint = motor_speed.motor1;
         motor2_handler.linear_velocity_setpoint = motor_speed.motor2;
@@ -231,7 +237,7 @@ void movement_update()
 
         odom_update(&odom_handler, motor0_handler.linear_velocity, motor1_handler.linear_velocity,
                     motor2_handler.linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
-        //printOdom();
+        printOdom();
     }
 }
 

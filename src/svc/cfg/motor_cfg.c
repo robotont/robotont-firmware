@@ -12,7 +12,7 @@
 
 /**
  * @brief Assigns all motor pins in the configuration struct
- * 
+ *
  * @param pinout_m0 [out] Motor 0 pinout struct
  * @param pinout_m1 [out] Motor 1 pinout struct
  * @param pinout_m2 [out] Motor 2 pinout struct

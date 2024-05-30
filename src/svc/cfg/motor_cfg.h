@@ -1,7 +1,7 @@
 /**
  * @file motor_cfg.h
  * @brief PWM motor configuration header file, contains commonly used contants
- * 
+ *
  * @author Leonid Tšigrinski (leonid.tsigrinski@gmail.com)
  * @copyright Copyright (c) 2023 Tartu Ülikool
  */
