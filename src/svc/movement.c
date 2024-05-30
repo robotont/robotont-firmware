@@ -51,9 +51,6 @@ typedef struct
 static MotorSpeedType motor_speed;   /* Target motor speed, that received from CMD handler */
 static uint32_t last_packet_time_ms; /* Last time, when command received. Based on that calculated timeout */
 
-MotorHandleType motor0_handler;
-MotorHandleType motor1_handler;
-MotorHandleType motor2_handler;
 PID_TypeDef pid0_handler;
 PID_TypeDef pid1_handler;
 PID_TypeDef pid2_handler;

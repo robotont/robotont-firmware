@@ -25,6 +25,8 @@
 #include "menu.h"
 #include "movement.h"
 #include "peripheral.h"
+#include "pid.h"
+#include "ssd1306.h"
 #include "system_hal.h"
 
 #define DEBUG_LED_PERIOD_PRESCALER 10u
