@@ -25,7 +25,7 @@
 int led_val = 0;
 uint8_t led_val_increasing = 1;
 uint8_t led_i = 0;
-LEDMode led_mode = MOTOR_DUTY;
+LEDMode led_mode = MOTOR_SPEEDS;
 LEDMode prev_led_mode = NONE;
 uint32_t counter = 0;
 static IoPinType estop;
@@ -420,7 +420,7 @@ void led_update()
             default:
                 break;
         }
-        if (ARGB_Ready() == ARGB_READY && counter % 1 == 0)
+        if (ARGB_Ready() == ARGB_READY && counter % 2 == 0)
         {
             ARGB_Show();
         }
