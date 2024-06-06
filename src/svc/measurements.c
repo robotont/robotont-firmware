@@ -1,5 +1,15 @@
 #include "measurements.h"
+#include "i2cif.h"
 
+void measurements_init(){
+  // Initialize the measurements
+    i2cif_init();
+    HAL_I2C_EnableListen_IT(&hi2c1);
+    MtrCurrent = 0;
+    NucCurrent = 0;
+    WallVoltage = 0;
+    BatVoltage = 0;
+}
     
 void processData(){
 	// Process the received data

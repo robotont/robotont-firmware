@@ -8,5 +8,6 @@ float NucCurrent;
 float WallVoltage;
 float BatVoltage;
 
+void measurements_init();
 void printMeasurements();
 void processData();

@@ -22,6 +22,7 @@
 
 #include "cmd.h"
 #include "led.h"
+#include "measurements.h"
 #include "menu.h"
 #include "movement.h"
 #include "peripheral.h"
@@ -56,6 +57,7 @@ int main(void)
     movement_init();
     menu_init();
     led_init();
+    measurements_init();
     initDebugLeds();
 
     uint32_t debug_counter = 1u;
