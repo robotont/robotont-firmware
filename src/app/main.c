@@ -73,11 +73,11 @@ int main(void)
             // Service layer modules update
             movement_update();
             led_update();
+            menu_update();
 
             // Debug
             if (debug_counter % DEBUG_LED_PERIOD_PRESCALER == 0)
             {
-                menu_update();
                 toggleDebugLeds();
             }
         }

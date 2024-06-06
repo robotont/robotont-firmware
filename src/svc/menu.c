@@ -182,12 +182,14 @@ static MenuItem menu[][MAX_MENUITEMS] =
     // LED SETTINGS
     {
         MAINMENU,
+        MENUITEM("MODE_NONE", &setLEDMode),
         MENUITEM("MODE_SPIN", &setLEDMode),
         MENUITEM("MODE_PULSE", &setLEDMode),
         MENUITEM("MODE_COLORS_SMOOTH", &setLEDMode),
         MENUITEM("MODE_WHEEL_COLORS", &setLEDMode),
         MENUITEM("MODE_COLORS_RGB", &setLEDMode),
         MENUITEM("MODE_COLORS_SPIN", &setLEDMode),
+        MENUITEM("MODE_MOTOR_DUTY", &setLEDMode),
         MENUITEM("MODE_MOTOR_SPEEDS", &setLEDMode),
         MENUITEM("MODE_SCAN_RANGES", &setLEDMode),
     },
