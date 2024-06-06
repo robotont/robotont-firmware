@@ -261,6 +261,10 @@ void menu_init()
 
     menu_state = STATE_DASHBOARD;
 
+    ioif_init();
+    i2cif_init();
+    timerif_init();
+
     ssd1306_Init();
     ssd1306_FlipScreenVertically();
     ssd1306_SetColor(White);

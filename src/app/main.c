@@ -53,9 +53,9 @@ int main(void)
     peripheral_init(); // Initialized peripheral, that don't have interface yet; To be removed in the future
 
     cmd_init();
-    led_init();
-    menu_init();
     movement_init();
+    menu_init();
+    led_init();
     initDebugLeds();
 
     uint32_t debug_counter = 1u;

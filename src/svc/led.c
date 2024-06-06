@@ -40,6 +40,9 @@ void led_init()
     estop.ptr_port = PIN_ESTOP_GPIO_Port;
     estop.pin_number = PIN_ESTOP_Pin;
 
+    ioif_init();
+    timerif_init();
+
     ARGB_Init();  // Initialization
     ARGB_Clear(); // Clear stirp
 
