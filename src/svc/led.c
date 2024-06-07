@@ -52,7 +52,7 @@ void led_init()
     led_mode_params.speed = 25;
 
     // Clamp battery level between low batery voltage and max battery voltage
-    float current_bat_v = max(min(BatVoltage, MAX_BAT_VOLTAGE), LOW_BAT_VOLTAGE);
+    float current_bat_v = max(min(pwr_mgmnt_data.bat_voltage, MAX_BAT_VOLTAGE), LOW_BAT_VOLTAGE);
     // Show battery level
     ARGB_FillRGB(255 - ((MAX_BAT_VOLTAGE - current_bat_v) / (MAX_BAT_VOLTAGE - LOW_BAT_VOLTAGE)) * 255, ((MAX_BAT_VOLTAGE - current_bat_v) / (MAX_BAT_VOLTAGE - LOW_BAT_VOLTAGE)) * 255, 0);
 
@@ -173,7 +173,7 @@ void led_update()
 {
     if (counter >= BATTERY_V_DISPLAY_TIME)
     {
-        if (BatVoltage <= LOW_BAT_VOLTAGE) // Blink red if battery empty
+        if (pwr_mgmnt_data.bat_voltage <= LOW_BAT_VOLTAGE) // Blink red if battery empty
         {
             led_mode = PULSE;
             led_mode_params.r = 255;

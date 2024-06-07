@@ -402,19 +402,19 @@ static void showPowerInfo()
     char buff[32];
 
     setCursorCompactView(COMPACTVIEW_TOP);
-    snprintf(buff, sizeof(buff), "Battery: %.2f V", BatVoltage);
+    snprintf(buff, sizeof(buff), "Battery: %.2f V", pwr_mgmnt_data.bat_voltage);
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_ABOVECENTER);
-    snprintf(buff, sizeof(buff), "Wall: %.2f V", WallVoltage);
+    snprintf(buff, sizeof(buff), "Wall: %.2f V", pwr_mgmnt_data.wall_voltage);
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_CENTER);
-    snprintf(buff, sizeof(buff), "Motors: %.2f A", MtrCurrent);
+    snprintf(buff, sizeof(buff), "Motors: %.2f A", pwr_mgmnt_data.motor_current);
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_BELOWCENTER);
-    snprintf(buff, sizeof(buff), "NUC: %.2f A", NucCurrent);
+    snprintf(buff, sizeof(buff), "NUC: %.2f A", pwr_mgmnt_data.nuc_current);
     drawText(buff, true);
 }
 
@@ -475,7 +475,7 @@ static void drawDashboard()
     char buff[64];
 
     setCursorCompactView(COMPACTVIEW_TOP);
-    snprintf(buff, sizeof(buff), "Bat volt: %.1f V", BatVoltage);
+    snprintf(buff, sizeof(buff), "Bat volt: %.1f V", pwr_mgmnt_data.bat_voltage);
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_ABOVECENTER);

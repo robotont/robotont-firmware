@@ -11,11 +11,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <math.h>
-#include "measurements.h"
 
 static I2CCallbackType error_callback;
+static I2CRxCallbackType receive_callback;
 
-
+static uint8_t ptr_rx_buf[I2CIF_RX_BUFFER_SIZE];
 
 /**
  * @brief Initializes i2c module
@@ -39,6 +39,14 @@ void i2cif_init(void)
 void i2cif_setErrorCallback(I2CCallbackType callback)
 {
     error_callback = callback;
+}
+
+/**
+ * @brief Sets function, that is called inside `HAL_I2C_SlaveRxCpltCallback` interrupt
+ */
+void i2cif_setReceiveCallback(I2CRxCallbackType callback)
+{
+    receive_callback = callback;
 }
 
 /**
@@ -85,15 +93,16 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef *i2c_handler, uint8_t TransferDirect
 {
 	if(TransferDirection == I2C_DIRECTION_TRANSMIT)  // if attiny wants to transmit the data
 	{
-		HAL_I2C_Slave_Sequential_Receive_IT(i2c_handler, I2C_Data, 8, I2C_FIRST_AND_LAST_FRAME);
+		HAL_I2C_Slave_Sequential_Receive_IT(i2c_handler, ptr_rx_buf, I2CIF_RX_BUFFER_SIZE, I2C_FIRST_AND_LAST_FRAME);
 	}
 }
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *i2c_handler)
 {
-    if(i2c_handler == &hi2c1){
-        processData();
-    }
-    
+    if (receive_callback != NULL) //TODO: make it more flexible
+        {
+            
+            receive_callback(i2c_handler, ptr_rx_buf);
+        }
 }
 

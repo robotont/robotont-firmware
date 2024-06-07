@@ -73,7 +73,7 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
 
     if (is_message_complete && receive_callback != NULL)
     {
-        receive_callback(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF
+        receive_callback(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF TODO: what if only only CR or LF received?
         rx_buffer_length = 0u;
     }
 
