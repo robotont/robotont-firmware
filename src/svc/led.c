@@ -14,13 +14,11 @@
 #include "movement.h"
 #include "main.h"
 #include <math.h>
+#include "macros.h"
 
 #define MAX_BAT_VOLTAGE 18
 #define LOW_BAT_VOLTAGE 13
 #define BATTERY_V_DISPLAY_TIME 100
-#define max(x, y) (x > y) ? x : y
-#define min(x, y) (x < y) ? x : y
-#define clamp(val, min_val, max_val) max(min(val, max_val), min_val)
 
 int led_val = 0;
 uint8_t led_val_increasing = 1;
@@ -32,7 +30,7 @@ static IoPinType estop;
 
 void set_mode_speed(uint8_t frequency)
 {
-    led_mode_params.speed = clamp(frequency, 1, 50);
+    led_mode_params.speed = CLAMP(frequency, 1, 50);
 }
 
 void led_init()
@@ -51,8 +49,8 @@ void led_init()
     led_mode_params.b = 255;
     led_mode_params.speed = 25;
 
-    // Clamp battery level between low batery voltage and max battery voltage
-    float current_bat_v = max(min(pwr_mgmnt_data.bat_voltage, MAX_BAT_VOLTAGE), LOW_BAT_VOLTAGE);
+    // CLAMP battery level between low batery voltage and max battery voltage
+    float current_bat_v = MAX(MIN(pwr_mgmnt_data.bat_voltage, MAX_BAT_VOLTAGE), LOW_BAT_VOLTAGE);
     // Show battery level
     ARGB_FillRGB(255 - ((MAX_BAT_VOLTAGE - current_bat_v) / (MAX_BAT_VOLTAGE - LOW_BAT_VOLTAGE)) * 255, ((MAX_BAT_VOLTAGE - current_bat_v) / (MAX_BAT_VOLTAGE - LOW_BAT_VOLTAGE)) * 255, 0);
 
@@ -317,11 +315,11 @@ void led_update()
                     int right = 0;
 
                     if (motor0_handler.duty_cycle != 0)
-                        left = clamp(motor0_handler.duty_cycle, -100, 100) / 100.0f * 255;
+                        left = CLAMP(motor0_handler.duty_cycle, -100, 100) / 100.0f * 255;
                     if (motor1_handler.duty_cycle != 0)
-                        middle = clamp(motor1_handler.duty_cycle, -100, 100) / 100.0f * 255;
+                        middle = CLAMP(motor1_handler.duty_cycle, -100, 100) / 100.0f * 255;
                     if (motor2_handler.duty_cycle != 0)
-                        right = clamp(motor2_handler.duty_cycle, -100, 100) / 100.0f * 255;
+                        right = CLAMP(motor2_handler.duty_cycle, -100, 100) / 100.0f * 255;
 
                     for (uint32_t i = 6; i < 14; i++)
                     {
@@ -358,11 +356,11 @@ void led_update()
                     int middle = 0;
                     int right = 0;
                     if (motor0_handler.linear_velocity != 0)
-                        left = clamp((int)round(motor0_handler.linear_velocity*255.0), -255, 255);
+                        left = CLAMP((int)round(motor0_handler.linear_velocity*255.0), -255, 255);
                     if (motor1_handler.linear_velocity != 0)
-                        middle = clamp((int)round(motor1_handler.linear_velocity*255.0), -255, 255);
+                        middle = CLAMP((int)round(motor1_handler.linear_velocity*255.0), -255, 255);
                     if (motor2_handler.linear_velocity != 0)
-                        right = clamp((int)round(motor2_handler.linear_velocity*255.0), -255, 255);
+                        right = CLAMP((int)round(motor2_handler.linear_velocity*255.0), -255, 255);
                     
                     for (uint32_t i = 6; i < 14; i++)
                     {
