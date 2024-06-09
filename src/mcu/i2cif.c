@@ -100,9 +100,15 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef *i2c_handler, uint8_t TransferDirect
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *i2c_handler)
 {
     if (receive_callback != NULL) //TODO: make it more flexible
-        {
-            
-            receive_callback(i2c_handler, ptr_rx_buf);
-        }
+    {
+        // If make it more flexible, then mb like this?:
+        // if (i2c_handler->Instance == I2C_HANDLER_1)
+        // {
+        //     receive1_callback(i2c_handler, ptr_rx_buf);
+        // }
+        // But need to create i2cif_setRxCallback for each channel (setCallback1/2/3)
+        // Right now seems a little bit over-complicated?
+        receive_callback(i2c_handler, ptr_rx_buf);
+    }
 }
 
