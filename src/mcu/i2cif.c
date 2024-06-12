@@ -7,6 +7,7 @@
  */
 
 #include "i2cif.h"
+#include "system_hal.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -84,9 +85,12 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *i2c_handler)
     }
 }
 
-void HAL_I2C_ListenCpltCallback (I2C_HandleTypeDef *i2c_handler)
+void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *i2c_handler)
 {
-	HAL_I2C_EnableListen_IT(i2c_handler);
+    if (HAL_I2C_EnableListen_IT(i2c_handler) != HAL_OK)
+    {
+        Error_Handler();
+    }
 }
 
 void HAL_I2C_AddrCallback(I2C_HandleTypeDef *i2c_handler, uint8_t TransferDirection, uint16_t AddrMatchCode)

@@ -3,14 +3,16 @@
 
 void measurements_init(void)
 {
-  // Initialize the measurements
-    i2cif_init();
-    i2cif_setReceiveCallback(measurements_receiveCallback);
-    
+    // Initialize the power management data with zeros
     pwr_mgmnt_data.motor_current = 0.0f;
     pwr_mgmnt_data.nuc_current = 0.0f;
     pwr_mgmnt_data.wall_voltage = 0.0f;
     pwr_mgmnt_data.bat_voltage = 0.0f;
+    
+    // Initialize i2c interface and set up the receive mechanism
+    i2cif_init();
+    i2cif_setReceiveCallback(measurements_receiveCallback);
+    HAL_I2C_ListenCpltCallback(I2C_HANDLER_1);
 }
     
 void measurements_receiveCallback(I2C_HandleTypeDef *ifi2c_handler, uint8_t *ptr_rx_buf)
