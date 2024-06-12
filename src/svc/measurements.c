@@ -1,4 +1,5 @@
 #include "measurements.h"
+#include <string.h>
 
 void measurements_init(void)
 {
@@ -12,7 +13,7 @@ void measurements_init(void)
     pwr_mgmnt_data.bat_voltage = 0.0f;
 }
     
-void measurements_receiveCallback(I2CRxCallbackType ifi2c_handler, uint8_t *ptr_rx_buf)
+void measurements_receiveCallback(I2C_HandleTypeDef *ifi2c_handler, uint8_t *ptr_rx_buf)
 {
   if (ifi2c_handler == I2C_HANDLER_1)
   {

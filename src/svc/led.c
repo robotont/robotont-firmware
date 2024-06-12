@@ -146,7 +146,7 @@ void led_handleCommandsLM(uint8_t *ptr_data, uint16_t lenght)
 
 void led_handleCommandsLS(uint8_t *ptr_data, uint16_t lenght)
 {
-    char *token = strtok(ptr_data, ":");
+    char *token = strtok((char *)ptr_data, ":");
     int idx_start = atof(token);
 
     token = strtok(NULL, ":");

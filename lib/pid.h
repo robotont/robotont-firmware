@@ -87,7 +87,7 @@
 
 	#elif defined   (  __GNUC__  ) /* GNU Compiler */
 
-	#pragma diag_suppress 177     /* Disable 'unused function' warning */
+	#define UNUSED_FUNCTION __attribute__((unused))     /* Disable 'unused function' warning */
 
 	#endif /* __ICCARM__ */
 
