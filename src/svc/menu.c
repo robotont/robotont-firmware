@@ -134,6 +134,13 @@ static void doNothing();
 static void showFirmwareInfo();
 static void showPowerInfo();
 static void sendCommand();
+
+//declarations for container management
+static void stopAllContainers();
+static void startRobotontDriver();
+static void startRobotontDriverTeleopJoy();
+static void startRobotontFakeDriver();
+
 // END MENU CALLBACKS
 
 // BEGIN DRAWING FUNCTIONS
@@ -248,10 +255,10 @@ static MenuItem menu[][MAX_MENUITEMS] =
     // ROS CONTAINERS
     {
         MAINMENU,
-        MENUITEM("Container 1 (mapping?)", &doNothing),
-        MENUITEM("Container 2 (AR steering?)", &doNothing),
-        MENUITEM("Container 3 (teleop?)", &doNothing),
-        MENUITEM("Container 4 (demo x?)", &doNothing),
+        MENUITEM("Stop All Containers", &stopAllContainers),
+        MENUITEM("Start robotont_driver", &startRobotontDriver),
+        MENUITEM("Start robotont_driver_teleop_joy", &startRobotontDriverTeleopJoy),
+        MENUITEM("Start robotont_fake_driver", &startRobotontFakeDriver),
     }
 };
 
@@ -337,6 +344,30 @@ void menu_update()
 }
 
 // ================ BEGIN MENU ITEM CALLBACKS ================
+
+//callback to stop all containers
+static void stopAllContainers()
+{
+    printf("CMD:stop all_containers\r\n");
+}
+
+//callback to start `robotont_driver`
+static void startRobotontDriver()
+{
+    printf("CMD:start robotont_driver\r\n");
+}
+
+//callback to start `robotont_driver_teleop_joy`
+static void startRobotontDriverTeleopJoy()
+{
+    printf("CMD:start robotont_driver_teleop_joy\r\n");
+}
+
+//callback to start `robotont_fake_driver`
+static void startRobotontFakeDriver()
+{
+    printf("CMD:start robotont_fake_driver\r\n");
+}
 
 static void showDashboard()
 {
