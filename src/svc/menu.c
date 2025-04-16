@@ -460,14 +460,24 @@ static void enterMainMenu()
 
 static void enterSubmenu()
 {
-    if (menu[current_menu][menu_item_index].menu_to_enter == MENU_DYNAMIC_CONTAINER_SUBMENU)
+    MenuType next_menu = menu[current_menu][menu_item_index].menu_to_enter;
+
+    // If you select a dynamic container:
+    if (next_menu == MENU_DYNAMIC_CONTAINER_SUBMENU)
     {
         selected_container_index = (int)(uintptr_t)menu[current_menu][menu_item_index].ptr_dynamic_value;
     }
 
-    current_menu = menu[current_menu][menu_item_index].menu_to_enter;
+    // Switch menus
+    current_menu = next_menu;
     menu_item_index = 0;
     border_position = ITEM_TOP;
+
+    // If we are about to show the "ROS containers" menu, ask supervisor for an updated list
+    if (current_menu == MENU_ROS_CONTAINERS)
+    {
+        printf("SC:request_containers\r\n");
+    }
 }
 
 
