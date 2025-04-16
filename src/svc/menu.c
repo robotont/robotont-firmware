@@ -23,6 +23,7 @@
 #include "measurements.h" // Power info
 #include "led.h" // LED modes
 #include "timerif.h" // showMotorSpeeds
+#include "cmd.h" // for menu_updateContainers()
 
 #define DASHBOARD {"^ Dashboard", &showDashboard}
 #define MAINMENU {"^ Main menu", &enterMainMenu}
@@ -60,6 +61,7 @@ typedef enum
     MENU_NETWORK_SETTINGS,
     MENU_ROS_NODES,
     MENU_ROS_CONTAINERS,
+    MENU_DYNAMIC_CONTAINER_SUBMENU,
 } MenuType;
 
 typedef enum 
@@ -101,6 +103,12 @@ typedef struct
     int *ptr_dynamic_value;
 } MenuItem;
 
+// Dynamic container labels and callbacks
+static char container_labels[MAX_CONTAINERS][MAX_CONTAINER_NAME_LEN];
+static MenuItem dynamic_containers[MAX_CONTAINERS + 1]; // +1 for MAINMENU entry
+static int dynamic_container_count = 0;
+static int selected_container_index = -1;
+
 static MenuType current_menu = MENU_ROOT;
 static MenuState menu_state = STATE_DASHBOARD;
 static ItemPosition border_position = ITEM_TOP;
@@ -134,6 +142,9 @@ static void doNothing();
 static void showFirmwareInfo();
 static void showPowerInfo();
 static void sendCommand();
+static void startDynamicContainer();
+static void stopDynamicContainer();
+static void showContainerStatus();
 
 //declarations for container management
 static void stopAllContainers();
@@ -257,10 +268,75 @@ static MenuItem menu[][MAX_MENUITEMS] =
         MAINMENU,
         MENUITEM("Stop All Containers", &stopAllContainers),
         MENUITEM("Start robotont_driver", &startRobotontDriver),
-        MENUITEM("Start robotont_driver_teleop_joy", &startRobotontDriverTeleopJoy),
-        MENUITEM("Start robotont_fake_driver", &startRobotontFakeDriver),
-    }
+        MENUITEM("Start robotont_driver_teleopp_joy", &startRobotontDriverTeleopJoy),
+        MENUITEM("Start robotont_fake_driverrr", &startRobotontFakeDriver),
+    },
+    // DYNAMIC CONTAINER SUBMENU
+    {
+        SUBMENU("^ Back to containers", MENU_ROS_CONTAINERS),
+        MENUITEM("Start container", &startDynamicContainer),
+        MENUITEM("Stop container", &stopDynamicContainer),
+        MENUITEM("Status: [TBD]", &showContainerStatus),
+    },
 };
+
+void menu_updateContainers(char names[][MAX_CONTAINER_NAME_LEN], uint8_t count)
+{
+    dynamic_container_count = count;
+
+    for (int i = 0; i < dynamic_container_count; i++)
+    {
+        strncpy(container_labels[i], names[i], MAX_CONTAINER_NAME_LEN);
+        container_labels[i][MAX_CONTAINER_NAME_LEN - 1] = '\0';
+
+        dynamic_containers[i + 1].label = container_labels[i];
+        dynamic_containers[i + 1].item_callback = &enterSubmenu;
+        dynamic_containers[i + 1].menu_to_enter = MENU_DYNAMIC_CONTAINER_SUBMENU;
+        dynamic_containers[i + 1].ptr_dynamic_value = (int *)(uintptr_t)i;  // store index        
+    }
+
+    dynamic_containers[0].label = "^ Main menu";
+    dynamic_containers[0].item_callback = &enterMainMenu;
+    dynamic_containers[0].menu_to_enter = MENU_NONE;
+    dynamic_containers[0].ptr_dynamic_value = NULL;
+
+    for (int i = 0; i < MAX_MENUITEMS; i++)
+    {
+        if (i <= dynamic_container_count)
+        {
+            menu[MENU_ROS_CONTAINERS][i] = dynamic_containers[i];
+        }
+        else
+        {
+            menu[MENU_ROS_CONTAINERS][i].label = NULL;
+        }
+    }
+}
+
+
+static void startDynamicContainer()
+{
+    if (selected_container_index >= 0 && selected_container_index < dynamic_container_count)
+    {
+        printf("SC:start %s\r\n", container_labels[selected_container_index]);
+    }
+}
+
+
+static void stopDynamicContainer()
+{
+    if (selected_container_index >= 0 && selected_container_index < dynamic_container_count)
+    {
+        printf("SC:stop %s\r\n", container_labels[selected_container_index]);
+    }
+}
+
+static void showContainerStatus()
+{
+    // Placeholder — you can update this later to fetch real status
+    return;
+}
+
 
 void menu_init()
 {
@@ -348,25 +424,25 @@ void menu_update()
 //callback to stop all containers
 static void stopAllContainers()
 {
-    printf("CMD:stop all_containers\r\n");
+    printf("SC:stop all_containers\r\n");
 }
 
 //callback to start `robotont_driver`
 static void startRobotontDriver()
 {
-    printf("CMD:start robotont_driver\r\n");
+    printf("SC:start robotont_driver\r\n");
 }
 
 //callback to start `robotont_driver_teleop_joy`
 static void startRobotontDriverTeleopJoy()
 {
-    printf("CMD:start robotont_driver_teleop_joy\r\n");
+    printf("SC:start robotont_driver_teleop_joy\r\n");
 }
 
 //callback to start `robotont_fake_driver`
 static void startRobotontFakeDriver()
 {
-    printf("CMD:start robotont_fake_driver\r\n");
+    printf("SC:start robotont_fake_driver\r\n");
 }
 
 static void showDashboard()
@@ -384,10 +460,16 @@ static void enterMainMenu()
 
 static void enterSubmenu()
 {
+    if (menu[current_menu][menu_item_index].menu_to_enter == MENU_DYNAMIC_CONTAINER_SUBMENU)
+    {
+        selected_container_index = (int)(uintptr_t)menu[current_menu][menu_item_index].ptr_dynamic_value;
+    }
+
     current_menu = menu[current_menu][menu_item_index].menu_to_enter;
     menu_item_index = 0;
     border_position = ITEM_TOP;
 }
+
 
 // This implies that LedModes enum has same ordering as LED settings submenu
 static void setLEDMode()

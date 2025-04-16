@@ -22,6 +22,13 @@
 #define ARG_LED_CONTROL        0x4C44 /* "LD" */
 #define ARG_LED_MODE           0x4C4D /* "LM" */
 #define ARG_LED_SEGMENT        0x4C53 /* "LS" */
+#define ARG_SUPERVISOR_COMMAND 0x5343 /* "SC" */
+
+#define MAX_CONTAINERS 10
+#define MAX_CONTAINER_NAME_LEN 32
+
+char container_names[MAX_CONTAINERS][MAX_CONTAINER_NAME_LEN];
+uint8_t container_count = 0;
 
 /**
  * @brief Inits usbif and sets usbif callback to `cmd_handleUsbData`
@@ -72,6 +79,11 @@ void cmd_handleUsbData(uint8_t *ptr_data, uint16_t lenght)
             led_handleCommandsLS(&ptr_data[3], lenght - 3U);
             break;
 
+        case ARG_SUPERVISOR_COMMAND:
+            ptr_data[lenght] = '\0';
+            cmd_handleSCResponse((char*)ptr_data);
+            break;
+
         default:
             // TODO: notify user about bad argument?
             break;
@@ -85,4 +97,32 @@ int _write(int file, char *ptr_data, int len)
 {
     (void)file; // Not used
     return usbif_transmit((uint8_t *)ptr_data, (uint16_t)len);
+}
+
+extern void menu_updateContainers(char names[][MAX_CONTAINER_NAME_LEN], uint8_t count);
+
+void cmd_handleSCResponse(char *data)
+{
+    if (strncmp(data, "SC:containers ", 14) == 0)
+    {
+        container_count = 0;
+        char *token = strtok(data + 14, ":");
+        while (token != NULL && container_count < MAX_CONTAINERS)
+        {
+            strncpy(container_names[container_count], token, MAX_CONTAINER_NAME_LEN);
+            container_names[container_count][MAX_CONTAINER_NAME_LEN - 1] = '\0';
+            container_count++;
+            token = strtok(NULL, ":");
+        }
+
+        menu_updateContainers(container_names, container_count);
+    }
+    else if (strncmp(data, "SC:ok:", 6) == 0)
+    {
+        printf("Received OK: %s\n", data + 6);
+    }
+    else if (strncmp(data, "SC:err:", 7) == 0)
+    {
+        printf("Received ERROR: %s\n", data + 7);
+    }
 }

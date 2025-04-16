@@ -10,7 +10,11 @@
 
 #include "ssd1306.h"
 
+#define MAX_CONTAINERS 10
+#define MAX_CONTAINER_NAME_LEN 32
+
 void menu_init();
 void menu_update();
+void menu_updateContainers(char names[][MAX_CONTAINER_NAME_LEN], uint8_t count);
 
 #endif

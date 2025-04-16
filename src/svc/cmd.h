@@ -21,5 +21,6 @@ extern uint8_t last_packet[USBIF_BUFFER_SIZE];
 
 void cmd_init(void);
 void cmd_handleUsbData(uint8_t *ptr_data, uint16_t lenght);
+void cmd_handleSCResponse(char *data);
 
 #endif
