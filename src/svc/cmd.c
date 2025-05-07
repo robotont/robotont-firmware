@@ -10,6 +10,7 @@
  */
 
 #include "cmd.h"
+#include "menu.h"
 
 #include "led.h"
 #include "movement.h"
@@ -116,6 +117,10 @@ void cmd_handleSCResponse(char *data)
         }
 
         menu_updateContainers(container_names, container_count);
+    }
+    else if (strncmp(data, "SC:status ", 9) == 0)
+    {
+        menu_setContainerStatus(data + 9);
     }
     else if (strncmp(data, "SC:ok:", 6) == 0)
     {

@@ -16,5 +16,6 @@
 void menu_init();
 void menu_update();
 void menu_updateContainers(char names[][MAX_CONTAINER_NAME_LEN], uint8_t count);
+void menu_setContainerStatus(const char *msg);
 
 #endif

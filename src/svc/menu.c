@@ -108,6 +108,8 @@ static char container_labels[MAX_CONTAINERS][MAX_CONTAINER_NAME_LEN];
 static MenuItem dynamic_containers[MAX_CONTAINERS + 1]; // +1 for MAINMENU entry
 static int dynamic_container_count = 0;
 static int selected_container_index = -1;
+static char container_status_msg[64] = "Status: [TBD]";
+static bool container_status_req_sent = false;
 
 static MenuType current_menu = MENU_ROOT;
 static MenuState menu_state = STATE_DASHBOARD;
@@ -144,7 +146,7 @@ static void showPowerInfo();
 static void sendCommand();
 static void startDynamicContainer();
 static void stopDynamicContainer();
-static void showContainerStatus();
+
 
 //declarations for container management
 static void stopAllContainers();
@@ -276,7 +278,7 @@ static MenuItem menu[][MAX_MENUITEMS] =
         SUBMENU("^ Back to containers", MENU_ROS_CONTAINERS),
         MENUITEM("Start container", &startDynamicContainer),
         MENUITEM("Stop container", &stopDynamicContainer),
-        MENUITEM("Status: [TBD]", &showContainerStatus),
+        MENUITEM(container_status_msg, &doNothing),
     },
 };
 
@@ -331,12 +333,20 @@ static void stopDynamicContainer()
     }
 }
 
-static void showContainerStatus()
+void menu_setContainerStatus(const char *msg)
 {
-    // Placeholder — you can update this later to fetch real status
-    return;
-}
+    snprintf(container_status_msg,
+        sizeof(container_status_msg),
+        "Status: %s", msg);
 
+    /* if the row is currently on screen, refresh right now */
+    if (menu_state == STATE_MENU &&
+    current_menu == MENU_DYNAMIC_CONTAINER_SUBMENU)
+    {
+    drawMenuItems();
+    ssd1306_UpdateScreen();
+    }
+}
 
 void menu_init()
 {
@@ -466,6 +476,11 @@ static void enterSubmenu()
     if (next_menu == MENU_DYNAMIC_CONTAINER_SUBMENU)
     {
         selected_container_index = (int)(uintptr_t)menu[current_menu][menu_item_index].ptr_dynamic_value;
+        /* ask supervisor for fresh status every time you open the submenu */
+        container_status_req_sent = false;
+        printf("SC:status %s\r\n", container_labels[selected_container_index]);
+        menu_setContainerStatus("Requesting status…");
+        container_status_req_sent = true;
     }
 
     // Switch menus
@@ -830,6 +845,7 @@ static void infoScreenInputHandler()
 {
     if (is_input_select)
     {
+        container_status_req_sent = false;
         menu_state = STATE_MENU;
     }
 
