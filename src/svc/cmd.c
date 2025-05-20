@@ -101,33 +101,29 @@ int _write(int file, char *ptr_data, int len)
 }
 
 extern void menu_updateContainers(char names[][MAX_CONTAINER_NAME_LEN], uint8_t count);
-
 void cmd_handleSCResponse(char *data)
 {
-    if (strncmp(data, "SC:containers ", 14) == 0)
+    if (strncmp(data, "SC:containers clear", 19) == 0)
     {
         container_count = 0;
-        char *token = strtok(data + 14, ":");
-        while (token != NULL && container_count < MAX_CONTAINERS)
+    }
+    else if (strncmp(data, "SC:containers add ", 18) == 0)
+    {
+        if (container_count < MAX_CONTAINERS)
         {
-            strncpy(container_names[container_count], token, MAX_CONTAINER_NAME_LEN);
+            strncpy(container_names[container_count],
+                    data + 18,
+                    MAX_CONTAINER_NAME_LEN);
             container_names[container_count][MAX_CONTAINER_NAME_LEN - 1] = '\0';
             container_count++;
-            token = strtok(NULL, ":");
         }
-
+    }
+    else if (strncmp(data, "SC:containers done", 19) == 0)
+    {
         menu_updateContainers(container_names, container_count);
     }
     else if (strncmp(data, "SC:status ", 9) == 0)
     {
         menu_setContainerStatus(data + 9);
-    }
-    else if (strncmp(data, "SC:ok:", 6) == 0)
-    {
-        printf("Received OK: %s\n", data + 6);
-    }
-    else if (strncmp(data, "SC:err:", 7) == 0)
-    {
-        printf("Received ERROR: %s\n", data + 7);
     }
 }

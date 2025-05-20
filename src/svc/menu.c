@@ -268,10 +268,7 @@ static MenuItem menu[][MAX_MENUITEMS] =
     // ROS CONTAINERS
     {
         MAINMENU,
-        MENUITEM("Stop All Containers", &stopAllContainers),
-        MENUITEM("Start robotont_driver", &startRobotontDriver),
-        MENUITEM("Start robotont_driver_teleopp_joy", &startRobotontDriverTeleopJoy),
-        MENUITEM("Start robotont_fake_driverrr", &startRobotontFakeDriver),
+        MENUITEM("placeholder", &doNothing),
     },
     // DYNAMIC CONTAINER SUBMENU
     {
@@ -430,30 +427,6 @@ void menu_update()
 }
 
 // ================ BEGIN MENU ITEM CALLBACKS ================
-
-//callback to stop all containers
-static void stopAllContainers()
-{
-    printf("SC:stop all_containers\r\n");
-}
-
-//callback to start `robotont_driver`
-static void startRobotontDriver()
-{
-    printf("SC:start robotont_driver\r\n");
-}
-
-//callback to start `robotont_driver_teleop_joy`
-static void startRobotontDriverTeleopJoy()
-{
-    printf("SC:start robotont_driver_teleop_joy\r\n");
-}
-
-//callback to start `robotont_fake_driver`
-static void startRobotontFakeDriver()
-{
-    printf("SC:start robotont_fake_driver\r\n");
-}
 
 static void showDashboard()
 {
