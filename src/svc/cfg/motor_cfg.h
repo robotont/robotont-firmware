@@ -11,10 +11,10 @@
 
 #include "motor.h"
 
-#define MOTOR_0_WHEEL_PHI   (M_PI / 3.0f)        /* Wheen position angle, rel. to the center */
-#define MOTOR_1_WHEEL_PHI   (M_PI)               /* Wheen position angle, rel. to the center */
-#define MOTOR_2_WHEEL_PHI   (5.0f / 3.0f * M_PI) /* Wheen position angle, rel. to the center */
-#define MOTOR_WHEEL_R       0.145f               /* Wheen inner radius (mm) */
+#define MOTOR_0_WHEEL_PHI   (M_PI / 3.0f)        /* Wheel position angle, rel. to the robot center */
+#define MOTOR_1_WHEEL_PHI   (M_PI)               /* Wheel position angle, rel. to the robot center */
+#define MOTOR_2_WHEEL_PHI   (5.0f / 3.0f * M_PI) /* Wheel position angle, rel. to the robot center */
+#define MOTOR_WHEEL_R       0.145f               /* Wheel position radius (m), rel. to the robot center */
 #define MOTOR_GEAR_RATIO    18.75f               /* Gearbox reduction ratio */
 #define MOTOR_WHEEL_OUTER_R 0.035f               /* Wheel outer radius */
 #define MOTOR_MAX_LIN_VEL   0.4f                 /* Maximum allowed linear velocity (m/s) */
