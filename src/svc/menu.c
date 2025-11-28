@@ -371,7 +371,7 @@ static void enterSubmenu()
 // This implies that LedModes enum has same ordering as LED settings submenu
 static void setLEDMode()
 {
-    led_mode = menu_item_index - 1;
+    led_set_mode(menu_item_index - 1);
 }
 
 static void setValue()

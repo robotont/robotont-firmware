@@ -35,10 +35,11 @@ typedef struct
     uint8_t scan_ranges[3];
 } ModeParameters;
 
-LEDMode led_mode;
-ModeParameters led_mode_params;
+LEDMode led_mode, user_led_mode;
+ModeParameters led_mode_params, user_led_mode_params;
 
 void led_init();
+void led_set_mode(LEDMode mode);
 void led_handleCommandsLD(uint8_t *ptr_data, uint16_t lenght);
 void led_handleCommandsLM(uint8_t *ptr_data, uint16_t lenght);
 void led_handleCommandsLS(uint8_t *ptr_data, uint16_t lenght);
