@@ -1,13 +1,19 @@
 #include <stdio.h>
 #include "i2cif.h"
 
-#define PWR_MGMNT_PACKET_SIZE 8
+#define PWR_MGMNT_PACKET_SIZE 24 // Size of the incoming data packet
+//#define PWR_MGMNT_PACKET_SIZE 29
+
 typedef struct
 {
     float motor_current;
     float nuc_current;
     float wall_voltage;
     float bat_voltage;
+    float bat_pack_voltage;
+    float bat_cell_voltages[5];
+    float bat_cell_temp;
+    float bat_mosfet_temp;
 } MeasurementsType;
 
 MeasurementsType pwr_mgmnt_data;

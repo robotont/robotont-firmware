@@ -13,7 +13,8 @@
 #define I2C_HANDLER_3            (&hi2c3)
 
 #define I2CIF_DEFAULT_TIMEOUT_MS HAL_MAX_DELAY
-#define I2CIF_RX_BUFFER_SIZE 8
+#define I2CIF_RX_BUFFER_SIZE 24
+//#define I2CIF_RX_BUFFER_SIZE 29
 
 typedef void (*I2CCallbackType)(I2C_HandleTypeDef *i2c_handler); /* Callback that is called when error occurs */
 typedef void (*I2CRxCallbackType)(I2C_HandleTypeDef *i2c_handler, uint8_t *ptr_data); /* Callback that called when data is received */
