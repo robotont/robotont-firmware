@@ -44,6 +44,7 @@ void odom_init(OdomType *ptr_odom)
     if (arm_mat_inverse_f32(&(ptr_odom->odom_matrix), &(ptr_odom->odom_matrix_inv)) == ARM_MATH_SINGULAR)
     {
         printf("Odom matrix is singular and finding it's inverse is not possible!!\n");
+        // TODO: Halt the system and do not allow movement!
     }
 
     // initialize vectors with zeros
@@ -55,10 +56,10 @@ void odom_init(OdomType *ptr_odom)
  */
 void odom_reset(OdomType *ptr_odom)
 {
-    arm_scale_f32(ptr_odom->wheel_vel_data, 0.0f, ptr_odom->wheel_vel_data, 3);
-    arm_scale_f32(ptr_odom->robot_vel_data, 0.0f, ptr_odom->robot_vel_data, 3);
-    arm_scale_f32(ptr_odom->odom_vel_data, 0.0f, ptr_odom->odom_vel_data, 3);
-    arm_scale_f32(ptr_odom->odom_pos_data, 0.0f, ptr_odom->odom_pos_data, 3);
+    arm_fill_f32(0.0f, ptr_odom->wheel_vel_data, 3);
+    arm_fill_f32(0.0f, ptr_odom->robot_vel_data, 3);
+    arm_fill_f32(0.0f, ptr_odom->odom_vel_data, 3);
+    arm_fill_f32(0.0f, ptr_odom->odom_pos_data, 3);
 }
 
 /**
