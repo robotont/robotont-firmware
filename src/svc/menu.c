@@ -60,6 +60,7 @@ typedef enum
     MENU_NETWORK_SETTINGS,
     MENU_ROS_NODES,
     MENU_ROS_CONTAINERS,
+    MENU_DEBUG,
 } MenuType;
 
 typedef enum 
@@ -133,6 +134,7 @@ static void showMotorSpeeds();
 static void doNothing();
 static void showFirmwareInfo();
 static void showPowerInfo();
+static void showBatteryInfo();
 static void sendCommand();
 // END MENU CALLBACKS
 
@@ -174,10 +176,12 @@ static MenuItem menu[][MAX_MENUITEMS] =
         SUBMENU("> Network settings", MENU_NETWORK_SETTINGS),
         SUBMENU("> Reset ROS nodes", MENU_ROS_NODES),
         SUBMENU("> Choose ROS container", MENU_ROS_CONTAINERS),
+        SUBMENU("> Debug information", MENU_DEBUG),
         INFOSCREEN("Firmware information", &showFirmwareInfo),
         INFOSCREEN("Motor speeds", &showMotorSpeeds),
         USERINPUT("Set max speed", &dummy),
-        INFOSCREEN("Power information", &showPowerInfo),
+        //INFOSCREEN("Power information", &showPowerInfo),
+        //INFOSCREEN("Battery information", &showBatteryInfo),
     },
     // LED SETTINGS
     {
@@ -252,7 +256,13 @@ static MenuItem menu[][MAX_MENUITEMS] =
         MENUITEM("Container 2 (AR steering?)", &doNothing),
         MENUITEM("Container 3 (teleop?)", &doNothing),
         MENUITEM("Container 4 (demo x?)", &doNothing),
-    }
+    },
+    // DEBUG
+    {
+        MAINMENU,
+        INFOSCREEN("Power information", &showPowerInfo),
+        INFOSCREEN("Battery information", &showBatteryInfo),
+    },
 };
 
 void menu_init()
@@ -417,6 +427,40 @@ static void showPowerInfo()
     snprintf(buff, sizeof(buff), "NUC: %.2f A", pwr_mgmnt_data.nuc_current);
     drawText(buff, true);
 }
+
+
+static void showBatteryInfo()
+{
+    menu_state = STATE_INFOSCREEN;
+    ssd1306_Clear();
+    char buff[32];
+    
+    // Row 0: Pack voltage
+    setCursorCompactView((CompactViewPosition)0);
+    sprintf(buff, "Pack:%.2fV", pwr_mgmnt_data.bat_pack_voltage);
+    drawText(buff, true);
+    
+    // Row 1: Cells 1-2
+    setCursorCompactView((CompactViewPosition)1);
+    snprintf(buff, sizeof(buff), "C1:%.2f C2:%.2f", pwr_mgmnt_data.bat_cell_voltages[0], pwr_mgmnt_data.bat_cell_voltages[1]);
+    drawText(buff, true);
+    
+    // Row 2: Cells 3-4
+    setCursorCompactView((CompactViewPosition)2);
+    snprintf(buff, sizeof(buff), "C3:%.2f C4:%.2f", pwr_mgmnt_data.bat_cell_voltages[2], pwr_mgmnt_data.bat_cell_voltages[3]);
+    drawText(buff, true);
+    
+    // Row 3: Cell 5
+    setCursorCompactView((CompactViewPosition)3);
+    snprintf(buff, sizeof(buff), "C5:%.2f", pwr_mgmnt_data.bat_cell_voltages[4]);
+    drawText(buff, true);
+
+    // Row 4: Temps
+    setCursorCompactView((CompactViewPosition)4);
+    snprintf(buff, sizeof(buff), "TC:%.1f TM:%.1f", pwr_mgmnt_data.bat_cell_temp, pwr_mgmnt_data.bat_mosfet_temp);
+    drawText(buff, true);
+}
+
 
 static void showFirmwareInfo()
 {
