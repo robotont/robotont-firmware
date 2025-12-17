@@ -32,7 +32,7 @@
 #define PACKET_TIMEOUT_MS 1000 /* Timeout, if no new packets received, then all motors will be stopped */
 
 #define PID_KP            60u   /* Proportional coef*/
-#define PID_KI            1000u /* Integral coef*/
+#define PID_KI            1500u /* Integral coef*/
 #define PID_KD            1u    /* Derivative coef*/
 
 /* Speed that goes as an input to the PID controller of the each motor */
@@ -237,7 +237,7 @@ void movement_update()
 
         odom_update(&odom_handler, motor0_handler.linear_velocity, motor1_handler.linear_velocity,
                     motor2_handler.linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
-        printOdom();
+        //printOdom();
     }
 }
 

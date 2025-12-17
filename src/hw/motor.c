@@ -27,7 +27,7 @@
 #include "timerif.h"
 
 #define DUTY_CYCLE_EPSILON       10 /* If duty cycle value is less, then PWM pulse is not strong enough to run the motor */
-#define DUTY_CYCLE_LIMIT_DEFAULT 25 /* If duty cycle value is greater, then motors can be dangerous */
+#define DUTY_CYCLE_LIMIT_DEFAULT 40 /* If duty cycle value is greater, then motors can be dangerous */
 
 static uint8_t duty_cycle_limit;
 

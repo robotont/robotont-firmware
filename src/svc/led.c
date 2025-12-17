@@ -26,7 +26,6 @@ int led_val = 0;
 uint8_t led_val_increasing = 1;
 uint8_t led_i = 0;
 uint32_t counter = 0;
-static IoPinType estop;
 static uint8_t forced_mode_active = 0;         // Flag for forced mode state
 
 void led_set_mode(LEDMode mode)
@@ -48,9 +47,6 @@ void set_mode_speed(uint8_t frequency)
 
 void led_init()
 {
-    estop.ptr_port = PIN_ESTOP_GPIO_Port;
-    estop.pin_number = PIN_ESTOP_Pin;
-
     ioif_init();
     timerif_init();
 
@@ -216,8 +212,14 @@ void led_update()
 
     // --- Forced mode logic ---
     uint8_t low_battery = pwr_mgmnt_data.bat_voltage <= LOW_BAT_VOLTAGE;
-    uint8_t estop_active = ioif_isActive(&estop);
-    uint8_t should_force = low_battery || estop_active;
+    uint8_t stop_button_pressed = pwr_mgmnt_data.stop_btn_pressed;
+
+    ForcedModeType should_force = FORCED_NONE;
+    if (low_battery) {
+        should_force = FORCED_LOW_BATTERY;
+    } else if (stop_button_pressed) {
+        should_force = FORCED_STOP_BUTTON;
+    }
 
     if (should_force && !forced_mode_active) {
         // Enter forced mode
@@ -226,7 +228,7 @@ void led_update()
         led_mode_params.r = 255;
         led_mode_params.g = 0;
         led_mode_params.b = 0;
-        led_mode_params.speed = low_battery ? 50 : 25;
+        led_mode_params.speed = low_battery ? 100 : 25;
         led_val = 0;
         led_val_increasing = 1;
         ARGB_Clear();
@@ -234,7 +236,7 @@ void led_update()
     else if (!should_force && forced_mode_active) {
         // Exit forced mode - resume user mode
         // Use hysteresis: only resume if voltage is above resume threshold
-        if (pwr_mgmnt_data.bat_voltage >= BATTERY_RESUME_VOLTAGE && !estop_active) {
+        if (pwr_mgmnt_data.bat_voltage >= BATTERY_RESUME_VOLTAGE && !stop_button_pressed) {
             forced_mode_active = 0;
             led_mode = user_led_mode;
             led_mode_params = user_led_mode_params;
@@ -263,14 +265,18 @@ void led_update()
             }
             break;
         case PULSE:
-            if (counter % (uint8_t)round((1000 / MAIN_LOOP_DT_MS) / led_mode_params.speed) == 0) // Leds pulse on/off
             {
+                // TODO: use something more physics based, e.g. period or rate in hz instead of speed
+                // Currently maintaining compatibility with previous implementation
+                float step_size_f = led_mode_params.speed * MAIN_LOOP_DT_MS / 100.0f;
+                uint8_t step_size = (uint8_t)CLAMP(roundf(step_size_f), 1, 128);
+
                 ARGB_SetBrightness(led_val);
                 ARGB_FillRGB(led_mode_params.r, led_mode_params.g, led_mode_params.b);
-        
+
                 if (led_val_increasing)
                 {
-                    led_val += 10;
+                    led_val += step_size;
                     if (led_val > 255)
                     {
                         led_val = 255;
@@ -279,7 +285,7 @@ void led_update()
                 }
                 else
                 {
-                    led_val -= 10;
+                    led_val -= step_size;
                     if (led_val <= 0)
                     {
                         led_val = 0;

@@ -1,11 +1,24 @@
 #include <stdio.h>
 #include "i2cif.h"
+#include "stdbool.h"
 
-#define PWR_MGMNT_PACKET_SIZE 24 // Size of the incoming data packet
-//#define PWR_MGMNT_PACKET_SIZE 29
+#define PWR_MGMNT_PACKET_SIZE 25 // Size of the incoming data packet
+
+// Status byte bit positions
+// bit 0: stop button pressed
+// bit 1: power switch pressed
+// bit 2: wall power present
+// bit 3: motor power enabled
+// bit 4: system power enabled
+// bits 5-7: reserved for future use
 
 typedef struct
 {
+    bool stop_btn_pressed;
+    bool power_sw_pressed;
+    bool wall_power_present;
+    bool motor_power_enabled;
+    bool sys_power_enabled;
     float motor_current;
     float nuc_current;
     float wall_voltage;
