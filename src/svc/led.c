@@ -26,12 +26,12 @@ int led_val = 0;
 uint8_t led_val_increasing = 1;
 uint8_t led_i = 0;
 uint32_t counter = 0;
-static uint8_t forced_mode_active = 0;         // Flag for forced mode state
+static ForcedModeType forced_mode = FORCED_NONE;         // Forced mode state
 
 void led_set_mode(LEDMode mode)
 {
     user_led_mode = mode;
-    if (!forced_mode_active) {
+    if (forced_mode == FORCED_NONE) {
         led_mode = mode;
         ARGB_Clear();
     }
@@ -40,8 +40,8 @@ void led_set_mode(LEDMode mode)
 void set_mode_speed(uint8_t frequency)
 {
     user_led_mode_params.speed = CLAMP(frequency, 1, 50);
-    if (!forced_mode_active) {
-        led_mode_params.speed = user_led_mode_params.speed;
+    if (forced_mode == FORCED_NONE) {
+        led_mode_params = user_led_mode_params;
     }
 }
 
@@ -51,9 +51,9 @@ void led_init()
     timerif_init();
 
     ARGB_Init();  // Initialization
-    ARGB_Clear(); // Clear stirp
+    ARGB_Clear(); // Clear strip
 
-    led_mode = COLORS_SMOOTH;
+    led_mode = NONE;
     led_mode_params.r = 0;
     led_mode_params.g = 0;
     led_mode_params.b = 255;
@@ -61,6 +61,7 @@ void led_init()
     
     user_led_mode = NONE;
     user_led_mode_params = led_mode_params;
+    forced_mode_active = FORCED_NONE;
 
     // CLAMP battery level between low batery voltage and max battery voltage
     float current_bat_v = MAX(MIN(pwr_mgmnt_data.bat_voltage, MAX_BAT_VOLTAGE), LOW_BAT_VOLTAGE);
@@ -68,6 +69,9 @@ void led_init()
     ARGB_FillRGB(255 - ((MAX_BAT_VOLTAGE - current_bat_v) / (MAX_BAT_VOLTAGE - LOW_BAT_VOLTAGE)) * 255, ((MAX_BAT_VOLTAGE - current_bat_v) / (MAX_BAT_VOLTAGE - LOW_BAT_VOLTAGE)) * 255, 0);
 
     while (ARGB_Show() != ARGB_OK);
+
+    // Set default led mode to smooth colors
+    led_set_mode(COLORS_SMOOTH);
 }
 
 void led_handleCommandsLD(uint8_t *ptr_data, uint16_t lenght)
@@ -221,35 +225,38 @@ void led_update()
         should_force = FORCED_STOP_BUTTON;
     }
 
-    if (should_force && !forced_mode_active) {
-        // Enter forced mode
-        forced_mode_active = 1;
+    // Enter or upgrade forced mode
+    if (should_force > forced_mode) {
+        forced_mode = should_force;
         led_mode = PULSE;
         led_mode_params.r = 255;
         led_mode_params.g = 0;
         led_mode_params.b = 0;
-        led_mode_params.speed = low_battery ? 100 : 25;
+        led_mode_params.speed = (should_force == FORCED_LOW_BATTERY) ? 100 : 25;
         led_val = 0;
         led_val_increasing = 1;
         ARGB_Clear();
-    } 
-    else if (!should_force && forced_mode_active) {
-        // Exit forced mode - resume user mode
-        // Use hysteresis: only resume if voltage is above resume threshold
-        if (pwr_mgmnt_data.bat_voltage >= BATTERY_RESUME_VOLTAGE && !stop_button_pressed) {
-            forced_mode_active = 0;
-            led_mode = user_led_mode;
-            led_mode_params = user_led_mode_params;
-            led_val = 0;
-            led_i = 0;
-            ARGB_Clear();
+    }
+    // Downgrade forced mode (higher priority condition cleared)
+    else if (should_force < forced_mode) {
+        if (should_force == FORCED_NONE) {
+            // Exit forced mode completely - check hysteresis for battery
+            if (pwr_mgmnt_data.bat_voltage >= BATTERY_RESUME_VOLTAGE && !stop_button_pressed) {
+                forced_mode = FORCED_NONE;
+                led_mode = user_led_mode;
+                led_mode_params = user_led_mode_params;
+                led_val = 0;
+                led_i = 0;
+                ARGB_Clear();
+            }
+        } else {
+            // Downgrade to lower priority forced mode (e.g., battery recovered but stop still pressed)
+            forced_mode = should_force;
+            led_mode_params.speed = 25;  // Stop button speed
         }
     }
 
     // --- Run current mode ---
-    //uint8_t tick_interval = (uint8_t)round((1000.0f / MAIN_LOOP_DT_MS) / led_mode_params.speed);
-    //uint8_t mode_tick = (counter % tick_interval) == 0;
-    
     switch (led_mode)
     {
         case SPIN:

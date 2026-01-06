@@ -26,6 +26,12 @@ typedef enum
     SCAN_RANGES    /* Laser scan ranges */
 } LEDMode;
 
+typedef enum {
+    FORCED_NONE = 0,
+    FORCED_STOP_BUTTON = 1,
+    FORCED_LOW_BATTERY = 2
+} ForcedModeType;
+
 typedef struct
 {
     uint8_t r;
@@ -36,6 +42,7 @@ typedef struct
 } ModeParameters;
 
 LEDMode led_mode, user_led_mode;
+ForcedModeType forced_mode_active;
 ModeParameters led_mode_params, user_led_mode_params;
 
 void led_init();
