@@ -38,7 +38,8 @@ typedef struct
     TIM_HandleTypeDef *enc_timer;    /* Timer, that counts encoder rotations */
     TIM_HandleTypeDef *pwm_timer;    /* Timer, that generates PWM signal */
     IoPinType pwm_pin;               /* PWM signal output pin, that will run motors */
-    double linear_velocity;          /* Actual linear velocity */
+    double linear_velocity;          /* Actual linear velocity (m/s) */
+    double angular_position;         /* Wheel angular position (rad) - integrated from encoder */
     double linear_velocity_setpoint; /* Desired linear velocity */
     double duty_cycle;               /* PWM duty cycle. Note: PID input is double; Mark (+/-) defines direction */
     uint32_t prev_enc_timestamp;     /* Time of the encoder update in order to calculate pulse width (and speed) */

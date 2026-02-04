@@ -58,6 +58,7 @@ OdomType odom_handler;
 
 static void initPID(void);
 static void printOdom(void);
+static void printJointStates(void);
 
 /**
  * @brief   Initialized movement module.
@@ -237,7 +238,8 @@ void movement_update()
 
         odom_update(&odom_handler, motor0_handler.linear_velocity, motor1_handler.linear_velocity,
                     motor2_handler.linear_velocity, (MAIN_LOOP_DT_MS / 1000.0f));
-        //printOdom();
+        printOdom();
+        printJointStates();
     }
 }
 
@@ -329,4 +331,28 @@ static void printOdom(void)
     float vel_y = odom_handler.robot_vel_data[1];
     float vel_z = odom_handler.robot_vel_data[2];
     printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", pos_x, pos_y, pos_z, vel_x, vel_y, vel_z);
+}
+
+/** @brief Prints over serial motor joint states data in the format "JS:{pos_0}:{pos_1}:{pos_2}:{vel_0}:{vel_1}:{vel_2}:{eff_0}:{eff_1}:{eff_2}\r\n" */
+static void printJointStates(void)
+{
+    /* Positions in radians - from encoder integration */
+    float pos_0 = motor0_handler.angular_position;
+    float pos_1 = motor1_handler.angular_position;
+    float pos_2 = motor2_handler.angular_position;
+
+    /* Velocities in rad/s - convert from linear velocity */
+    float vel_0 = motor0_handler.linear_velocity / MOTOR_WHEEL_OUTER_R;
+    float vel_1 = motor1_handler.linear_velocity / MOTOR_WHEEL_OUTER_R;
+    float vel_2 = motor2_handler.linear_velocity / MOTOR_WHEEL_OUTER_R;
+
+    /* Efforts - duty cycle as percentage (-100 to 100) */
+    float eff_0 = motor0_handler.duty_cycle;
+    float eff_1 = motor1_handler.duty_cycle;
+    float eff_2 = motor2_handler.duty_cycle;
+
+    printf("JS:%f:%f:%f:%f:%f:%f:%f:%f:%f\r\n",
+           pos_0, pos_1, pos_2,
+           vel_0, vel_1, vel_2,
+           eff_0, eff_1, eff_2);
 }

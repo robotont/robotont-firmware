@@ -43,6 +43,7 @@ void motor_init(MotorHandleType *motor_handler, MotorPinoutType *pinout, TIM_Han
     motor_handler->enc_timer = enc_timer;
     motor_handler->duty_cycle = 0.0f;
     motor_handler->linear_velocity = 0.0f;
+    motor_handler->angular_position = 0.0f;
     motor_handler->linear_velocity_setpoint = 0.0f;
     motor_handler->prev_enc_timestamp = 0u;
 
@@ -57,7 +58,9 @@ void motor_update(MotorHandleType *motor_handler)
 {
     double dt_sec;
     double linear_velocity;
+    double angular_change;
     double pulse_to_speed_ratio;
+    double pulse_to_angle_ratio;
     uint16_t duty_cycle;
     int16_t enc_counter;
     uint32_t current_timestamp;
@@ -88,16 +91,22 @@ void motor_update(MotorHandleType *motor_handler)
     }
     timerif_setDutyCycle(motor_handler->pwm_timer, duty_cycle);
 
-    /* Calculates wheel rotation speed based on counter pulse value */
+    /* Calculates wheel rotation speed and position based on counter pulse value */
     if (motor_handler->prev_enc_timestamp != 0)
     {
         enc_counter = timerif_getCounter(motor_handler->enc_timer);
         current_timestamp = system_hal_timestamp();
 
         dt_sec = (current_timestamp - motor_handler->prev_enc_timestamp) / 1000.0f;
-        pulse_to_speed_ratio = 1.0f / MOTOR_ENC_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI / dt_sec * MOTOR_WHEEL_OUTER_R;
-        linear_velocity = enc_counter * pulse_to_speed_ratio;
 
+        /* Calculate angular change from encoder counts (radians) */
+        pulse_to_angle_ratio = 1.0f / MOTOR_ENC_CPR / MOTOR_GEAR_RATIO * 2.0f * M_PI;
+        angular_change = enc_counter * pulse_to_angle_ratio;
+        motor_handler->angular_position += angular_change;
+
+        /* Calculate linear velocity (m/s) */
+        pulse_to_speed_ratio = pulse_to_angle_ratio / dt_sec * MOTOR_WHEEL_OUTER_R;
+        linear_velocity = enc_counter * pulse_to_speed_ratio;
         motor_handler->linear_velocity = linear_velocity;
     }
     timerif_resetCounter(motor_handler->enc_timer);
