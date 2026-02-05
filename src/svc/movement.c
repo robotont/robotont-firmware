@@ -28,6 +28,8 @@
 #include "pid.h"
 #include "system_hal.h"
 #include "timerif.h"
+#include "usbif.h"
+#include "float_format.h"
 
 #define PACKET_TIMEOUT_MS 1000 /* Timeout, if no new packets received, then all motors will be stopped */
 
@@ -330,7 +332,10 @@ static void printOdom(void)
     float vel_x = odom_handler.robot_vel_data[0];
     float vel_y = odom_handler.robot_vel_data[1];
     float vel_z = odom_handler.robot_vel_data[2];
-    printf("ODOM:%f:%f:%f:%f:%f:%f\r\n", pos_x, pos_y, pos_z, vel_x, vel_y, vel_z);
+
+    char buffer[128];
+    int len = format_odom(buffer, sizeof(buffer), pos_x, pos_y, pos_z, vel_x, vel_y, vel_z);
+    usbif_transmit_blocking((uint8_t *)buffer, len);
 }
 
 /** @brief Prints over serial motor joint states data in the format "JS:{pos_0}:{pos_1}:{pos_2}:{vel_0}:{vel_1}:{vel_2}:{eff_0}:{eff_1}:{eff_2}\r\n" */
@@ -351,8 +356,12 @@ static void printJointStates(void)
     float eff_1 = motor1_handler.duty_cycle;
     float eff_2 = motor2_handler.duty_cycle;
 
-    printf("JS:%f:%f:%f:%f:%f:%f:%f:%f:%f\r\n",
-           pos_0, pos_1, pos_2,
-           vel_0, vel_1, vel_2,
-           eff_0, eff_1, eff_2);
+    char buffer[256];
+    int len = format_joint_states(
+                    buffer,
+                    sizeof(buffer),
+                    pos_0, pos_1, pos_2,
+                    vel_0, vel_1, vel_2,
+                    eff_0, eff_1, eff_2);
+    usbif_transmit_blocking((uint8_t *)buffer, len);
 }
