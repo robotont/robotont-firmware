@@ -48,6 +48,21 @@ uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght)
     return retval;
 }
 
+uint8_t usbif_transmit_blocking(uint8_t *ptr_data, uint16_t length)
+{
+    uint32_t timeout = system_hal_timestamp() + 10;  // 10ms timeout
+    uint8_t rc;
+    
+    do {
+        rc = CDC_Transmit_FS((unsigned char *)ptr_data, length);
+        if (rc == USBD_OK) return length;
+        if (rc == USBD_FAIL) return 0;
+        // USBD_BUSY - keep trying
+    } while (system_hal_timestamp() < timeout);
+    
+    return 0;  // Timeout
+}
+
 /**
  * @brief   Handles "USB receive data" event
  * @details
@@ -60,21 +75,41 @@ uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght)
 {
     static uint8_t rx_buffer[USBIF_BUFFER_SIZE];
     static uint16_t rx_buffer_length = 0u;
-    static bool is_message_complete = false;
 
     for (uint16_t i = 0u; i < lenght; i++)
     {
-        rx_buffer[rx_buffer_length++] = ptr_data[i];
-        if (ptr_data[i] == '\r' || ptr_data[i] == '\n')
+        // Bounds check
+        if (rx_buffer_length >= USBIF_BUFFER_SIZE)
         {
-            is_message_complete = true;
+            // Buffer full - reset and discard
+            rx_buffer_length = 0u;
+            continue;
         }
-    }
 
-    if (is_message_complete && receive_callback != NULL)
-    {
-        receive_callback(rx_buffer, rx_buffer_length - 2u); // Exclude CR+LF TODO: what if only only CR or LF received?
-        rx_buffer_length = 0u;
+        uint8_t c = ptr_data[i];
+        rx_buffer[rx_buffer_length++] = c;
+
+        // Check for end of message
+        if (c == '\r' || c == '\n')
+        {
+            if (receive_callback != NULL && rx_buffer_length > 1)
+            {
+                // Safe length calculation
+                uint16_t msg_len = rx_buffer_length;
+                // Strip trailing CR/LF
+                while (msg_len > 0 && (rx_buffer[msg_len - 1] == '\r' || rx_buffer[msg_len - 1] == '\n'))
+                {
+                    msg_len--;
+                }
+                
+                if (msg_len > 0)
+                {
+                    receive_callback(rx_buffer, msg_len);
+                }
+            }
+            // Reset buffer after processing
+            rx_buffer_length = 0u;
+        }
     }
 
     return 0u;

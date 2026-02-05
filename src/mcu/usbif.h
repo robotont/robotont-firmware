@@ -16,6 +16,7 @@
 
 void usbif_init(void);
 uint8_t usbif_transmit(uint8_t *ptr_data, uint16_t lenght);
+uint8_t usbif_transmit_blocking(uint8_t *ptr_data, uint16_t length);
 uint8_t usbif_receive(uint8_t *ptr_data, uint16_t lenght);
 void usbif_setUpperLayerCallback(ReceiveCallbackType rx_callback);
 
