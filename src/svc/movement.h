@@ -32,6 +32,10 @@ void movement_handleCommandsMS(uint8_t *ptr_data, uint16_t lenght);
 void movement_handleCommandsDC(uint8_t *ptr_data, uint16_t lenght);
 void movement_handleCommandsOR(uint8_t *ptr_data, uint16_t lenght);
 
+void movement_setLinearVelocityLimit(float max_lin_vel);
+void movement_setAngularVelocityLimit(float max_ang_vel);
+void movement_setMotorsDutyCycleLimit(uint8_t duty_cycle_limit);
+
 void movement_update();
 
 void movement_pwmHighCallback(TIM_HandleTypeDef *timer_handler);

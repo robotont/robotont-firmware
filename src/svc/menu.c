@@ -1,5 +1,5 @@
 /**
- * @file menu.h
+ * @file menu.c
  * @brief Service. Displays information and allows for changing various parameters on the display using rotary encoder as input
  * 
  * @author Andres Sakk (andres.sakk@ut.ee)
@@ -8,7 +8,6 @@
 
 // TODO make dashboard nicer
 // TODO demo program submenu
-// TODO racing and normal mode callbacks
 
 // #define DEBUG
 
@@ -23,11 +22,12 @@
 #include "measurements.h" // Power info
 #include "led.h" // LED modes
 #include "timerif.h" // showMotorSpeeds
+#include "movement.h" // robot and motor speed limits
 
 #define DASHBOARD {"^ Dashboard", &showDashboard}
 #define MAINMENU {"^ Main menu", &enterMainMenu}
 #define SUBMENU(submenu_label, MENU_TYPE) {submenu_label, &enterSubmenu, MENU_TYPE}
-#define USERINPUT(setvalue_label, ptr_value) {setvalue_label, &setValue, MENU_NONE, ptr_value}
+#define USERINPUT(setvalue_label, input_cfg) {setvalue_label, &setValue, MENU_NONE, input_cfg}
 #define INFOSCREEN(infoscreen_label, callback) {infoscreen_label, callback}
 #define MENUITEM(menuitem_label, callback) {menuitem_label, callback}
 
@@ -53,7 +53,7 @@ typedef enum
     MENU_NONE = -1,
     MENU_ROOT,
     MENU_LED_SETTINGS,
-    MENU_MOTOR_SETTINGS,
+    MENU_CONTROL_LIMITS,
     MENU_SEND_CMD,
     MENU_DEMO_SUBMENU1,
     MENU_DEMO_SUBMENU2,
@@ -94,12 +94,38 @@ typedef enum
     STATE_INFOSCREEN,
 } MenuState;
 
+typedef enum {
+    INPUT_TYPE_NONE,
+    INPUT_TYPE_UINT8,
+    INPUT_TYPE_FLOAT
+} InputType;
+
+typedef struct {
+    InputType type;
+    union {
+        struct {
+            uint8_t value;
+            uint8_t min;
+            uint8_t max;
+            uint8_t step;
+        } uint8_config;
+        struct {
+            float value;
+            float min;
+            float max;
+            float step;
+        } float_config;
+    };
+    void (*callback_uint8)(uint8_t); // For uint8_t inputs
+    void (*callback_float)(float);   // For float inputs
+} UserInputConfig;
+
 typedef struct
 {
     char *label;
     void (*item_callback)(void);
     MenuType menu_to_enter;
-    int *ptr_dynamic_value;
+    UserInputConfig *input_config;
 } MenuItem;
 
 static MenuType current_menu = MENU_ROOT;
@@ -119,8 +145,55 @@ static bool is_scrolling_activated = false;
 
 static int menu_item_index = 0;
 
-static int dummy = 10;
-static int *ptr_user_input_value;
+static UserInputConfig *ptr_current_input_config;
+
+// ================ BEGIN INPUT CONFIGURATIONS ================
+
+static UserInputConfig input_linear_velocity = {
+    .type = INPUT_TYPE_FLOAT,
+    .float_config = {
+        .value = 0.4f,
+        .min = 0.1f,
+        .max = 2.0f,
+        .step = 0.05f
+    },
+    .callback_float = movement_setLinearVelocityLimit
+};
+
+static UserInputConfig input_angular_velocity = {
+    .type = INPUT_TYPE_FLOAT,
+    .float_config = {
+        .value = 1.0f,
+        .min = 0.1f,
+        .max = 3.1f,
+        .step = 0.1f
+    },
+    .callback_float = movement_setAngularVelocityLimit
+};
+
+static UserInputConfig input_effort = {
+    .type = INPUT_TYPE_UINT8,
+    .uint8_config = {
+        .value = 40,
+        .min = 10,
+        .max = 100,
+        .step = 5
+    },
+    .callback_uint8 = movement_setMotorsDutyCycleLimit
+};
+
+static UserInputConfig input_dummy = {
+    .type = INPUT_TYPE_UINT8,
+    .uint8_config = {
+        .value = 10,
+        .min = 0,
+        .max = 100,
+        .step = 1
+    },
+    .callback_uint8 = NULL  // No callback for dummy
+};
+
+// ================ END INPUT CONFIGURATIONS ================
 
 // ================ BEGIN DECLARATIONS ================
 
@@ -132,6 +205,8 @@ static void setValue();
 static void setLEDMode();
 static void showMotorSpeeds();
 static void doNothing();
+static void setRacingMode();
+static void setNormalMode();
 static void showFirmwareInfo();
 static void showPowerInfo();
 static void showBatteryInfo();
@@ -170,7 +245,7 @@ static MenuItem menu[][MAX_MENUITEMS] =
     {
         DASHBOARD,
         SUBMENU("> LED modes", MENU_LED_SETTINGS),
-        SUBMENU("> Motor control settings", MENU_MOTOR_SETTINGS),
+        SUBMENU("> Control limits", MENU_CONTROL_LIMITS),
         SUBMENU("> Send commands", MENU_SEND_CMD),
         SUBMENU("> Demo submenu 1", MENU_DEMO_SUBMENU1),
         SUBMENU("> Network settings", MENU_NETWORK_SETTINGS),
@@ -179,7 +254,7 @@ static MenuItem menu[][MAX_MENUITEMS] =
         SUBMENU("> Debug information", MENU_DEBUG),
         INFOSCREEN("Firmware information", &showFirmwareInfo),
         INFOSCREEN("Motor speeds", &showMotorSpeeds),
-        USERINPUT("Set max speed", &dummy),
+        USERINPUT("Set max speed", &input_dummy),
         //INFOSCREEN("Power information", &showPowerInfo),
         //INFOSCREEN("Battery information", &showBatteryInfo),
     },
@@ -200,11 +275,11 @@ static MenuItem menu[][MAX_MENUITEMS] =
     // MOTOR SETTINGS
     {   
         MAINMENU,
-        MENUITEM("Activate racing mode", &doNothing),
-        MENUITEM("Activate normal mode", &doNothing),
-        USERINPUT("Set motor linear velocity", &dummy),
-        USERINPUT("Set motor angular velocity", &dummy),
-        USERINPUT("Set motor effort", &dummy),
+        MENUITEM("Activate racing mode", &setRacingMode),
+        MENUITEM("Activate normal mode", &setNormalMode),
+        USERINPUT("Set linear velocity", &input_linear_velocity),
+        USERINPUT("Set angular velocity", &input_angular_velocity),
+        USERINPUT("Set effort limit", &input_effort),
     },
     // MENU_SEND_CMD
     {
@@ -377,7 +452,21 @@ static void setLEDMode()
 static void setValue()
 {
     menu_state = STATE_USERINPUT;
-    ptr_user_input_value = menu[current_menu][menu_item_index].ptr_dynamic_value;
+    ptr_current_input_config = menu[current_menu][menu_item_index].input_config;
+}
+
+static void setRacingMode()
+{
+    movement_setLinearVelocityLimit(1.0f);
+    movement_setAngularVelocityLimit(3.0f);
+    movement_setMotorsDutyCycleLimit(100u);
+}
+
+static void setNormalMode()
+{
+    movement_setLinearVelocityLimit(0.4f);
+    movement_setAngularVelocityLimit(1.0f);
+    movement_setMotorsDutyCycleLimit(40u);
 }
 
 static void doNothing()
@@ -523,7 +612,10 @@ static void drawDashboard()
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_ABOVECENTER);
-    snprintf(buff, sizeof(buff), "Motor duty: %d%%", dummy);
+    snprintf(buff, sizeof(buff), "Limit %.1f %.1f %u", 
+             input_linear_velocity.float_config.value,
+             input_angular_velocity.float_config.value,
+             input_effort.uint8_config.value);
     drawText(buff, true);    
 
     static IoPinType estop;
@@ -637,7 +729,15 @@ static void drawInputScreen() {
 
     // Draw variable value
     char buff[64];
-    snprintf(buff, sizeof(buff), "%d", *(ptr_user_input_value));
+    if (ptr_current_input_config->type == INPUT_TYPE_UINT8)
+    {
+        snprintf(buff, sizeof(buff), "%d", ptr_current_input_config->uint8_config.value);
+    }
+    else if (ptr_current_input_config->type == INPUT_TYPE_FLOAT)
+    {
+        snprintf(buff, sizeof(buff), "%.2f", ptr_current_input_config->float_config.value);
+    }
+    
     ssd1306_SetCursor(48, 30);
     ssd1306_WriteString(buff, Font_16x26);
 }
@@ -771,26 +871,66 @@ static void userInputInputHandler()
 {
     if (is_input_select)
     {
+        // Call the appropriate callback with the final value
+        if (ptr_current_input_config->type == INPUT_TYPE_UINT8)
+        {
+            if (ptr_current_input_config->callback_uint8 != NULL)
+            {
+                ptr_current_input_config->callback_uint8(ptr_current_input_config->uint8_config.value);
+            }
+        }
+        else if (ptr_current_input_config->type == INPUT_TYPE_FLOAT)
+        {
+            if (ptr_current_input_config->callback_float != NULL)
+            {
+                ptr_current_input_config->callback_float(ptr_current_input_config->float_config.value);
+            }
+        }
+        
         menu_state = STATE_MENU;
     }
 
     while (input_clockwise_counter > 0)
     {   
-        if (*ptr_user_input_value < 100)
+        if (ptr_current_input_config->type == INPUT_TYPE_UINT8)
         {
-            (*ptr_user_input_value)++;
+            if (ptr_current_input_config->uint8_config.value + ptr_current_input_config->uint8_config.step 
+                <= ptr_current_input_config->uint8_config.max)
+            {
+                ptr_current_input_config->uint8_config.value += ptr_current_input_config->uint8_config.step;
+            }
         }
-
+        else if (ptr_current_input_config->type == INPUT_TYPE_FLOAT)
+        {
+            if (ptr_current_input_config->float_config.value + ptr_current_input_config->float_config.step 
+                <= ptr_current_input_config->float_config.max)
+            {
+                ptr_current_input_config->float_config.value += ptr_current_input_config->float_config.step;
+            }
+        }
+        
         input_clockwise_counter--;
     }
 
     while (input_counterclockwise_counter > 0)
     {
-        if (*ptr_user_input_value > 0)
+        if (ptr_current_input_config->type == INPUT_TYPE_UINT8)
         {
-            (*ptr_user_input_value)--;
+            if (ptr_current_input_config->uint8_config.value - ptr_current_input_config->uint8_config.step 
+                >= ptr_current_input_config->uint8_config.min)
+            {
+                ptr_current_input_config->uint8_config.value -= ptr_current_input_config->uint8_config.step;
+            }
         }
-
+        else if (ptr_current_input_config->type == INPUT_TYPE_FLOAT)
+        {
+            if (ptr_current_input_config->float_config.value - ptr_current_input_config->float_config.step 
+                >= ptr_current_input_config->float_config.min)
+            {
+                ptr_current_input_config->float_config.value -= ptr_current_input_config->float_config.step;
+            }
+        }
+        
         input_counterclockwise_counter--;
     }
 }

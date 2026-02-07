@@ -53,6 +53,10 @@ typedef struct
 static MotorSpeedType motor_speed;   /* Target motor speed, that received from CMD handler */
 static uint32_t last_packet_time_ms; /* Last time, when command received. Based on that calculated timeout */
 
+// Take defaults from motor_cfg.h, but can be changed via menu
+static float linear_velocity_limit = MOTOR_MAX_LIN_VEL;
+static float angular_velocity_limit = MOTOR_MAX_ANG_VEL;
+
 PID_TypeDef pid0_handler;
 PID_TypeDef pid1_handler;
 PID_TypeDef pid2_handler;
@@ -122,8 +126,8 @@ void movement_handleCommandsRS(uint8_t *ptr_data, uint16_t lenght)
     velocity_z = atof(ptr_token);
     velocity_dir = atan2(velocity_y, velocity_x);
     velocity_mag = sqrt(SQUARE_OF(velocity_x) + SQUARE_OF(velocity_y));
-    velocity_mag = MIN(velocity_mag, MOTOR_MAX_LIN_VEL);
-    velocity_z = MAX(MIN(velocity_z, MOTOR_MAX_ANG_VEL), -MOTOR_MAX_ANG_VEL);
+    velocity_mag = MIN(velocity_mag, linear_velocity_limit);
+    velocity_z = MAX(MIN(velocity_z, angular_velocity_limit), -angular_velocity_limit);
 
     motor_speed.motor0 = velocity_mag * sin(velocity_dir - MOTOR_0_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
     motor_speed.motor1 = velocity_mag * sin(velocity_dir - MOTOR_1_WHEEL_PHI) + MOTOR_WHEEL_R * velocity_z;
@@ -288,6 +292,26 @@ void movement_pwmLowCallback(TIM_HandleTypeDef *timer_handler)
     {
         ioif_writePin(&motor2_handler.pwm_pin, false);
     }
+}
+
+/** @brief Sets linear velocity magnitude limit for the robot */
+void movement_setLinearVelocityLimit(float max_lin_vel)
+{
+    linear_velocity_limit = max_lin_vel;
+}
+
+/** @brief Sets angular velocity limit for the robot */
+void movement_setAngularVelocityLimit(float max_ang_vel)
+{
+    angular_velocity_limit = max_ang_vel;
+}
+
+/** @brief Sets PWM duty cycle limit for the motors */
+void movement_setMotorsDutyCycleLimit(uint8_t duty_cycle_limit)
+{
+    motor_setDutyCycleLimit(&motor0_handler, duty_cycle_limit);
+    motor_setDutyCycleLimit(&motor1_handler, duty_cycle_limit);
+    motor_setDutyCycleLimit(&motor2_handler, duty_cycle_limit);
 }
 
 /** @brief Initializes PID controller for each motor */
