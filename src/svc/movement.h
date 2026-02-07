@@ -36,6 +36,10 @@ void movement_setLinearVelocityLimit(float max_lin_vel);
 void movement_setAngularVelocityLimit(float max_ang_vel);
 void movement_setMotorsDutyCycleLimit(uint8_t duty_cycle_limit);
 
+float movement_getLinearVelocityLimit();
+float movement_getAngularVelocityLimit();
+uint8_t movement_getMotorsDutyCycleLimit();
+
 void movement_update();
 
 void movement_pwmHighCallback(TIM_HandleTypeDef *timer_handler);

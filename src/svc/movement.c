@@ -53,9 +53,10 @@ typedef struct
 static MotorSpeedType motor_speed;   /* Target motor speed, that received from CMD handler */
 static uint32_t last_packet_time_ms; /* Last time, when command received. Based on that calculated timeout */
 
-// Take defaults from motor_cfg.h, but can be changed via menu
-static float linear_velocity_limit = MOTOR_MAX_LIN_VEL;
-static float angular_velocity_limit = MOTOR_MAX_ANG_VEL;
+// Set default limits for velocity and effort (duty cycle)
+static float linear_velocity_limit = 0.4f;
+static float angular_velocity_limit = 1.0f;
+static uint8_t duty_cycle_limit = 40u;
 
 PID_TypeDef pid0_handler;
 PID_TypeDef pid1_handler;
@@ -93,6 +94,11 @@ void movement_init()
     motor_init(&motor2_handler, &motor2_pinout, TIMER_PWM_M2, TIMER_ENC_M2);
     odom_init(&odom_handler);
     initPID();
+
+    // Apply initial duty cycle limit to all motors
+    motor_setDutyCycleLimit(&motor0_handler, duty_cycle_limit);
+    motor_setDutyCycleLimit(&motor1_handler, duty_cycle_limit);
+    motor_setDutyCycleLimit(&motor2_handler, duty_cycle_limit);
 
     timerif_setPeriodElapsedCallback((TimerCallbackType)movement_pwmHighCallback);
     timerif_setPulseFinishedCallback((TimerCallbackType)movement_pwmLowCallback);
@@ -306,12 +312,33 @@ void movement_setAngularVelocityLimit(float max_ang_vel)
     angular_velocity_limit = max_ang_vel;
 }
 
-/** @brief Sets PWM duty cycle limit for the motors */
-void movement_setMotorsDutyCycleLimit(uint8_t duty_cycle_limit)
+/** @brief Sets PWM duty cycle limit for all motors */
+void movement_setMotorsDutyCycleLimit(uint8_t duty_cycle_limit_percent)
 {
+    duty_cycle_limit = duty_cycle_limit_percent;
+    
+    // Propagate to all motors
     motor_setDutyCycleLimit(&motor0_handler, duty_cycle_limit);
     motor_setDutyCycleLimit(&motor1_handler, duty_cycle_limit);
     motor_setDutyCycleLimit(&motor2_handler, duty_cycle_limit);
+}
+
+/** @brief Gets linear velocity magnitude limit for the robot */
+float movement_getLinearVelocityLimit()
+{
+    return linear_velocity_limit;
+}
+
+/** @brief Gets angular velocity limit for the robot */
+float movement_getAngularVelocityLimit()
+{    
+    return angular_velocity_limit;
+}   
+
+/** @brief Gets PWM duty cycle limit (robot-wide setting) */
+uint8_t movement_getMotorsDutyCycleLimit()
+{
+    return duty_cycle_limit;
 }
 
 /** @brief Initializes PID controller for each motor */

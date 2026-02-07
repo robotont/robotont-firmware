@@ -272,7 +272,7 @@ static MenuItem menu[][MAX_MENUITEMS] =
         MENUITEM("MODE_MOTOR_SPEEDS", &setLEDMode),
         MENUITEM("MODE_SCAN_RANGES", &setLEDMode),
     },
-    // MOTOR SETTINGS
+    // CONTROL LIMITS
     {   
         MAINMENU,
         MENUITEM("Activate racing mode", &setRacingMode),
@@ -353,6 +353,11 @@ void menu_init()
     ssd1306_Init();
     ssd1306_FlipScreenVertically();
     ssd1306_SetColor(White);
+
+    // Sync menu values with actual movement class values at startup
+    input_linear_velocity.float_config.value = movement_getLinearVelocityLimit();
+    input_angular_velocity.float_config.value = movement_getAngularVelocityLimit();
+    input_effort.uint8_config.value = movement_getMotorsDutyCycleLimit();
 }
 
 void menu_update()
@@ -453,6 +458,20 @@ static void setValue()
 {
     menu_state = STATE_USERINPUT;
     ptr_current_input_config = menu[current_menu][menu_item_index].input_config;
+    
+    // Sync value from movement class when entering input screen
+    if (ptr_current_input_config == &input_linear_velocity)
+    {
+        input_linear_velocity.float_config.value = movement_getLinearVelocityLimit();
+    }
+    else if (ptr_current_input_config == &input_angular_velocity)
+    {
+        input_angular_velocity.float_config.value = movement_getAngularVelocityLimit();
+    }
+    else if (ptr_current_input_config == &input_effort)
+    {
+        input_effort.uint8_config.value = movement_getMotorsDutyCycleLimit();
+    }
 }
 
 static void setRacingMode()
@@ -460,6 +479,11 @@ static void setRacingMode()
     movement_setLinearVelocityLimit(1.0f);
     movement_setAngularVelocityLimit(3.0f);
     movement_setMotorsDutyCycleLimit(100u);
+    
+    // Update menu values to reflect the changes
+    input_linear_velocity.float_config.value = 1.0f;
+    input_angular_velocity.float_config.value = 3.0f;
+    input_effort.uint8_config.value = 100u;
 }
 
 static void setNormalMode()
@@ -467,6 +491,11 @@ static void setNormalMode()
     movement_setLinearVelocityLimit(0.4f);
     movement_setAngularVelocityLimit(1.0f);
     movement_setMotorsDutyCycleLimit(40u);
+    
+    // Update menu values to reflect the changes
+    input_linear_velocity.float_config.value = 0.4f;
+    input_angular_velocity.float_config.value = 1.0f;
+    input_effort.uint8_config.value = 40u;
 }
 
 static void doNothing()

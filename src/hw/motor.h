@@ -43,6 +43,7 @@ typedef struct
     double linear_velocity_setpoint; /* Desired linear velocity */
     double duty_cycle;               /* PWM duty cycle. Note: PID input is double; Mark (+/-) defines direction */
     uint32_t prev_enc_timestamp;     /* Time of the encoder update in order to calculate pulse width (and speed) */
+    uint8_t duty_cycle_limit;        /* Maximum allowed duty cycle (0-100%) */
 
 } MotorHandleType;
 
