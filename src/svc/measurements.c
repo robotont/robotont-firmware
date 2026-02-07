@@ -12,7 +12,7 @@ void measurements_init(void)
     pwr_mgmnt_data.motor_power_enabled = false;
     pwr_mgmnt_data.sys_power_enabled = false;
     pwr_mgmnt_data.motor_current = 0.0f;
-    pwr_mgmnt_data.nuc_current = 0.0f;
+    pwr_mgmnt_data.obc_current = 0.0f;
     pwr_mgmnt_data.wall_voltage = 0.0f;
     pwr_mgmnt_data.bat_voltage = 0.0f;
     
@@ -49,7 +49,7 @@ void measurements_processData(void)
     pwr_mgmnt_data.motor_current = ((mtr_current_reading * 3.3) / (1024 * 40)) * 200; // AMPS
 
     uint16_t nuc_current_reading = (pwr_mgmnt_data_raw[3] << 8) | pwr_mgmnt_data_raw[4];
-    pwr_mgmnt_data.nuc_current = ((nuc_current_reading * 3.3) / (1024 * 60)) * 100; // AMPS
+    pwr_mgmnt_data.obc_current = ((nuc_current_reading * 3.3) / (1024 * 60)) * 100; // AMPS
 
     uint16_t wall_voltage_reading = (pwr_mgmnt_data_raw[5] << 8) | pwr_mgmnt_data_raw[6];
     pwr_mgmnt_data.wall_voltage = (((wall_voltage_reading * 3.3) / 1024) * 118) / 18; // VOLTS
@@ -76,7 +76,7 @@ void measurements_processData(void)
     // Print the processed data
     printf("BATSTATE: %.3f:%.3f:%.3f:%.3f:",
            pwr_mgmnt_data.motor_current,
-           pwr_mgmnt_data.nuc_current,
+           pwr_mgmnt_data.obc_current,
            pwr_mgmnt_data.wall_voltage,
            MAX(pwr_mgmnt_data.bat_voltage, pwr_mgmnt_data.bat_pack_voltage));
     for (int i = 0; i < 5; i++) {

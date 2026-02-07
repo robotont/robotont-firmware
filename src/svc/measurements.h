@@ -20,7 +20,7 @@ typedef struct
     bool motor_power_enabled;
     bool sys_power_enabled;
     float motor_current;
-    float nuc_current;
+    float obc_current;
     float wall_voltage;
     float bat_voltage;
     float bat_pack_voltage;

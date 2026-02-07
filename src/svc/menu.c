@@ -542,7 +542,7 @@ static void showPowerInfo()
     drawText(buff, true);
 
     setCursorCompactView(COMPACTVIEW_BELOWCENTER);
-    snprintf(buff, sizeof(buff), "NUC: %.2f A", pwr_mgmnt_data.nuc_current);
+    snprintf(buff, sizeof(buff), "OBC: %.2f A", pwr_mgmnt_data.obc_current);
     drawText(buff, true);
 }
 
