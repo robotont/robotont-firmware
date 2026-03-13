@@ -56,8 +56,13 @@ Install recommended extensions, they are included in the workspace file.
 #### CLI
 
 1. Install PlatformIO [CLI](https://docs.platformio.org/en/latest/core/installation.html).    
-2. Make sure to add [the standard udev rules](https://docs.platformio.org/en/latest/faq.html#faq-udev-rules) of platformIO and also ST-link 2.1 specific ones:    
-```curl -fsSL https://raw.githubusercontent.com/stlink-org/stlink/develop/config/udev/rules.d/49-stlinkv2-1.rules | sudo tee /etc/udev/rules.d/49-stlinkv2-1.rules```
+2. Make sure to add [the standard udev rules](https://docs.platformio.org/en/latest/faq.html#faq-udev-rules) of platformIO and also ST-link specific ones:    
+``` bash
+curl -fsSL https://raw.githubusercontent.com/stlink-org/stlink/develop/config/udev/rules.d/49-stlinkv2.rules | sudo tee /etc/udev/rules.d/49-stlinkv2.rules
+curl -fsSL https://raw.githubusercontent.com/stlink-org/stlink/develop/config/udev/rules.d/49-stlinkv2-1.rules | sudo tee /etc/udev/rules.d/49-stlinkv2-1.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
 
 To build and upload, in the project root, do
 `pio run -t upload`
