@@ -3,6 +3,8 @@
 
 #include "macros.h"
 
+static volatile bool pwr_mgmnt_data_ready = false;
+
 void measurements_init(void)
 {
     // Initialize the power management data with zeros
@@ -19,7 +21,7 @@ void measurements_init(void)
     // Initialize i2c interface and set up the receive mechanism
     i2cif_init();
     i2cif_setReceiveCallback(measurements_receiveCallback);
-    HAL_I2C_ListenCpltCallback(I2C_HANDLER_1);
+    HAL_I2C_EnableListen_IT(I2C_HANDLER_1);
 }
     
 void measurements_receiveCallback(I2C_HandleTypeDef *ifi2c_handler, uint8_t *ptr_rx_buf)
@@ -30,8 +32,8 @@ void measurements_receiveCallback(I2C_HandleTypeDef *ifi2c_handler, uint8_t *ptr
     memcpy(pwr_mgmnt_data_raw, ptr_rx_buf, PWR_MGMNT_PACKET_SIZE);
   }
 
-  // Process and forward the data immediately upon receiving
   measurements_processData();
+  pwr_mgmnt_data_ready = true;
 }
 	
 
@@ -65,15 +67,16 @@ void measurements_processData(void)
 
     pwr_mgmnt_data.bat_cell_temp = ((pwr_mgmnt_data_raw[21] << 8) | pwr_mgmnt_data_raw[22]) / 100.0f; // CELSIUS
     pwr_mgmnt_data.bat_mosfet_temp = ((pwr_mgmnt_data_raw[23] << 8) | pwr_mgmnt_data_raw[24]) / 100.0f; // CELSIUS
+}
 
-    // Debug data
-    // for (int i = 0; i < 29; i++) {
-    //     // Assuming there's a debug array in MeasurementsType to hold these values
-    //     // If not, you can store them elsewhere as needed
-    //   pwr_mgmnt_data.dbg[i] = pwr_mgmnt_data_raw[i];
-    // }
+void measurements_update(void)
+{
+    if (!pwr_mgmnt_data_ready)
+    {
+        return;
+    }
+    pwr_mgmnt_data_ready = false;
 
-    // Print the processed data
     printf("BATSTATE: %.3f:%.3f:%.3f:%.3f:",
            pwr_mgmnt_data.motor_current,
            pwr_mgmnt_data.obc_current,
@@ -86,7 +89,7 @@ void measurements_processData(void)
         }
     }
     printf(":%.2f:%.2f\n",
-           pwr_mgmnt_data.bat_cell_temp, 
+           pwr_mgmnt_data.bat_cell_temp,
            pwr_mgmnt_data.bat_mosfet_temp);
 }
     

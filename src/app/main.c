@@ -76,6 +76,8 @@ int main(void)
             movement_update();
             led_update();
             menu_update();
+            measurements_update();
+            system_hal_feed_watchdog();
 
             // Debug
             if (debug_counter % DEBUG_LED_PERIOD_PRESCALER == 0)

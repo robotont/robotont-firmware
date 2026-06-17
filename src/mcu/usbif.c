@@ -12,6 +12,7 @@
 
 #include "usb_device.h"
 #include "usbd_def.h"
+#include "system_hal.h"
 
 static ReceiveCallbackType receive_callback;
 

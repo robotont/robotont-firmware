@@ -16,6 +16,7 @@
 void system_hal_init(void);
 void system_hal_delay(uint32_t delay_ms);
 uint32_t system_hal_timestamp(void);
+void system_hal_feed_watchdog(void);
 void Error_Handler(void);
 
 #endif

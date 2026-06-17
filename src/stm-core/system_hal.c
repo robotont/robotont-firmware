@@ -8,8 +8,10 @@
 
 #include "system_hal.h"
 #include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_iwdg.h"
 
 static void SystemClock_Config(void);
+static IWDG_HandleTypeDef hiwdg;
 
 /**
  * @brief Init CubeMX HAL module and SystemClock
@@ -18,6 +20,18 @@ void system_hal_init(void)
 {
     HAL_Init();
     SystemClock_Config();
+
+    /* IWDG: LSI ~32 kHz, prescaler 256 → ~8 ms/tick; reload 374 → ~3 s timeout.
+     * The main loop runs at 50 Hz (20 ms), so any hang is detected within 3 s. */
+    hiwdg.Instance = IWDG;
+    hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
+    hiwdg.Init.Reload = 374;
+    HAL_IWDG_Init(&hiwdg);
+}
+
+void system_hal_feed_watchdog(void)
+{
+    HAL_IWDG_Refresh(&hiwdg);
 }
 
 /**
